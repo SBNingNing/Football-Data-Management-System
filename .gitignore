@@ -1,0 +1,38 @@
+# Node.js 依赖目录
+node_modules/
+
+# 构建输出
+/dist
+/build
+
+# 日志文件
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# 编辑器配置
+.idea/
+.vscode/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# 环境变量文件
+.env.local
+.env.*.local
+
+# Python 字节码文件
+__pycache__/
+*.py[cod]
+*$py.class
+
+# 虚拟环境
+venv/
+env/
+ENV/
+
+# SQLite 数据库
+*.db
+*.sqlite
