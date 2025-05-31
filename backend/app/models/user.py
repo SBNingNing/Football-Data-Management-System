@@ -9,7 +9,7 @@ class User(db.Model):
     用户名 = db.Column('用户名', db.String(100), unique=True, nullable=False)
     密码 = db.Column('密码', db.String(100), nullable=False)
     邮箱 = db.Column('邮箱', db.String(100), unique=True, nullable=False)
-    身份_角色 = db.Column('身份/角色', db.String(20), default='user')
+    身份_角色 = db.Column('身份角色', db.String(20), default='user')
     创建时间 = db.Column('创建时间', db.DateTime, default=datetime.utcnow)
     最后登录时间 = db.Column('最后登录时间', db.DateTime)
     状态 = db.Column('状态', db.CHAR(1), default='A')  # A=活跃, I=禁用
