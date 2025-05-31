@@ -1,0 +1,38 @@
+Football-Data-Management-System/
+│
+├── backend/
+│   ├── app/
+│   │   ├── __init__.py
+│   │   ├── config.py
+│   │   ├── models/
+│   │   │   ├── __init__.py
+│   │   │   └── user.py
+│   │   ├── routes/
+│   │   │   ├── __init__.py
+│   │   │   └── auth.py
+│   │   └── utils/
+│   │       ├── __init__.py
+│   │       └── security.py
+│   ├── requirements.txt
+│   └── run.py
+│
+└── frontend/
+    ├── package.json
+    ├── vite.config.js
+    ├── index.html
+    ├── public/
+    └── src/
+        ├── main.js
+        ├── App.vue
+        ├── router/
+        │   └── index.js
+        ├── store/
+        │   └── index.js
+        ├── assets/
+        ├── components/
+        │   └── common/
+        └── views/
+            ├── auth/
+            │   ├── Login.vue
+            │   └── Register.vue
+            └── Home.vue

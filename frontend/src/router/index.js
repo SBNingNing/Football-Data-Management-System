@@ -1,10 +1,7 @@
-import Vue from 'vue'
-import VueRouter from 'vue-router'
-import Login from '../views/Login.vue'
-import Register from '../views/Register.vue'
+import { createRouter, createWebHistory } from 'vue-router'
+import Login from '../views/auth/Login.vue'
+import Register from '../views/auth/Register.vue'
 import Home from '../views/Home.vue'
-
-Vue.use(VueRouter)
 
 const routes = [
   {
@@ -14,12 +11,14 @@ const routes = [
   {
     path: '/login',
     name: 'Login',
-    component: Login
+    component: Login,
+    meta: { requiresAuth: false }
   },
   {
     path: '/register',
     name: 'Register',
-    component: Register
+    component: Register,
+    meta: { requiresAuth: false }
   },
   {
     path: '/home',
@@ -29,24 +28,19 @@ const routes = [
   }
 ]
 
-const router = new VueRouter({
-  mode: 'history',
-  base: process.env.BASE_URL,
+const router = createRouter({
+  history: createWebHistory(),
   routes
 })
 
-// 全局导航守卫
+// 导航守卫
 router.beforeEach((to, from, next) => {
-  if (to.matched.some(record => record.meta.requiresAuth)) {
-    // 需要登录的页面
-    if (!localStorage.getItem('token')) {
-      next({
-        path: '/login',
-        query: { redirect: to.fullPath }
-      })
-    } else {
-      next()
-    }
+  const token = localStorage.getItem('token')
+  
+  if (to.meta.requiresAuth && !token) {
+    next('/login')
+  } else if ((to.path === '/login' || to.path === '/register') && token) {
+    next('/home')
   } else {
     next()
   }

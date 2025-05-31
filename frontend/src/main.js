@@ -1,27 +1,15 @@
-import Vue from 'vue'
+import { createApp } from 'vue'
 import App from './App.vue'
 import router from './router'
-import ElementUI from 'element-ui'
-import 'element-ui/lib/theme-chalk/index.css'
-import axios from 'axios'
+import { createPinia } from 'pinia'
+import ElementPlus from 'element-plus'
+import 'element-plus/dist/index.css'
+import './assets/main.css'
 
-Vue.use(ElementUI)
-Vue.config.productionTip = false
+const app = createApp(App)
 
-// 配置axios
-axios.defaults.baseURL = 'http://localhost:5000'
-Vue.prototype.$http = axios
+app.use(createPinia())
+app.use(router)
+app.use(ElementPlus)
 
-// 添加请求拦截器，在请求头中添加token
-axios.interceptors.request.use(config => {
-  const token = localStorage.getItem('token')
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`
-  }
-  return config
-})
-
-new Vue({
-  router,
-  render: h => h(App),
-}).$mount('#app')
+app.mount('#app')

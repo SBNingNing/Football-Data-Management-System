@@ -1,45 +1,82 @@
 <template>
   <div class="home-container">
-    <el-card>
-      <div slot="header">
-        <h2>足球管理系统</h2>
-      </div>
-      <div class="welcome-message">
-        <h3>欢迎您，{{ username }}!</h3>
-        <p>这是一个空的测试页面</p>
-      </div>
-      <el-button type="danger" @click="logout">退出登录</el-button>
-    </el-card>
+    <el-container>
+      <el-header>
+        <div class="header-content">
+          <h2>科大校园足球赛事管理系统</h2>
+          <div class="user-info">
+            <span>{{ userStore.currentUser?.username }}</span>
+            <el-button type="text" @click="handleLogout">退出</el-button>
+          </div>
+        </div>
+      </el-header>
+      
+      <el-main>
+        <div class="welcome-container">
+          <h1>欢迎使用科大校园足球赛事管理系统</h1>
+          <p>这是一个测试主页，登录成功！</p>
+        </div>
+      </el-main>
+    </el-container>
   </div>
 </template>
 
-<script>
-export default {
-  name: 'Home',
-  data() {
-    return {
-      username: localStorage.getItem('username') || '用户'
-    }
-  },
-  methods: {
-    logout() {
-      // 清除存储的信息
-      localStorage.removeItem('token')
-      localStorage.removeItem('username')
-      this.$message.success('已退出登录')
-      this.$router.push('/login')
-    }
-  }
+<script setup>
+import { useUserStore } from '@/store'
+import { useRouter } from 'vue-router'
+import { ElMessage } from 'element-plus'
+
+const userStore = useUserStore()
+const router = useRouter()
+
+const handleLogout = () => {
+  userStore.logout()
+  ElMessage.success('已退出登录')
+  router.push('/login')
 }
 </script>
 
 <style scoped>
 .home-container {
-  max-width: 800px;
-  margin: 0 auto;
+  min-height: 100vh;
+}
+
+.el-header {
+  background-color: #409EFF;
+  color: white;
+  line-height: 60px;
+  padding: 0 20px;
+}
+
+.header-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.el-main {
   padding: 20px;
 }
-.welcome-message {
-  margin: 20px 0;
+
+.welcome-container {
+  text-align: center;
+  margin-top: 100px;
+}
+
+.welcome-container h1 {
+  font-size: 32px;
+  color: #303133;
+  margin-bottom: 20px;
+}
+
+.welcome-container p {
+  font-size: 18px;
+  color: #606266;
 }
 </style>
