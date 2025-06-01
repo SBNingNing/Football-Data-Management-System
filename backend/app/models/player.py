@@ -17,9 +17,11 @@ class Player(db.Model):
     
     # 统计数据
     goals_season = db.Column(db.Integer, default=0, comment='赛季进球数')
-    cards_season = db.Column(db.Integer, default=0, comment='赛季红黄牌数')
+    yellow_cards_season = db.Column(db.Integer, default=0, comment='赛季黄牌数')
+    red_cards_season = db.Column(db.Integer, default=0, comment='赛季红牌数')
     goals_history = db.Column(db.Integer, default=0, comment='历史进球数')
-    cards_history = db.Column(db.Integer, default=0, comment='历史红黄牌数')
+    yellow_cards_history = db.Column(db.Integer, default=0, comment='历史黄牌数')
+    red_cards_history = db.Column(db.Integer, default=0, comment='历史红牌数')
     
     # 关系
     team = db.relationship('Team', backref=db.backref('players', lazy=True))
@@ -40,7 +42,9 @@ class Player(db.Model):
             'team_name': self.team.name if self.team else None,
             'season_id': self.season_id,
             'goals_season': self.goals_season,
-            'cards_season': self.cards_season,
+            'yellow_cards_season': self.yellow_cards_season,
+            'red_cards_season': self.red_cards_season,
             'goals_history': self.goals_history,
-            'cards_history': self.cards_history
+            'yellow_cards_history': self.yellow_cards_history,
+            'red_cards_history': self.red_cards_history
         }

@@ -26,11 +26,13 @@ CREATE TABLE team (
     赛事ID INT NOT NULL,
     赛季ID INT NOT NULL,
     赛季总进球数 INT DEFAULT 0,
-    赛季红黄牌数 INT DEFAULT 0,
+    赛季红牌数 INT DEFAULT 0,
+    赛季黄牌数 INT DEFAULT 0,
     赛季积分 INT DEFAULT 0,
     赛季排名 INT,
     历史总进球数 INT DEFAULT 0,
-    历史总红黄牌数 INT DEFAULT 0,
+    历史总红牌数 INT DEFAULT 0,
+    历史总黄牌数 INT DEFAULT 0,
     FOREIGN KEY (赛事ID) REFERENCES tournament(赛事ID),
     FOREIGN KEY (赛季ID) REFERENCES season(赛季ID)
 );
@@ -43,9 +45,11 @@ CREATE TABLE player (
     球队ID INT NOT NULL,
     赛季ID INT NOT NULL,
     赛季进球数 INT DEFAULT 0,
-    赛季红黄牌数 INT DEFAULT 0,
+    赛季红牌数 INT DEFAULT 0,
+    赛季黄牌数 INT DEFAULT 0,
     历史进球数 INT DEFAULT 0,
-    历史红黄牌数 INT DEFAULT 0,
+    历史红牌数 INT DEFAULT 0,
+    历史黄牌数 INT DEFAULT 0,
     FOREIGN KEY (球队ID) REFERENCES team(球队ID),
     FOREIGN KEY (赛季ID) REFERENCES season(赛季ID)
 );
