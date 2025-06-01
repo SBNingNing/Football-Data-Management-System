@@ -77,3 +77,15 @@ def get_current_user():
         return jsonify({'error': '用户不存在'}), 404
         
     return jsonify(user.to_dict()), 200
+
+@auth_bp.route('/guest-login', methods=['POST'])
+def guest_login():
+    try:
+        # 创建游客身份令牌
+        access_token = create_access_token(identity='guest')
+        return jsonify({
+            'message': '游客登录成功',
+            'access_token': access_token
+        }), 200
+    except Exception as e:
+        return jsonify({'error': f'游客登录失败: {str(e)}'}), 500

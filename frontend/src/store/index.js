@@ -54,6 +54,29 @@ export const useUserStore = defineStore('user', {
       }
     },
     
+    async setGuestMode() {
+      this.loading = true
+      this.error = null
+      
+      try {
+        const response = await axios.post('/api/auth/guest-login')
+        const { access_token } = response.data
+        
+        this.token = access_token
+        this.user = { role: 'guest' }
+        
+        localStorage.setItem('token', access_token)
+        axios.defaults.headers.common['Authorization'] = `Bearer ${access_token}`
+        
+        this.loading = false
+        return true
+      } catch (error) {
+        this.error = error.response?.data?.error || '游客登录失败'
+        this.loading = false
+        return false
+      }
+    },
+    
     logout() {
       this.user = null
       this.token = null

@@ -80,10 +80,10 @@
     </el-card>
 
     
-    <!-- 热门比赛轮播 -->
+    <!-- 近期比赛轮播 -->
     <el-card class="featured-matches-card">
       <div slot="header" class="clearfix">
-        <span>热门比赛</span>
+        <span>近期比赛</span>
       </div>
       
       <el-carousel :interval="4000" type="card" height="200px">
@@ -107,25 +107,71 @@
       </el-carousel>
     </el-card>
     
-    <!-- 赛事公告 -->
-    <el-card class="announcements-card">
+    <!-- 排行数据 -->
+    <el-card class="rankings-card">
       <div slot="header" class="clearfix">
-        <span>赛事公告</span>
-        <el-button style="float: right; padding: 3px 0" type="text">查看全部</el-button>
+        <span>赛事排行</span>
+        <el-select v-model="selectedCompetition" placeholder="选择赛事" style="float: right; width: 150px;" @change="onCompetitionChange">
+          <el-option label="冠军杯" value="championsCup"></el-option>
+          <el-option label="巾帼杯" value="womensCup"></el-option>
+          <el-option label="八人制" value="eightASide"></el-option>
+        </el-select>
       </div>
       
-      <el-timeline>
-        <el-timeline-item
-          v-for="(announcement, index) in announcements"
-          :key="index"
-          :timestamp="announcement.date"
-          :type="announcement.type">
-          <el-card>
-            <h4>{{ announcement.title }}</h4>
-            <p>{{ announcement.content }}</p>
-          </el-card>
-        </el-timeline-item>
-      </el-timeline>
+      <el-tabs type="card">
+        <!-- 射手榜 -->
+        <el-tab-pane label="射手榜">
+          <el-row :gutter="20">
+            <el-col :span="12">
+              <h3>球员射手榜</h3>
+              <el-table :data="currentRankings.topScorers.players" style="width: 100%">
+                <el-table-column prop="name" label="球员"></el-table-column>
+                <el-table-column prop="team" label="球队"></el-table-column>
+                <el-table-column prop="goals" label="进球数"></el-table-column>
+              </el-table>
+            </el-col>
+            <el-col :span="12">
+              <h3>球队射手榜</h3>
+              <el-table :data="currentRankings.topScorers.teams" style="width: 100%">
+                <el-table-column prop="team" label="球队"></el-table-column>
+                <el-table-column prop="goals" label="进球数"></el-table-column>
+              </el-table>
+            </el-col>
+          </el-row>
+        </el-tab-pane>
+        
+        <!-- 红黄牌榜 -->
+        <el-tab-pane label="红黄牌榜">
+          <el-row :gutter="20">
+            <el-col :span="12">
+              <h3>球员红黄牌榜</h3>
+              <el-table :data="currentRankings.cards.players" style="width: 100%">
+                <el-table-column prop="name" label="球员"></el-table-column>
+                <el-table-column prop="team" label="球队"></el-table-column>
+                <el-table-column prop="yellowCards" label="黄牌数"></el-table-column>
+                <el-table-column prop="redCards" label="红牌数"></el-table-column>
+              </el-table>
+            </el-col>
+            <el-col :span="12">
+              <h3>球队红黄牌榜</h3>
+              <el-table :data="currentRankings.cards.teams" style="width: 100%">
+                <el-table-column prop="team" label="球队"></el-table-column>
+                <el-table-column prop="yellowCards" label="黄牌数"></el-table-column>
+                <el-table-column prop="redCards" label="红牌数"></el-table-column>
+              </el-table>
+            </el-col>
+          </el-row>
+        </el-tab-pane>
+        
+        <!-- 积分榜 -->
+        <el-tab-pane label="积分榜">
+          <el-table :data="currentRankings.points" style="width: 100%">
+            <el-table-column prop="team" label="球队"></el-table-column>
+            <el-table-column prop="matchesPlayed" label="比赛场次"></el-table-column>
+            <el-table-column prop="points" label="积分"></el-table-column>
+          </el-table>
+        </el-tab-pane>
+      </el-tabs>
     </el-card>
     
     <!-- 近期比赛表格 -->
@@ -133,22 +179,62 @@
       <div slot="header" class="clearfix">
         <span>近期比赛</span>
       </div>
-      <el-table :data="recentMatches" style="width: 100%">
-        <el-table-column prop="name" label="比赛名称"></el-table-column>
-        <el-table-column prop="type" label="类型"></el-table-column>
-        <el-table-column prop="date" label="日期"></el-table-column>
-        <el-table-column prop="location" label="地点"></el-table-column>
-        <el-table-column label="对阵">
-          <template slot-scope="scope">
-            {{ scope.row.team1 }} vs {{ scope.row.team2 }}
-          </template>
-        </el-table-column>
-        <el-table-column label="操作" width="120">
-          <template slot-scope="scope">
-            <el-button size="mini" type="primary" @click="viewMatchDetails(scope.row)">查看</el-button>
-          </template>
-        </el-table-column>
-      </el-table>
+      <el-tabs type="card">
+        <el-tab-pane label="冠军杯">
+          <el-table :data="recentMatches.championsCup" style="width: 100%">
+            <el-table-column prop="name" label="比赛名称"></el-table-column>
+            <el-table-column prop="type" label="类型"></el-table-column>
+            <el-table-column prop="date" label="日期"></el-table-column>
+            <el-table-column prop="location" label="地点"></el-table-column>
+            <el-table-column label="对阵">
+              <template slot-scope="scope">
+                {{ scope.row.team1 }} vs {{ scope.row.team2 }}
+              </template>
+            </el-table-column>
+            <el-table-column label="操作" width="120">
+              <template slot-scope="scope">
+                <el-button size="mini" type="primary" @click="viewMatchDetails(scope.row)">查看</el-button>
+              </template>
+            </el-table-column>
+          </el-table>
+        </el-tab-pane>
+        <el-tab-pane label="巾帼杯">
+          <el-table :data="recentMatches.womensCup" style="width: 100%">
+            <el-table-column prop="name" label="比赛名称"></el-table-column>
+            <el-table-column prop="type" label="类型"></el-table-column>
+            <el-table-column prop="date" label="日期"></el-table-column>
+            <el-table-column prop="location" label="地点"></el-table-column>
+            <el-table-column label="对阵">
+              <template slot-scope="scope">
+                {{ scope.row.team1 }} vs {{ scope.row.team2 }}
+              </template>
+            </el-table-column>
+            <el-table-column label="操作" width="120">
+              <template slot-scope="scope">
+                <el-button size="mini" type="primary" @click="viewMatchDetails(scope.row)">查看</el-button>
+              </template>
+            </el-table-column>
+          </el-table>
+        </el-tab-pane>
+        <el-tab-pane label="八人制">
+          <el-table :data="recentMatches.eightASide" style="width: 100%">
+            <el-table-column prop="name" label="比赛名称"></el-table-column>
+            <el-table-column prop="type" label="类型"></el-table-column>
+            <el-table-column prop="date" label="日期"></el-table-column>
+            <el-table-column prop="location" label="地点"></el-table-column>
+            <el-table-column label="对阵">
+              <template slot-scope="scope">
+                {{ scope.row.team1 }} vs {{ scope.row.team2 }}
+              </template>
+            </el-table-column>
+            <el-table-column label="操作" width="120">
+              <template slot-scope="scope">
+                <el-button size="mini" type="primary" @click="viewMatchDetails(scope.row)">查看</el-button>
+              </template>
+            </el-table-column>
+          </el-table>
+        </el-tab-pane>
+      </el-tabs>
     </el-card>
   </div>
 </template>
@@ -160,56 +246,103 @@ export default {
   name: 'Home',
   data() {
     return {
-      recentMatches: [],
+      selectedCompetition: 'championsCup',
+      recentMatches: {
+        championsCup: [],
+        womensCup: [],
+        eightASide: []
+      },
       featuredMatches: [],
       statsData: {
         totalMatches: 0,
         upcomingMatches: 0,
         completedMatches: 0
       },
-      announcements: [
-        {
-          date: '2023-06-15',
-          title: '冠军杯决赛将于本周六举行',
-          content: '本赛季冠军杯决赛将于6月15日下午3点在主体育场举行，欢迎广大球迷到场观看。',
-          type: 'success'
+      rankings: {
+        championsCup: {
+          topScorers: {
+            players: [],
+            teams: []
+          },
+          cards: {
+            players: [],
+            teams: []
+          },
+          points: []
         },
-        {
-          date: '2023-06-10',
-          title: '巾帼杯报名开始',
-          content: '2023年巾帼杯足球赛报名已开始，请各参赛队伍于6月20日前完成报名手续。',
-          type: 'warning'
+        womensCup: {
+          topScorers: {
+            players: [],
+            teams: []
+          },
+          cards: {
+            players: [],
+            teams: []
+          },
+          points: []
         },
-        {
-          date: '2023-06-05',
-          title: '赛事规程更新',
-          content: '八人制比赛规程已更新，请各参赛队伍注意查看新规则。',
-          type: 'info'
+        eightASide: {
+          topScorers: {
+            players: [],
+            teams: []
+          },
+          cards: {
+            players: [],
+            teams: []
+          },
+          points: []
         }
-      ]
+      }
+    };
+  },
+  computed: {
+    currentRankings() {
+      return this.rankings[this.selectedCompetition];
     }
   },
   created() {
     this.fetchRecentMatches();
     this.fetchFeaturedMatches();
     this.fetchStats();
+    this.fetchRankings();
   },
   methods: {
     fetchRecentMatches() {
       axios.get('/api/matches')
         .then(response => {
           if (response.data.status === 'success') {
-            this.recentMatches = response.data.data.slice(0, 5); // 只显示最近的5场比赛
+            const matches = response.data.data;
+            this.recentMatches.championsCup = matches.filter(match => match.type === '冠军杯').slice(0, 5);
+            this.recentMatches.womensCup = matches.filter(match => match.type === '巾帼杯').slice(0, 5);
+            this.recentMatches.eightASide = matches.filter(match => match.type === '八人制').slice(0, 5);
           }
         })
         .catch(error => {
           console.error('获取比赛数据失败:', error);
           // 临时模拟数据
-          this.recentMatches = [
-            { id: 1, name: '冠军杯半决赛', type: '冠军杯', date: '2023-06-10 15:00:00', location: '主体育场', team1: '红牛队', team2: '蓝狮队' },
-            { id: 2, name: '巾帼杯第三轮', type: '巾帼杯', date: '2023-06-12 14:00:00', location: '体育中心', team1: '凤凰队', team2: '飓风队' },
-            { id: 3, name: '八人制联赛第5轮', type: '八人制', date: '2023-06-15 18:30:00', location: '西区球场', team1: '闪电队', team2: '雷霆队' }
-          ];
+          this.recentMatches = {
+            championsCup: [
+              { id: 1, name: '冠军杯半决赛A组', type: '冠军杯', date: '2023-06-10 15:00:00', location: '主体育场', team1: '红牛队', team2: '蓝狮队' },
+              { id: 2, name: '冠军杯半决赛B组', type: '冠军杯', date: '2023-06-12 14:00:00', location: '体育中心', team1: '雄鹰队', team2: '猛虎队' },
+              { id: 3, name: '冠军杯决赛', type: '冠军杯', date: '2023-06-15 15:00:00', location: '主体育场', team1: '红牛队', team2: '雄鹰队' },
+              { id: 4, name: '冠军杯季军赛', type: '冠军杯', date: '2023-06-14 16:00:00', location: '体育中心', team1: '蓝狮队', team2: '猛虎队' },
+              { id: 5, name: '冠军杯小组赛', type: '冠军杯', date: '2023-06-08 18:30:00', location: '西区球场', team1: '飞豹队', team2: '狂狼队' }
+            ],
+            womensCup: [
+              { id: 6, name: '巾帼杯第三轮A组', type: '巾帼杯', date: '2023-06-12 14:00:00', location: '体育中心', team1: '凤凰队', team2: '飓风队' },
+              { id: 7, name: '巾帼杯第三轮B组', type: '巾帼杯', date: '2023-06-13 15:00:00', location: '主体育场', team1: '玫瑰队', team2: '百合队' },
+              { id: 8, name: '巾帼杯半决赛', type: '巾帼杯', date: '2023-06-16 14:00:00', location: '体育中心', team1: '凤凰队', team2: '玫瑰队' },
+              { id: 9, name: '巾帼杯小组赛', type: '巾帼杯', date: '2023-06-09 16:00:00', location: '南区球场', team1: '蝴蝶队', team2: '鸿雁队' },
+              { id: 10, name: '巾帼杯决赛', type: '巾帼杯', date: '2023-06-18 15:00:00', location: '主体育场', team1: '凤凰队', team2: '百合队' }
+            ],
+            eightASide: [
+              { id: 11, name: '八人制联赛第5轮', type: '八人制', date: '2023-06-15 18:30:00', location: '西区球场', team1: '闪电队', team2: '雷霆队' },
+              { id: 12, name: '八人制联赛第6轮', type: '八人制', date: '2023-06-17 19:00:00', location: '东区球场', team1: '烈火队', team2: '寒冰队' },
+              { id: 13, name: '八人制联赛第7轮', type: '八人制', date: '2023-06-19 18:00:00', location: '北区球场', team1: '疾风队', team2: '山岳队' },
+              { id: 14, name: '八人制联赛第4轮', type: '八人制', date: '2023-06-13 19:30:00', location: '南区球场', team1: '海浪队', team2: '森林队' },
+              { id: 15, name: '八人制联赛第8轮', type: '八人制', date: '2023-06-21 18:30:00', location: '中央球场', team1: '钢铁队', team2: '流星队' }
+            ]
+          };
         });
     },
     fetchFeaturedMatches() {
@@ -230,6 +363,146 @@ export default {
         completedMatches: 16
       };
     },
+    fetchRankings() {
+      axios.get('/api/rankings')
+        .then(response => {
+          if (response.data.status === 'success') {
+            this.rankings = response.data.data;
+          }
+        })
+        .catch(error => {
+          console.error('获取排行数据失败:', error);
+          // 临时模拟数据
+          this.rankings = {
+            championsCup: {
+              topScorers: {
+                players: [
+                  { name: '张三', team: '红牛队', goals: 15 },
+                  { name: '李四', team: '蓝狮队', goals: 12 },
+                  { name: '王五', team: '雄鹰队', goals: 10 },
+                  { name: '赵六', team: '猛虎队', goals: 9 },
+                  { name: '钱七', team: '飞豹队', goals: 8 }
+                ],
+                teams: [
+                  { team: '红牛队', goals: 45 },
+                  { team: '蓝狮队', goals: 38 },
+                  { team: '雄鹰队', goals: 35 },
+                  { team: '猛虎队', goals: 32 },
+                  { team: '飞豹队', goals: 28 }
+                ]
+              },
+              cards: {
+                players: [
+                  { name: '孙八', team: '狂狼队', yellowCards: 8, redCards: 2 },
+                  { name: '周九', team: '红牛队', yellowCards: 6, redCards: 1 },
+                  { name: '吴十', team: '蓝狮队', yellowCards: 5, redCards: 1 },
+                  { name: '郑一', team: '雄鹰队', yellowCards: 4, redCards: 0 },
+                  { name: '王二', team: '猛虎队', yellowCards: 3, redCards: 0 }
+                ],
+                teams: [
+                  { team: '狂狼队', yellowCards: 25, redCards: 5 },
+                  { team: '红牛队', yellowCards: 18, redCards: 3 },
+                  { team: '蓝狮队', yellowCards: 15, redCards: 2 },
+                  { team: '雄鹰队', yellowCards: 12, redCards: 1 },
+                  { team: '猛虎队', yellowCards: 10, redCards: 1 }
+                ]
+              },
+              points: [
+                { team: '红牛队', matchesPlayed: 12, points: 30 },
+                { team: '雄鹰队', matchesPlayed: 12, points: 28 },
+                { team: '蓝狮队', matchesPlayed: 12, points: 25 },
+                { team: '猛虎队', matchesPlayed: 12, points: 22 },
+                { team: '飞豹队', matchesPlayed: 12, points: 18 }
+              ]
+            },
+            womensCup: {
+              topScorers: {
+                players: [
+                  { name: '小红', team: '凤凰队', goals: 12 },
+                  { name: '小芳', team: '玫瑰队', goals: 10 },
+                  { name: '小丽', team: '百合队', goals: 9 },
+                  { name: '小美', team: '飓风队', goals: 8 },
+                  { name: '小娟', team: '蝴蝶队', goals: 7 }
+                ],
+                teams: [
+                  { team: '凤凰队', goals: 35 },
+                  { team: '玫瑰队', goals: 30 },
+                  { team: '百合队', goals: 28 },
+                  { team: '飓风队', goals: 25 },
+                  { team: '蝴蝶队', goals: 22 }
+                ]
+              },
+              cards: {
+                players: [
+                  { name: '小华', team: '鸿雁队', yellowCards: 5, redCards: 1 },
+                  { name: '小玲', team: '凤凰队', yellowCards: 4, redCards: 0 },
+                  { name: '小燕', team: '玫瑰队', yellowCards: 3, redCards: 0 },
+                  { name: '小雪', team: '百合队', yellowCards: 3, redCards: 0 },
+                  { name: '小梅', team: '飓风队', yellowCards: 2, redCards: 0 }
+                ],
+                teams: [
+                  { team: '鸿雁队', yellowCards: 15, redCards: 2 },
+                  { team: '凤凰队', yellowCards: 12, redCards: 1 },
+                  { team: '玫瑰队', yellowCards: 10, redCards: 1 },
+                  { team: '百合队', yellowCards: 8, redCards: 0 },
+                  { team: '飓风队', yellowCards: 6, redCards: 0 }
+                ]
+              },
+              points: [
+                { team: '凤凰队', matchesPlayed: 8, points: 21 },
+                { team: '玫瑰队', matchesPlayed: 8, points: 18 },
+                { team: '百合队', matchesPlayed: 8, points: 16 },
+                { team: '飓风队', matchesPlayed: 8, points: 12 },
+                { team: '蝴蝶队', matchesPlayed: 8, points: 9 }
+              ]
+            },
+            eightASide: {
+              topScorers: {
+                players: [
+                  { name: '阿强', team: '闪电队', goals: 18 },
+                  { name: '阿明', team: '雷霆队', goals: 16 },
+                  { name: '阿伟', team: '烈火队', goals: 14 },
+                  { name: '阿华', team: '寒冰队', goals: 13 },
+                  { name: '阿超', team: '疾风队', goals: 11 }
+                ],
+                teams: [
+                  { team: '闪电队', goals: 52 },
+                  { team: '雷霆队', goals: 48 },
+                  { team: '烈火队', goals: 44 },
+                  { team: '寒冰队', goals: 40 },
+                  { team: '疾风队', goals: 36 }
+                ]
+              },
+              cards: {
+                players: [
+                  { name: '阿龙', team: '山岳队', yellowCards: 10, redCards: 3 },
+                  { name: '阿虎', team: '海浪队', yellowCards: 8, redCards: 2 },
+                  { name: '阿豹', team: '森林队', yellowCards: 7, redCards: 1 },
+                  { name: '阿鹰', team: '钢铁队', yellowCards: 6, redCards: 1 },
+                  { name: '阿狼', team: '流星队', yellowCards: 5, redCards: 0 }
+                ],
+                teams: [
+                  { team: '山岳队', yellowCards: 30, redCards: 6 },
+                  { team: '海浪队', yellowCards: 25, redCards: 4 },
+                  { team: '森林队', yellowCards: 22, redCards: 3 },
+                  { team: '钢铁队', yellowCards: 18, redCards: 2 },
+                  { team: '流星队', yellowCards: 15, redCards: 1 }
+                ]
+              },
+              points: [
+                { team: '闪电队', matchesPlayed: 15, points: 38 },
+                { team: '雷霆队', matchesPlayed: 15, points: 35 },
+                { team: '烈火队', matchesPlayed: 15, points: 32 },
+                { team: '寒冰队', matchesPlayed: 15, points: 28 },
+                { team: '疾风队', matchesPlayed: 15, points: 25 }
+              ]
+            }
+          };
+        });
+    },
+    onCompetitionChange() {
+      // 赛事变更时的处理
+    },
     viewMatchDetails(match) {
       this.$router.push(`/matches/detail/${match.id}`);
     }
@@ -245,7 +518,7 @@ export default {
 
 .welcome-card,
 .featured-matches-card,
-.announcements-card,
+.rankings-card,
 .recent-matches-card {
   margin-bottom: 20px;
 }
@@ -376,5 +649,13 @@ export default {
 
 h2 {
   margin-bottom: 20px;
+}
+
+.rankings-card {
+  margin-bottom: 20px;
+}
+
+h3 {
+  margin-bottom: 10px;
 }
 </style>
