@@ -36,3 +36,6 @@ ENV/
 # SQLite 数据库
 *.db
 *.sqlite
+
+# 忽略配置文件
+app/config.py
