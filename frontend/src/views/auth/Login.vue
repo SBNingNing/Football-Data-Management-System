@@ -137,7 +137,7 @@ const submitForm = async () => {
       
       if (success) {
         ElMessage.success('管理员登录成功')
-        router.push('/admin/dashboard')
+        router.push('/admin/board')
       } else {
         ElMessage.error(userStore.error || '登录失败，请检查账号密码')
       }
