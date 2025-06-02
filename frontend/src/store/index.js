@@ -77,6 +77,29 @@ export const useUserStore = defineStore('user', {
       }
     },
     
+    async adminLogin(credentials) {
+      this.loading = true
+      this.error = null
+      
+      try {
+        const response = await axios.post('/api/auth/login', credentials)
+        const { access_token, user } = response.data
+        
+        this.token = access_token
+        this.user = { ...user, role: 'admin' }
+        
+        localStorage.setItem('token', access_token)
+        axios.defaults.headers.common['Authorization'] = `Bearer ${access_token}`
+        
+        this.loading = false
+        return true
+      } catch (error) {
+        this.error = error.response?.data?.error || '管理员登录失败'
+        this.loading = false
+        return false
+      }
+    },
+    
     logout() {
       this.user = null
       this.token = null

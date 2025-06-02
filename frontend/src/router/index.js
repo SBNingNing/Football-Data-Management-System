@@ -2,6 +2,7 @@ import { createRouter, createWebHistory } from 'vue-router'
 import Login from '../views/auth/Login.vue'
 import Register from '../views/auth/Register.vue'
 import Home from '../views/Home.vue'
+import Board from '../views/admin/board.vue'
 
 const routes = [
   {
@@ -11,39 +12,28 @@ const routes = [
   {
     path: '/login',
     name: 'Login',
-    component: Login,
-    meta: { requiresAuth: false }
+    component: Login
   },
   {
     path: '/register',
     name: 'Register',
-    component: Register,
-    meta: { requiresAuth: false }
+    component: Register
   },
   {
     path: '/home',
     name: 'Home',
-    component: Home,
-    meta: { requiresAuth: true }
+    component: Home
+  },
+  {
+    path: '/admin/board',
+    name: 'Board',
+    component: Board
   }
 ]
 
 const router = createRouter({
   history: createWebHistory(),
   routes
-})
-
-// 导航守卫
-router.beforeEach((to, from, next) => {
-  const token = localStorage.getItem('token')
-  
-  if (to.meta.requiresAuth && !token) {
-    next('/login')
-  } else if ((to.path === '/login' || to.path === '/register') && token) {
-    next('/home')
-  } else {
-    next()
-  }
 })
 
 export default router

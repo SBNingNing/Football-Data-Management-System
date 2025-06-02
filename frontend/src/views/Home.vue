@@ -4,8 +4,11 @@
     <el-card class="welcome-card">
       <div slot="header" class="clearfix">
         <span>足球管理系统欢迎您</span>
+        <span @click="logout" style="float: right; margin-top: 8px; color: #409EFF; cursor: pointer;">
+          退出
+        </span>
       </div>
-      
+
       <!-- 数据统计卡片区域 -->
       <el-row :gutter="20" class="stats-section">
         <el-col :span="8">
@@ -19,7 +22,7 @@
             </div>
           </el-card>
         </el-col>
-        
+
         <el-col :span="8">
           <el-card shadow="hover" class="stats-card">
             <div class="stats-card-inner">
@@ -31,7 +34,7 @@
             </div>
           </el-card>
         </el-col>
-        
+
         <el-col :span="8">
           <el-card shadow="hover" class="stats-card">
             <div class="stats-card-inner">
@@ -44,7 +47,7 @@
           </el-card>
         </el-col>
       </el-row>
-      
+
       <!-- 赛事类型卡片区域 -->
       <el-row :gutter="20" class="match-types">
         <el-col :span="8">
@@ -56,7 +59,7 @@
             </div>
           </el-card>
         </el-col>
-        
+
         <el-col :span="8">
           <el-card shadow="hover" @click.native="$router.push('/matches/womens-cup')">
             <div class="match-type-card">
@@ -66,11 +69,11 @@
             </div>
           </el-card>
         </el-col>
-        
+
         <el-col :span="8">
           <el-card shadow="hover" @click.native="$router.push('/matches/eight-a-side')">
             <div class="match-type-card">
-              <i class="el-icon-basketball"></i>
+              <i class="el-icon-football"></i>
               <h3>八人制比赛</h3>
               <p>查看八人制赛事信息</p>
             </div>
@@ -79,13 +82,12 @@
       </el-row>
     </el-card>
 
-    
-    <!-- 近期比赛轮播 -->
+    <!-- 精选比赛轮播 -->
     <el-card class="featured-matches-card">
       <div slot="header" class="clearfix">
-        <span>近期比赛</span>
+        <span>精选比赛</span>
       </div>
-      
+
       <el-carousel :interval="4000" type="card" height="200px">
         <el-carousel-item v-for="match in featuredMatches" :key="match.id">
           <div class="featured-match-item" @click="viewMatchDetails(match)">
@@ -106,7 +108,7 @@
         </el-carousel-item>
       </el-carousel>
     </el-card>
-    
+
     <!-- 排行数据 -->
     <el-card class="rankings-card">
       <div slot="header" class="clearfix">
@@ -117,10 +119,10 @@
           <el-option label="八人制" value="eightASide"></el-option>
         </el-select>
       </div>
-      
-      <el-tabs type="card">
+
+      <el-tabs type="card" v-model="activeRankingTab">
         <!-- 射手榜 -->
-        <el-tab-pane label="射手榜">
+        <el-tab-pane label="射手榜" name="scorers">
           <el-row :gutter="20">
             <el-col :span="12">
               <h3>球员射手榜</h3>
@@ -139,9 +141,9 @@
             </el-col>
           </el-row>
         </el-tab-pane>
-        
+
         <!-- 红黄牌榜 -->
-        <el-tab-pane label="红黄牌榜">
+        <el-tab-pane label="红黄牌榜" name="cards">
           <el-row :gutter="20">
             <el-col :span="12">
               <h3>球员红黄牌榜</h3>
@@ -162,91 +164,93 @@
             </el-col>
           </el-row>
         </el-tab-pane>
-        
+
         <!-- 积分榜 -->
-        <el-tab-pane label="积分榜">
-          <el-table :data="currentRankings.points" style="width: 100%">
-            <el-table-column prop="team" label="球队"></el-table-column>
-            <el-table-column prop="matchesPlayed" label="比赛场次"></el-table-column>
-            <el-table-column prop="points" label="积分"></el-table-column>
-          </el-table>
+        <el-tab-pane label="积分榜" name="points">
+          <el-select v-model="currentRankingsTab" placeholder="选择阶段" style="float: right; width: 150px; margin-bottom: 20px;" @change="onRankingsTabChange">
+            <el-option label="常规赛" value="常规赛"></el-option>
+            <el-option label="淘汰赛" value="淘汰赛"></el-option>
+          </el-select>
+          
+          <div v-if="currentRankingsTab === '常规赛'">
+            <div v-if="selectedCompetition === 'eightASide'">
+              <div v-for="group in sortedGroupRankings" :key="group.name" style="margin-bottom: 30px;">
+                <h3>{{ group.name }}</h3>
+                <el-table :data="group.teams" style="width: 100%">
+                  <el-table-column prop="team" label="球队" width="120"></el-table-column>
+                  <el-table-column prop="matchesPlayed" label="比赛场次" width="100"></el-table-column>
+                  <el-table-column prop="wins" label="胜" width="60"></el-table-column>
+                  <el-table-column prop="draws" label="平" width="60"></el-table-column>
+                  <el-table-column prop="losses" label="负" width="60"></el-table-column>
+                  <el-table-column prop="goalsFor" label="进球" width="70"></el-table-column>
+                  <el-table-column prop="goalsAgainst" label="失球" width="70"></el-table-column>
+                  <el-table-column label="净胜" width="70">
+                    <template slot-scope="scope">
+                      {{ scope.row.goalsFor - scope.row.goalsAgainst }}
+                    </template>
+                  </el-table-column>
+                  <el-table-column prop="points" label="积分" width="70"></el-table-column>
+                </el-table>
+              </div>
+            </div>
+            <div v-else>
+              <el-table :data="currentRankings.points" style="width: 100%">
+                <el-table-column prop="team" label="球队"></el-table-column>
+                <el-table-column prop="matchesPlayed" label="比赛场次"></el-table-column>
+                <el-table-column prop="points" label="积分"></el-table-column>
+              </el-table>
+            </div>
+          </div>
+          
+          <div v-else>
+            <div v-for="round in currentPlayoffBracket" :key="round.round" style="margin-bottom: 20px;">
+              <h3>{{ round.round }}</h3>
+              <div v-for="(match, index) in round.matches" :key="index" style="padding: 10px; background: #f5f7fa; margin-bottom: 10px; border-radius: 5px;">
+                {{ match }}
+              </div>
+            </div>
+          </div>
         </el-tab-pane>
       </el-tabs>
     </el-card>
-    
-    <!-- 近期比赛表格 -->
+
+    <!-- 近期比赛 -->
     <el-card class="recent-matches-card">
       <div slot="header" class="clearfix">
         <span>近期比赛</span>
       </div>
-      <el-tabs type="card">
-        <el-tab-pane label="冠军杯">
-          <el-table :data="recentMatches.championsCup" style="width: 100%">
-            <el-table-column prop="name" label="比赛名称"></el-table-column>
-            <el-table-column prop="type" label="类型"></el-table-column>
-            <el-table-column prop="date" label="日期"></el-table-column>
-            <el-table-column prop="location" label="地点"></el-table-column>
-            <el-table-column label="对阵">
-              <template slot-scope="scope">
-                {{ scope.row.team1 }} vs {{ scope.row.team2 }}
-              </template>
-            </el-table-column>
-            <el-table-column label="操作" width="120">
-              <template slot-scope="scope">
-                <el-button size="mini" type="primary" @click="viewMatchDetails(scope.row)">查看</el-button>
-              </template>
-            </el-table-column>
-          </el-table>
-        </el-tab-pane>
-        <el-tab-pane label="巾帼杯">
-          <el-table :data="recentMatches.womensCup" style="width: 100%">
-            <el-table-column prop="name" label="比赛名称"></el-table-column>
-            <el-table-column prop="type" label="类型"></el-table-column>
-            <el-table-column prop="date" label="日期"></el-table-column>
-            <el-table-column prop="location" label="地点"></el-table-column>
-            <el-table-column label="对阵">
-              <template slot-scope="scope">
-                {{ scope.row.team1 }} vs {{ scope.row.team2 }}
-              </template>
-            </el-table-column>
-            <el-table-column label="操作" width="120">
-              <template slot-scope="scope">
-                <el-button size="mini" type="primary" @click="viewMatchDetails(scope.row)">查看</el-button>
-              </template>
-            </el-table-column>
-          </el-table>
-        </el-tab-pane>
-        <el-tab-pane label="八人制">
-          <el-table :data="recentMatches.eightASide" style="width: 100%">
-            <el-table-column prop="name" label="比赛名称"></el-table-column>
-            <el-table-column prop="type" label="类型"></el-table-column>
-            <el-table-column prop="date" label="日期"></el-table-column>
-            <el-table-column prop="location" label="地点"></el-table-column>
-            <el-table-column label="对阵">
-              <template slot-scope="scope">
-                {{ scope.row.team1 }} vs {{ scope.row.team2 }}
-              </template>
-            </el-table-column>
-            <el-table-column label="操作" width="120">
-              <template slot-scope="scope">
-                <el-button size="mini" type="primary" @click="viewMatchDetails(scope.row)">查看</el-button>
-              </template>
-            </el-table-column>
-          </el-table>
-        </el-tab-pane>
-      </el-tabs>
+      <el-table :data="recentMatches[selectedCompetition]" style="width: 100%">
+        <el-table-column prop="name" label="比赛名称"></el-table-column>
+        <el-table-column prop="type" label="类型"></el-table-column>
+        <el-table-column prop="date" label="日期"></el-table-column>
+        <el-table-column prop="location" label="地点"></el-table-column>
+        <el-table-column label="对阵">
+          <template slot-scope="scope">
+            {{ scope.row.team1 }} vs {{ scope.row.team2 }}
+          </template>
+        </el-table-column>
+        <el-table-column label="操作" width="120">
+          <template slot-scope="scope">
+            <el-button size="mini" type="primary" @click="viewMatchDetails(scope.row)">查看</el-button>
+          </template>
+        </el-table-column>
+      </el-table>
     </el-card>
   </div>
 </template>
 
 <script>
 import axios from 'axios';
+import { useUserStore } from '@/store';
+import { ElMessage } from 'element-plus';
 
 export default {
   name: 'Home',
   data() {
     return {
       selectedCompetition: 'championsCup',
+      activeRankingTab: 'scorers',
+      currentRankingsTab: '常规赛',
       recentMatches: {
         championsCup: [],
         womensCup: [],
@@ -292,12 +296,78 @@ export default {
           },
           points: []
         }
+      },
+      playoffBracket: {
+        championsCup: [
+          { round: '半决赛', matches: ['红牛队 vs 蓝狮队', '雄鹰队 vs 猛虎队'] },
+          { round: '决赛', matches: ['红牛队 vs 雄鹰队'] },
+          { round: '季军赛', matches: ['蓝狮队 vs 猛虎队'] }
+        ],
+        womensCup: [
+          { round: '半决赛', matches: ['凤凰队 vs 玫瑰队', '飓风队 vs 百合队'] },
+          { round: '决赛', matches: ['凤凰队 vs 百合队'] }
+        ],
+        eightASide: [
+          { round: '1/4决赛', matches: ['闪电队 vs 雷霆队', '烈火队 vs 寒冰队'] },
+          { round: '半决赛', matches: ['闪电队 vs 烈火队', '雷霆队 vs 寒冰队'] },
+          { round: '决赛', matches: ['闪电队 vs 雷霆队'] }
+        ]
+      },
+      groupRankings: {
+        eightASide: {
+          groups: [
+            {
+              name: 'A组',
+              teams: [
+                { team: '闪电队', group: 'A', matchesPlayed: 3, wins: 2, draws: 1, losses: 0, goalsFor: 9, goalsAgainst: 2, points: 7 },
+                { team: '雷霆队', group: 'A', matchesPlayed: 3, wins: 1, draws: 2, losses: 0, goalsFor: 2, goalsAgainst: 1, points: 5 },
+                { team: '烈火队', group: 'A', matchesPlayed: 3, wins: 1, draws: 0, losses: 2, goalsFor: 4, goalsAgainst: 7, points: 3 },
+                { team: '寒冰队', group: 'A', matchesPlayed: 3, wins: 0, draws: 1, losses: 2, goalsFor: 1, goalsAgainst: 6, points: 1 }
+              ]
+            },
+            {
+              name: 'B组',
+              teams: [
+                { team: '疾风队', group: 'B', matchesPlayed: 3, wins: 3, draws: 0, losses: 0, goalsFor: 7, goalsAgainst: 1, points: 9 },
+                { team: '山岳队', group: 'B', matchesPlayed: 3, wins: 2, draws: 0, losses: 1, goalsFor: 6, goalsAgainst: 5, points: 6 },
+                { team: '海浪队', group: 'B', matchesPlayed: 3, wins: 1, draws: 1, losses: 1, goalsFor: 4, goalsAgainst: 4, points: 4 },
+                { team: '森林队', group: 'B', matchesPlayed: 3, wins: 0, draws: 2, losses: 1, goalsFor: 2, goalsAgainst: 5, points: 2 }
+              ]
+            }
+          ]
+        }
       }
     };
   },
   computed: {
     currentRankings() {
-      return this.rankings[this.selectedCompetition];
+      return this.rankings[this.selectedCompetition] || {
+        topScorers: { players: [], teams: [] },
+        cards: { players: [], teams: [] },
+        points: []
+      };
+    },
+    currentPlayoffBracket() {
+      return this.playoffBracket[this.selectedCompetition] || [];
+    },
+    sortedGroupRankings() {
+      if (this.selectedCompetition !== 'eightASide' || !this.groupRankings.eightASide) {
+        return [];
+      }
+      return this.groupRankings.eightASide.groups.map(group => ({
+        ...group,
+        teams: group.teams.slice().sort((a, b) => {
+          if (b.points !== a.points) {
+            return b.points - a.points;
+          }
+          const aDiff = a.goalsFor - a.goalsAgainst;
+          const bDiff = b.goalsFor - b.goalsAgainst;
+          if (bDiff !== aDiff) {
+            return bDiff - aDiff;
+          }
+          return b.goalsFor - a.goalsFor;
+        })
+      }));
     }
   },
   created() {
@@ -319,7 +389,6 @@ export default {
         })
         .catch(error => {
           console.error('获取比赛数据失败:', error);
-          // 临时模拟数据
           this.recentMatches = {
             championsCup: [
               { id: 1, name: '冠军杯半决赛A组', type: '冠军杯', date: '2023-06-10 15:00:00', location: '主体育场', team1: '红牛队', team2: '蓝狮队' },
@@ -346,8 +415,6 @@ export default {
         });
     },
     fetchFeaturedMatches() {
-      // 实际项目中应从后端获取热门比赛数据
-      // 这里使用模拟数据
       this.featuredMatches = [
         { id: 1, name: '冠军杯决赛', type: '冠军杯', date: '2023-06-15 15:00', location: '主体育场', team1: '红牛队', team2: '蓝狮队' },
         { id: 2, name: '巾帼杯半决赛', type: '巾帼杯', date: '2023-06-12 14:00', location: '体育中心', team1: '凤凰队', team2: '飓风队' },
@@ -355,8 +422,6 @@ export default {
       ];
     },
     fetchStats() {
-      // 实际项目中应从后端获取统计数据
-      // 这里使用模拟数据
       this.statsData = {
         totalMatches: 24,
         upcomingMatches: 8,
@@ -372,7 +437,6 @@ export default {
         })
         .catch(error => {
           console.error('获取排行数据失败:', error);
-          // 临时模拟数据
           this.rankings = {
             championsCup: {
               topScorers: {
@@ -490,24 +554,41 @@ export default {
                 ]
               },
               points: [
-                { team: '闪电队', matchesPlayed: 15, points: 38 },
-                { team: '雷霆队', matchesPlayed: 15, points: 35 },
-                { team: '烈火队', matchesPlayed: 15, points: 32 },
-                { team: '寒冰队', matchesPlayed: 15, points: 28 },
-                { team: '疾风队', matchesPlayed: 15, points: 25 }
+                { team: '疾风队', matchesPlayed: 3, points: 9 },
+                { team: '山岳队', matchesPlayed: 3, points: 6 },
+                { team: '海浪队', matchesPlayed: 3, points: 4 },
+                { team: '森林队', matchesPlayed: 3, points: 2 }
               ]
             }
           };
         });
     },
     onCompetitionChange() {
-      // 赛事变更时的处理
+      this.currentRankingsTab = '常规赛';
+      this.activeRankingTab = 'scorers';
+    },
+    onRankingsTabChange() {
+      // 切换积分榜阶段时的逻辑
     },
     viewMatchDetails(match) {
       this.$router.push(`/matches/detail/${match.id}`);
+    },
+    logout() {
+      const userStore = useUserStore();
+      
+      // 清除用户状态
+      userStore.logout();
+      
+      // 显示退出消息
+      ElMessage.success('已退出登录');
+      
+      // 刷新页面并跳转到登录页面
+      setTimeout(() => {
+        window.location.href = '/login';
+      }, 500);
     }
   }
-}
+};
 </script>
 
 <style scoped>

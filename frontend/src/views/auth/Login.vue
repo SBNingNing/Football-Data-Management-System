@@ -76,22 +76,22 @@
 </template>
 
 <script setup>
-import { ref, reactive } from 'vue'
-import { useRouter } from 'vue-router'
-import { useUserStore } from '@/store'
-import { ElMessage } from 'element-plus'
-import { User, UserFilled, Lock, Key, Right } from '@element-plus/icons-vue'
+import { ref, reactive } from 'vue';
+import { useRouter } from 'vue-router';
+import { useUserStore } from '@/store';
+import { ElMessage } from 'element-plus';
+import { User, UserFilled, Lock, Key, Right } from '@element-plus/icons-vue';
 
-const router = useRouter()
-const userStore = useUserStore()
-const loginFormRef = ref(null)
-const activeTab = ref('guest') // 默认显示游客登录
-const guestLoading = ref(false)
+const router = useRouter();
+const userStore = useUserStore();
+const loginFormRef = ref(null);
+const activeTab = ref('guest'); // 默认显示游客登录
+const guestLoading = ref(false);
 
 const loginForm = reactive({
   username: '',
   password: ''
-})
+});
 
 const rules = {
   username: [
@@ -102,59 +102,59 @@ const rules = {
     { required: true, message: '请输入管理员密码', trigger: 'blur' },
     { min: 6, message: '密码至少需要6个字符', trigger: 'blur' }
   ]
-}
+};
 
 // 游客登录
 const guestLogin = async () => {
-  guestLoading.value = true
+  guestLoading.value = true;
   
   try {
     // 游客无需账号密码直接进入首页
-    await userStore.setGuestMode()
-    ElMessage.success('欢迎游客访问')
+    await userStore.setGuestMode();
+    ElMessage.success('欢迎游客访问');
     setTimeout(() => {
-      router.push('/home')
-    }, 500)
+      router.push('/home');
+    }, 500);
   } catch (error) {
-    ElMessage.error('进入失败，请重试')
+    ElMessage.error('进入失败，请重试');
   } finally {
-    guestLoading.value = false
+    guestLoading.value = false;
   }
-}
+};
 
 // 管理员登录
 const submitForm = async () => {
-  if (!loginFormRef.value) return
+  if (!loginFormRef.value) return;
   
   await loginFormRef.value.validate(async (valid) => {
     if (valid) {
       const adminData = {
         ...loginForm,
         role: 'admin'
-      }
+      };
       
-      const success = await userStore.adminLogin(adminData)
+      const success = await userStore.adminLogin(adminData);
       
       if (success) {
-        ElMessage.success('管理员登录成功')
-        router.push('/admin/board')
+        ElMessage.success('管理员登录成功');
+        router.push('/admin/board'); // 修正路径
       } else {
-        ElMessage.error(userStore.error || '登录失败，请检查账号密码')
+        ElMessage.error(userStore.error || '登录失败，请检查账号密码');
       }
     }
-  })
-}
+  });
+};
 
 // 切换选项卡时清空表单
 const handleTabChange = (tabName) => {
   if (tabName === 'admin') {
-    loginForm.username = ''
-    loginForm.password = ''
+    loginForm.username = '';
+    loginForm.password = '';
     if (loginFormRef.value) {
-      loginFormRef.value.clearValidate()
+      loginFormRef.value.clearValidate();
     }
   }
-}
+};
 </script>
 
 <style scoped>
@@ -224,7 +224,6 @@ const handleTabChange = (tabName) => {
   }
 }
 
-/* 自定义选项卡样式 */
 :deep(.el-tabs__header) {
   margin-bottom: 20px;
 }
