@@ -6,7 +6,9 @@ export const useUserStore = defineStore('user', {
     user: null,
     token: localStorage.getItem('token') || null,
     loading: false,
-    error: null
+    error: null,
+    teams: [],
+    players: []
   }),
   
   getters: {
@@ -106,6 +108,106 @@ export const useUserStore = defineStore('user', {
       
       localStorage.removeItem('token')
       delete axios.defaults.headers.common['Authorization']
-    }
+    },
+    
+    async createTeam(teamData) {
+      this.loading = true
+      this.error = null
+      
+      try {
+        const response = await axios.post('/api/auth/teams', teamData)
+        this.loading = false
+        
+        if (response.data.status === 'success') {
+          await this.fetchTeams() // 刷新球队列表
+          return { success: true, data: response.data }
+        }
+        return { success: false, error: response.data.message }
+      } catch (error) {
+        this.error = error.response?.data?.message || '创建球队失败'
+        this.loading = false
+        return { success: false, error: this.error }
+      }
+    },
+    
+    async fetchTeams() {
+      this.loading = true
+      this.error = null
+      
+      try {
+        const response = await axios.get('/api/auth/teams')
+        
+        if (response.data.status === 'success') {
+          this.teams = response.data.data
+        }
+        
+        this.loading = false
+        return { success: true, data: response.data.data }
+      } catch (error) {
+        this.error = error.response?.data?.message || '获取球队列表失败'
+        this.loading = false
+        return { success: false, error: this.error }
+      }
+    },
+    
+    async updateTeam(teamId, teamData) {
+      this.loading = true
+      this.error = null
+      
+      try {
+        const response = await axios.put(`/api/auth/teams/${teamId}`, teamData)
+        this.loading = false
+        
+        if (response.data.status === 'success') {
+          await this.fetchTeams() // 刷新球队列表
+          return { success: true, data: response.data }
+        }
+        return { success: false, error: response.data.message }
+      } catch (error) {
+        this.error = error.response?.data?.message || '更新球队失败'
+        this.loading = false
+        return { success: false, error: this.error }
+      }
+    },
+    
+    async deleteTeam(teamId) {
+      this.loading = true
+      this.error = null
+      
+      try {
+        const response = await axios.delete(`/api/auth/teams/${teamId}`)
+        this.loading = false
+        
+        if (response.data.status === 'success') {
+          await this.fetchTeams() // 刷新球队列表
+          return { success: true, data: response.data }
+        }
+        return { success: false, error: response.data.message }
+      } catch (error) {
+        this.error = error.response?.data?.message || '删除球队失败'
+        this.loading = false
+        return { success: false, error: this.error }
+      }
+    },
+    
+    async fetchPlayers() {
+      this.loading = true
+      this.error = null
+      
+      try {
+        const response = await axios.get('/api/auth/players')
+        
+        if (response.data.status === 'success') {
+          this.players = response.data.data
+        }
+        
+        this.loading = false
+        return { success: true, data: response.data.data }
+      } catch (error) {
+        this.error = error.response?.data?.message || '获取球员列表失败'
+        this.loading = false
+        return { success: false, error: this.error }
+      }
+    },
   }
 })

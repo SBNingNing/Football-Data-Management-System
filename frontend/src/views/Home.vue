@@ -574,18 +574,32 @@ export default {
       this.$router.push(`/matches/detail/${match.id}`);
     },
     logout() {
-      const userStore = useUserStore();
-      
-      // 清除用户状态
-      userStore.logout();
-      
-      // 显示退出消息
-      ElMessage.success('已退出登录');
-      
-      // 刷新页面并跳转到登录页面
-      setTimeout(() => {
-        window.location.href = '/login';
-      }, 500);
+      // 确认退出登录
+      this.$confirm('确定要退出登录吗？', '提示', {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'warning'
+      }).then(() => {
+        const userStore = useUserStore();
+        
+        // 清除用户状态
+        userStore.logout();
+        
+        // 清除本地存储
+        localStorage.removeItem('userToken');
+        localStorage.removeItem('userInfo');
+        sessionStorage.clear();
+        
+        // 显示退出消息
+        this.$message.success('已退出登录');
+        
+        // 使用页面刷新跳转到登录页
+        setTimeout(() => {
+          window.location.href = '/login';
+        }, 500);
+      }).catch(() => {
+        // 取消退出，不做任何操作
+      });
     }
   }
 };

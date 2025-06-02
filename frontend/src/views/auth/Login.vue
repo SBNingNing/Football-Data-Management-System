@@ -58,8 +58,8 @@
             </el-form-item>
             
             <el-form-item>
-              <router-link to="/register">
-                <el-button type="primary" size="large" style="width: 100%">
+              <router-link to="/register" style="width: 100%; display: block;">
+                <el-button type="primary" size="large" style="width: 100%;">
                   注册管理员账号
                 </el-button>
               </router-link>

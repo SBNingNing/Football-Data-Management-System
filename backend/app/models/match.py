@@ -6,20 +6,20 @@ class Match(db.Model):
     __tablename__ = 'match'
     
     # 主键
-    id = db.Column(db.Integer, primary_key=True, comment='MatchID')
+    id = db.Column('MatchID', db.Integer, primary_key=True, comment='MatchID')
     
     # 比赛信息
-    match_time = db.Column(db.DateTime, nullable=False, default=datetime.utcnow, comment='比赛时间')
-    location = db.Column(db.String(100), comment='比赛地点')
-    home_score = db.Column(db.Integer, default=0, comment='主队比分')
-    away_score = db.Column(db.Integer, default=0, comment='客队比分')
-    status = db.Column(db.String(1), default='P', comment='比赛状态(F: 已结束，P: 未结束)')
+    match_time = db.Column('比赛时间', db.DateTime, nullable=False, default=datetime.utcnow, comment='比赛时间')
+    location = db.Column('比赛地点', db.String(100), comment='比赛地点')
+    home_score = db.Column('主队比分', db.Integer, default=0, comment='主队比分')
+    away_score = db.Column('客队比分', db.Integer, default=0, comment='客队比分')
+    status = db.Column('比赛状态', db.String(1), default='P', comment='比赛状态(F: 已结束，P: 未结束)')
     
     # 外键关系
-    home_team_id = db.Column(db.Integer, db.ForeignKey('team.id'), comment='主队ID')
-    away_team_id = db.Column(db.Integer, db.ForeignKey('team.id'), comment='客队ID')
-    tournament_id = db.Column(db.Integer, db.ForeignKey('tournament.id'), comment='赛事ID')
-    season_id = db.Column(db.Integer, db.ForeignKey('season.id'), comment='赛季ID')
+    home_team_id = db.Column('主队ID', db.Integer, db.ForeignKey('team.球队ID'), comment='主队ID')
+    away_team_id = db.Column('客队ID', db.Integer, db.ForeignKey('team.球队ID'), comment='客队ID')
+    tournament_id = db.Column('赛事ID', db.Integer, db.ForeignKey('tournament.赛事ID'), comment='赛事ID')
+    season_id = db.Column('赛季ID', db.Integer, db.ForeignKey('season.赛季ID'), comment='赛季ID')
     
     # 关系
     home_team = db.relationship('Team', foreign_keys=[home_team_id], 

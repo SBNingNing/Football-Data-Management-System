@@ -5,17 +5,17 @@ class Event(db.Model):
     __tablename__ = 'event'
     
     # 主键
-    id = db.Column(db.Integer, primary_key=True, comment='eventID')
+    id = db.Column('eventID', db.Integer, primary_key=True, comment='eventID')
     
     # 事件信息
-    event_type = db.Column(db.String(50), nullable=False, comment='事件类型(goal, yellow_card, red_card等)')
-    time = db.Column(db.Integer, comment='事件发生时间(分钟)')
+    event_type = db.Column('事件类型', db.String(50), nullable=False, comment='事件类型(goal, yellow_card, red_card等)')
+    time = db.Column('事件发生时间', db.Integer, comment='事件发生时间(分钟)')
     
     # 外键关系
-    match_id = db.Column(db.Integer, db.ForeignKey('match.id'), nullable=False, comment='比赛ID')
-    team_id = db.Column(db.Integer, db.ForeignKey('team.id'), comment='球队ID')
-    player_id = db.Column(db.Integer, db.ForeignKey('player.id'), comment='球员ID')
-    season_id = db.Column(db.Integer, db.ForeignKey('season.id'), comment='赛季ID')
+    match_id = db.Column('MatchID', db.Integer, db.ForeignKey('match.MatchID'), nullable=False, comment='比赛ID')
+    team_id = db.Column('球队ID', db.Integer, db.ForeignKey('team.球队ID'), comment='球队ID')
+    player_id = db.Column('球员ID', db.Integer, db.ForeignKey('player.球员ID'), comment='球员ID')
+    season_id = db.Column('赛季ID', db.Integer, db.ForeignKey('season.赛季ID'), comment='赛季ID')
     
     # 关系在其他模型中定义
     

@@ -6,12 +6,12 @@ class Season(db.Model):
     __tablename__ = 'season'
     
     # 主键
-    id = db.Column(db.Integer, primary_key=True, comment='赛季ID')
+    id = db.Column('赛季ID', db.Integer, primary_key=True, comment='赛季ID')
     
     # 赛季信息
-    name = db.Column(db.String(100), nullable=False, comment='赛季名称')
-    start_time = db.Column(db.DateTime, nullable=False, comment='赛季开始时间')
-    end_time = db.Column(db.DateTime, nullable=False, comment='赛季结束时间')
+    name = db.Column('赛季名称', db.String(100), nullable=False, comment='赛季名称')
+    start_time = db.Column('赛季开始时间', db.DateTime, nullable=False, comment='赛季开始时间')
+    end_time = db.Column('赛季结束时间', db.DateTime, nullable=False, comment='赛季结束时间')
     
     # 关系在其他模型中定义
     

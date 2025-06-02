@@ -5,13 +5,13 @@ class Tournament(db.Model):
     __tablename__ = 'tournament'
     
     # 主键
-    id = db.Column(db.Integer, primary_key=True, comment='赛事ID')
+    id = db.Column('赛事ID', db.Integer, primary_key=True, comment='赛事ID')
     
     # 赛事信息
-    name = db.Column(db.String(100), nullable=False, comment='赛事名称')
-    type = db.Column(db.String(50), nullable=False, comment='赛事类型(11人制、8人制等)')
-    participant_type = db.Column(db.String(50), comment='参赛单位类型(学院、俱乐部等)')
-    gender_restriction = db.Column(db.String(1), default='U', comment='性别限制(M: 男，F: 女，U: 不限)')
+    name = db.Column('赛事名称', db.String(100), nullable=False, comment='赛事名称')
+    type = db.Column('赛事类型', db.String(50), nullable=False, comment='赛事类型(11人制、8人制等)')
+    participant_type = db.Column('参赛单位类型', db.String(50), comment='参赛单位类型(学院、俱乐部等)')
+    gender_restriction = db.Column('性别限制', db.String(1), default='U', comment='性别限制(M: 男，F: 女，U: 不限)')
     
     # 关系在其他模型中定义
     

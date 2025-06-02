@@ -19,7 +19,7 @@ CREATE TABLE tournament (
     性别限制 CHAR(1) NOT NULL CHECK (性别限制 IN ('M', 'F', 'U'))
 );
 
--- 创建球队表(team)
+-- 创建球队表(team) - 修正字段名
 CREATE TABLE team (
     球队ID INT PRIMARY KEY AUTO_INCREMENT,
     球队名称 VARCHAR(100) NOT NULL,
@@ -97,3 +97,18 @@ CREATE TABLE user (
     最后登录时间 DATETIME,
     状态 CHAR(1) DEFAULT 'A' CHECK (状态 IN ('A', 'D'))
 );
+
+-- 插入默认数据
+-- 插入默认赛季
+INSERT INTO season (赛季ID, 赛季名称, 赛季开始时间, 赛季结束时间) VALUES 
+(1, '2024赛季', '2024-01-01 00:00:00', '2024-12-31 23:59:59');
+
+-- 插入默认赛事
+INSERT INTO tournament (赛事ID, 赛事名称, 赛事类型, 参赛单位类型, 性别限制) VALUES 
+(1, '冠军杯', '淘汰赛', '学院', 'M'),
+(2, '巾帼杯', '淘汰赛', '学院', 'F'),
+(3, '八人制比赛', '循环赛', '学院', 'U');
+
+-- 插入默认管理员用户
+INSERT INTO user (用户名, 密码, 邮箱, 身份角色) VALUES 
+('admin', 'scrypt:32768:8:1$hashed_password', 'admin@example.com', 'admin');

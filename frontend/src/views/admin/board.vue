@@ -432,7 +432,7 @@ export default {
         matchType: this.currentMatchType
       };
       
-      axios.post('/api/teams', teamData)
+      axios.post('/api/auth/teams', teamData)
         .then(response => {
           if (response.data.status === 'success') {
             this.$message.success('球队信息录入成功');
@@ -490,7 +490,7 @@ export default {
         });
     },
     fetchTeams() {
-      axios.get('/api/teams')
+      axios.get('/api/auth/teams')
         .then(response => {
           if (response.data.status === 'success') {
             this.teams = response.data.data;
@@ -512,7 +512,7 @@ export default {
         });
     },
     fetchPlayers() {
-      axios.get('/api/players')
+      axios.get('/api/auth/players')
         .then(response => {
           if (response.data.status === 'success') {
             this.players = response.data.data;
@@ -582,7 +582,7 @@ export default {
       this.editTeamForm.players.splice(index, 1);
     },
     updateTeam() {
-      axios.put(`/api/teams/${this.editTeamForm.id}`, this.editTeamForm)
+      axios.put(`/api/auth/teams/${this.editTeamForm.id}`, this.editTeamForm)
         .then(response => {
           if (response.data.status === 'success') {
             this.$message.success('球队信息更新成功');
@@ -603,7 +603,7 @@ export default {
         cancelButtonText: '取消',
         type: 'warning'
       }).then(() => {
-        axios.delete(`/api/teams/${teamId}`)
+        axios.delete(`/api/auth/teams/${teamId}`)
           .then(response => {
             if (response.data.status === 'success') {
               this.$message.success('删除成功');
@@ -718,15 +718,30 @@ export default {
       });
     },
     goToHome() {
-      this.$router.push('/home');
+      // 使用页面刷新来跳转到前台
+      window.location.href = '/home';
     },
     logout() {
-      const userStore = useUserStore();
-      userStore.logout();
-      this.$message.success('已退出登录');
-      setTimeout(() => {
-        window.location.href = '/login';
-      }, 500);
+      // 确认退出登录
+      this.$confirm('确定要退出登录吗？', '提示', {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'warning'
+      }).then(() => {
+        const userStore = useUserStore();
+        userStore.logout();
+        // 清除本地存储
+        localStorage.removeItem('userToken');
+        localStorage.removeItem('userInfo');
+        sessionStorage.clear();
+        this.$message.success('已退出登录');
+        // 使用页面刷新跳转到登录页
+        setTimeout(() => {
+          window.location.href = '/login';
+        }, 500);
+      }).catch(() => {
+        // 取消退出
+      });
     }
   },
   created() {

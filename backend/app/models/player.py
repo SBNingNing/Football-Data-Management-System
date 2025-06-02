@@ -5,23 +5,23 @@ class Player(db.Model):
     __tablename__ = 'player'
     
     # 主键
-    id = db.Column(db.Integer, primary_key=True, comment='球员ID')
+    id = db.Column('球员ID', db.Integer, primary_key=True, comment='球员ID')
     
     # 球员信息
-    name = db.Column(db.String(100), nullable=False, comment='球员姓名')
-    gender = db.Column(db.String(1), nullable=False, comment='性别(M/F)')
+    name = db.Column('球员姓名', db.String(100), nullable=False, comment='球员姓名')
+    gender = db.Column('性别', db.String(1), nullable=False, comment='性别(M/F)')
     
     # 外键关系
-    team_id = db.Column(db.Integer, db.ForeignKey('team.id'), comment='球队ID')
-    season_id = db.Column(db.Integer, db.ForeignKey('season.id'), comment='赛季ID')
+    team_id = db.Column('球队ID', db.Integer, db.ForeignKey('team.球队ID'), comment='球队ID')
+    season_id = db.Column('赛季ID', db.Integer, db.ForeignKey('season.赛季ID'), comment='赛季ID')
     
     # 统计数据
-    goals_season = db.Column(db.Integer, default=0, comment='赛季进球数')
-    yellow_cards_season = db.Column(db.Integer, default=0, comment='赛季黄牌数')
-    red_cards_season = db.Column(db.Integer, default=0, comment='赛季红牌数')
-    goals_history = db.Column(db.Integer, default=0, comment='历史进球数')
-    yellow_cards_history = db.Column(db.Integer, default=0, comment='历史黄牌数')
-    red_cards_history = db.Column(db.Integer, default=0, comment='历史红牌数')
+    goals_season = db.Column('赛季进球数', db.Integer, default=0, comment='赛季进球数')
+    yellow_cards_season = db.Column('赛季黄牌数', db.Integer, default=0, comment='赛季黄牌数')
+    red_cards_season = db.Column('赛季红牌数', db.Integer, default=0, comment='赛季红牌数')
+    goals_history = db.Column('历史进球数', db.Integer, default=0, comment='历史进球数')
+    yellow_cards_history = db.Column('历史黄牌数', db.Integer, default=0, comment='历史黄牌数')
+    red_cards_history = db.Column('历史红牌数', db.Integer, default=0, comment='历史红牌数')
     
     # 关系
     team = db.relationship('Team', backref=db.backref('players', lazy=True))
