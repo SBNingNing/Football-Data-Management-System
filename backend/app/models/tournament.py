@@ -10,9 +10,8 @@ class Tournament(db.Model):
     
     # 赛事信息
     name = db.Column('赛事名称', db.String(100), nullable=False, comment='赛事名称')
-    type = db.Column('赛事类型', db.String(50), nullable=False, comment='赛事类型')
     season_name = db.Column('赛季名称', db.String(50), nullable=False, comment='赛季名称')
-    is_grouped = db.Column('是否分组', db.Boolean, default=False, comment='是否需要分组进行')
+    is_grouped = db.Column('常规赛是否分组', db.Boolean, default=False, comment='是否需要分组进行')
     season_start_time = db.Column('赛季开始时间', db.DateTime, nullable=False, comment='赛季开始时间')
     season_end_time = db.Column('赛季结束时间', db.DateTime, nullable=False, comment='赛季结束时间')
     
@@ -24,7 +23,6 @@ class Tournament(db.Model):
         return {
             'id': self.id,
             'name': self.name,
-            'type': self.type,
             'season_name': self.season_name,
             'is_grouped': self.is_grouped,
             'season_start_time': self.season_start_time.isoformat() if self.season_start_time else None,

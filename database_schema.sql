@@ -11,13 +11,12 @@ DROP TABLE IF EXISTS team;
 DROP TABLE IF EXISTS tournament;
 DROP TABLE IF EXISTS user;
 
--- 创建合并后的赛事表(tournament)
+-- 创建合并后的赛事表(tournament)，不同赛季的同种赛事也具有不同id
 CREATE TABLE tournament (
     赛事ID INT PRIMARY KEY AUTO_INCREMENT,
-    赛事名称 VARCHAR(100) NOT NULL,
-    赛事类型 VARCHAR(50) NOT NULL,
+    赛事名称 VARCHAR(100) NOT NULL,-- 如冠军杯
     赛季名称 VARCHAR(50) NOT NULL,
-    是否分组 BOOLEAN DEFAULT FALSE COMMENT '是否需要分组进行',
+    常规赛是否分组 BOOLEAN DEFAULT FALSE COMMENT '常规赛是否需要分组进行',
     赛季开始时间 DATETIME NOT NULL,
     赛季结束时间 DATETIME NOT NULL
 );
@@ -69,15 +68,16 @@ CREATE TABLE player_team_history (
 
 -- 创建比赛表(match) - 添加淘汰赛轮次信息
 CREATE TABLE `match` (
-    MatchID VARCHAR(10) PRIMARY KEY,
+    MatchID VARCHAR(50) PRIMARY KEY, -- 示例：冠军杯第一轮地空VS化院
+    赛事ID INT NOT NULL, -- 指明比赛赛事赛季信息
+    小组ID CHAR(1) NULL,
+    比赛轮次 INT, -- 指明第几轮，便于在前端查询榜单中标明
     比赛时间 DATETIME NOT NULL,
-    比赛地点 VARCHAR(100) NOT NULL,
+    比赛地点 VARCHAR(50) NOT NULL,
     主队ID INT NOT NULL,
     客队ID INT NOT NULL,
     主队比分 INT DEFAULT 0,
     客队比分 INT DEFAULT 0,
-    小组ID CHAR(1) NULL,
-    赛事ID INT NOT NULL,
     比赛状态 CHAR(1) NOT NULL CHECK (比赛状态 IN ('F', 'P')),
     淘汰赛轮次 INT, -- 0:常规赛, 1:附加赛, 2:1/4决赛, 3:半决赛, 4:决赛
     FOREIGN KEY (主队ID) REFERENCES team(球队ID),
@@ -111,10 +111,10 @@ CREATE TABLE user (
 
 -- 插入默认数据
 -- 插入默认赛事
-INSERT INTO tournament (赛事ID, 赛事名称, 赛事类型, 赛季名称, 赛季开始时间, 赛季结束时间) VALUES 
-(1, '冠军杯', '常规赛', '2024赛季', '2024-01-01 00:00:00', '2024-12-31 23:59:59'),
-(2, '巾帼杯', '常规赛', '2024赛季', '2024-01-01 00:00:00', '2024-12-31 23:59:59'),
-(3, '八人制比赛', '常规赛', '2024赛季', '2024-01-01 00:00:00', '2024-12-31 23:59:59');
+INSERT INTO tournament (赛事ID, 赛事名称, 赛季名称, 赛季开始时间, 赛季结束时间) VALUES 
+(1, '冠军杯','2024赛季', '2024-01-01 00:00:00', '2024-12-31 23:59:59'),
+(2, '巾帼杯', '2024赛季', '2024-01-01 00:00:00', '2024-12-31 23:59:59'),
+(3, '八人制比赛', '2024赛季', '2024-01-01 00:00:00', '2024-12-31 23:59:59');
 
 -- 插入默认管理员用户
 INSERT INTO user (用户名, 密码, 邮箱, 身份角色) VALUES 

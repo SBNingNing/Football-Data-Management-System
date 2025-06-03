@@ -38,7 +38,15 @@ BEGIN
             UPDATE player_team_history 
             SET 赛事进球数 = 赛事进球数 + 1 
             WHERE 球员ID = NEW.球员ID AND 球队ID = NEW.球队ID AND 赛事ID = match_tournament;
-            
+        WHEN '乌龙球' THEN
+            -- 更新比赛比分
+            IF NEW.球队ID = match_home_team THEN
+                UPDATE `match` SET 客队比分 = 客队比分 + 1 WHERE MatchID = NEW.MatchID;
+            ELSE
+                UPDATE `match` SET 主队比分 = 主队比分 + 1 WHERE MatchID = NEW.MatchID;
+            END IF;
+            -- 乌龙球不更新球队进球，不更新球员生涯进球
+            -- 不更新球员在该赛事的进球数
         WHEN '红牌' THEN
             -- 更新球队红牌数
             UPDATE team SET 赛事红牌数 = 赛事红牌数 + 1 
