@@ -20,6 +20,8 @@ class PlayerTeamHistory(db.Model):
     remarks = db.Column('备注', db.Text, comment='备注信息')
     
     # 关系
+    player = db.relationship('Player', back_populates='team_histories')
+    team = db.relationship('Team', back_populates='player_histories')
     tournament = db.relationship('Tournament', backref=db.backref('player_histories', lazy=True))
     
     # 唯一约束

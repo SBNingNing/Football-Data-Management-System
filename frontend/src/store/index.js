@@ -8,7 +8,9 @@ export const useUserStore = defineStore('user', {
     loading: false,
     error: null,
     teams: [],
-    players: []
+    players: [],
+    matches: [],
+    events: []
   }),
   
   getters: {
@@ -135,7 +137,7 @@ export const useUserStore = defineStore('user', {
       this.error = null
       
       try {
-        const response = await axios.get('/api/auth/teams')
+        const response = await axios.get('/api/teams')
         
         if (response.data.status === 'success') {
           this.teams = response.data.data
@@ -195,7 +197,7 @@ export const useUserStore = defineStore('user', {
       this.error = null
       
       try {
-        const response = await axios.get('/api/auth/players')
+        const response = await axios.get('/api/players')
         
         if (response.data.status === 'success') {
           this.players = response.data.data
@@ -205,6 +207,226 @@ export const useUserStore = defineStore('user', {
         return { success: true, data: response.data.data }
       } catch (error) {
         this.error = error.response?.data?.message || '获取球员列表失败'
+        this.loading = false
+        return { success: false, error: this.error }
+      }
+    },
+    
+    async createMatch(matchData) {
+      this.loading = true
+      this.error = null
+      
+      try {
+        const response = await axios.post('/api/matches', matchData)
+        this.loading = false
+        
+        if (response.data.status === 'success') {
+          await this.fetchMatches()
+          return { success: true, data: response.data }
+        }
+        return { success: false, error: response.data.message }
+      } catch (error) {
+        this.error = error.response?.data?.message || '创建比赛失败'
+        this.loading = false
+        return { success: false, error: this.error }
+      }
+    },
+    
+    async fetchMatches() {
+      this.loading = true
+      this.error = null
+      
+      try {
+        const response = await axios.get('/api/matches')
+        
+        if (response.data.status === 'success') {
+          this.matches = response.data.data
+        }
+        
+        this.loading = false
+        return { success: true, data: response.data.data }
+      } catch (error) {
+        this.error = error.response?.data?.message || '获取比赛列表失败'
+        this.loading = false
+        return { success: false, error: this.error }
+      }
+    },
+    
+    async updateMatch(matchId, matchData) {
+      this.loading = true
+      this.error = null
+      
+      try {
+        const response = await axios.put(`/api/matches/${matchId}`, matchData)
+        this.loading = false
+        
+        if (response.data.status === 'success') {
+          await this.fetchMatches()
+          return { success: true, data: response.data }
+        }
+        return { success: false, error: response.data.message }
+      } catch (error) {
+        this.error = error.response?.data?.message || '更新比赛失败'
+        this.loading = false
+        return { success: false, error: this.error }
+      }
+    },
+    
+    async deleteMatch(matchId) {
+      this.loading = true
+      this.error = null
+      
+      try {
+        const response = await axios.delete(`/api/matches/${matchId}`)
+        this.loading = false
+        
+        if (response.data.status === 'success') {
+          await this.fetchMatches()
+          return { success: true, data: response.data }
+        }
+        return { success: false, error: response.data.message }
+      } catch (error) {
+        this.error = error.response?.data?.message || '删除比赛失败'
+        this.loading = false
+        return { success: false, error: this.error }
+      }
+    },
+    
+    async createEvent(eventData) {
+      this.loading = true
+      this.error = null
+      
+      try {
+        const response = await axios.post('/api/events', eventData)
+        this.loading = false
+        
+        if (response.data.status === 'success') {
+          await this.fetchEvents()
+          return { success: true, data: response.data }
+        }
+        return { success: false, error: response.data.message }
+      } catch (error) {
+        this.error = error.response?.data?.message || '创建事件失败'
+        this.loading = false
+        return { success: false, error: this.error }
+      }
+    },
+    
+    async fetchEvents() {
+      this.loading = true
+      this.error = null
+      
+      try {
+        const response = await axios.get('/api/events')
+        
+        if (response.data.status === 'success') {
+          this.events = response.data.data
+        }
+        
+        this.loading = false
+        return { success: true, data: response.data.data }
+      } catch (error) {
+        this.error = error.response?.data?.message || '获取事件列表失败'
+        this.loading = false
+        return { success: false, error: this.error }
+      }
+    },
+    
+    async updateEvent(eventId, eventData) {
+      this.loading = true
+      this.error = null
+      
+      try {
+        const response = await axios.put(`/api/events/${eventId}`, eventData)
+        this.loading = false
+        
+        if (response.data.status === 'success') {
+          await this.fetchEvents()
+          return { success: true, data: response.data }
+        }
+        return { success: false, error: response.data.message }
+      } catch (error) {
+        this.error = error.response?.data?.message || '更新事件失败'
+        this.loading = false
+        return { success: false, error: this.error }
+      }
+    },
+    
+    async deleteEvent(eventId) {
+      this.loading = true
+      this.error = null
+      
+      try {
+        const response = await axios.delete(`/api/events/${eventId}`)
+        this.loading = false
+        
+        if (response.data.status === 'success') {
+          await this.fetchEvents()
+          return { success: true, data: response.data }
+        }
+        return { success: false, error: response.data.message }
+      } catch (error) {
+        this.error = error.response?.data?.message || '删除事件失败'
+        this.loading = false
+        return { success: false, error: this.error }
+      }
+    },
+    
+    async createPlayer(playerData) {
+      this.loading = true
+      this.error = null
+      
+      try {
+        const response = await axios.post('/api/auth/players', playerData)
+        this.loading = false
+        
+        if (response.data.status === 'success') {
+          await this.fetchPlayers()
+          return { success: true, data: response.data }
+        }
+        return { success: false, error: response.data.message }
+      } catch (error) {
+        this.error = error.response?.data?.message || '创建球员失败'
+        this.loading = false
+        return { success: false, error: this.error }
+      }
+    },
+    
+    async updatePlayer(playerId, playerData) {
+      this.loading = true
+      this.error = null
+      
+      try {
+        const response = await axios.put(`/api/auth/players/${playerId}`, playerData)
+        this.loading = false
+        
+        if (response.data.status === 'success') {
+          await this.fetchPlayers()
+          return { success: true, data: response.data }
+        }
+        return { success: false, error: response.data.message }
+      } catch (error) {
+        this.error = error.response?.data?.message || '更新球员失败'
+        this.loading = false
+        return { success: false, error: this.error }
+      }
+    },
+    
+    async deletePlayer(playerId) {
+      this.loading = true
+      this.error = null
+      
+      try {
+        const response = await axios.delete(`/api/auth/players/${playerId}`)
+        this.loading = false
+        
+        if (response.data.status === 'success') {
+          await this.fetchPlayers()
+          return { success: true, data: response.data }
+        }
+        return { success: false, error: response.data.message }
+      } catch (error) {
+        this.error = error.response?.data?.message || '删除球员失败'
         this.loading = false
         return { success: false, error: this.error }
       }

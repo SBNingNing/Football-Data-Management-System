@@ -2,6 +2,15 @@
 CREATE DATABASE IF NOT EXISTS football_management_system;
 USE football_management_system;
 
+-- 删除现有表（按依赖关系逆序删除）
+DROP TABLE IF EXISTS event;
+DROP TABLE IF EXISTS `match`;
+DROP TABLE IF EXISTS player_team_history;
+DROP TABLE IF EXISTS player;
+DROP TABLE IF EXISTS team;
+DROP TABLE IF EXISTS tournament;
+DROP TABLE IF EXISTS user;
+
 -- 创建合并后的赛事表(tournament)
 CREATE TABLE tournament (
     赛事ID INT PRIMARY KEY AUTO_INCREMENT,
@@ -76,10 +85,10 @@ CREATE TABLE `match` (
     FOREIGN KEY (赛事ID) REFERENCES tournament(赛事ID)
 );
 
--- 创建事件表(event) 
+-- 创建事件表(event) - 修复 MatchID 字段类型
 CREATE TABLE event (
     eventID INT PRIMARY KEY AUTO_INCREMENT,
-    MatchID INT NOT NULL,
+    MatchID VARCHAR(10) NOT NULL,
     事件类型 VARCHAR(50) NOT NULL,
     球队ID INT NOT NULL,
     球员ID VARCHAR(20) NOT NULL,
@@ -102,10 +111,10 @@ CREATE TABLE user (
 
 -- 插入默认数据
 -- 插入默认赛事
-INSERT INTO tournament (赛事ID, 赛事名称, 赛事类型, 性别限制, 赛季名称, 赛季开始时间, 赛季结束时间) VALUES 
-(1, '冠军杯', '常规赛', 'M', '2024赛季', '2024-01-01 00:00:00', '2024-12-31 23:59:59'),
-(2, '巾帼杯', '常规赛', 'F', '2024赛季', '2024-01-01 00:00:00', '2024-12-31 23:59:59'),
-(3, '八人制比赛', '常规赛','U', '2024赛季', '2024-01-01 00:00:00', '2024-12-31 23:59:59');
+INSERT INTO tournament (赛事ID, 赛事名称, 赛事类型, 赛季名称, 赛季开始时间, 赛季结束时间) VALUES 
+(1, '冠军杯', '常规赛', '2024赛季', '2024-01-01 00:00:00', '2024-12-31 23:59:59'),
+(2, '巾帼杯', '常规赛', '2024赛季', '2024-01-01 00:00:00', '2024-12-31 23:59:59'),
+(3, '八人制比赛', '常规赛', '2024赛季', '2024-01-01 00:00:00', '2024-12-31 23:59:59');
 
 -- 插入默认管理员用户
 INSERT INTO user (用户名, 密码, 邮箱, 身份角色) VALUES 

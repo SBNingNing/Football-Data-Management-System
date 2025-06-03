@@ -39,11 +39,22 @@
                   <el-input v-model="teamForm.teamName" placeholder="请输入球队名称"></el-input>
                 </el-form-item>
                 <el-form-item label="球员信息">
-                  <el-button type="primary" @click="addPlayer">添加球员</el-button>
-                  <div v-for="(player, index) in teamForm.players" :key="index" class="player-item">
-                    <el-input v-model="player.name" placeholder="球员姓名"></el-input>
-                    <el-input v-model="player.number" placeholder="球员号码"></el-input>
-                    <el-button type="danger" @click="removePlayer(index)">删除</el-button>
+                  <div class="player-header">
+                    <el-button type="primary" @click="addPlayer">添加球员</el-button>
+                    <span class="player-count">已添加 {{ teamForm.players.length }} 名球员</span>
+                  </div>
+                  <div class="players-container">
+                    <div v-for="(player, index) in teamForm.players" :key="index" class="player-card">
+                      <div class="player-card-header">
+                        <span class="player-index">球员 {{ index + 1 }}</span>
+                        <el-button type="text" icon="el-icon-delete" @click="removePlayer(index)" class="delete-btn">删除</el-button>
+                      </div>
+                      <div class="player-inputs">
+                        <el-input v-model="player.name" placeholder="球员姓名" class="player-input"></el-input>
+                        <el-input v-model="player.number" placeholder="球员号码" class="player-input"></el-input>
+                        <el-input v-model="player.studentId" placeholder="学号" class="player-input"></el-input>
+                      </div>
+                    </div>
                   </div>
                 </el-form-item>
                 <el-form-item>
@@ -90,28 +101,38 @@
               </div>
               <el-form ref="eventForm" :model="eventForm" label-width="120px">
                 <el-form-item label="比赛名称">
-                  <el-select v-model="eventForm.matchName" placeholder="请选择比赛">
+                  <el-select v-model="eventForm.matchName" placeholder="请选择比赛" @change="handleMatchSelect">
                     <el-option v-for="match in filteredMatches" :key="match.id" :label="match.matchName" :value="match.matchName"></el-option>
                   </el-select>
                 </el-form-item>
-                <el-form-item label="事件类型">
-                  <el-select v-model="eventForm.eventType" placeholder="请选择事件类型">
-                    <el-option label="进球" value="goal"></el-option>
-                    <el-option label="红牌" value="redCard"></el-option>
-                    <el-option label="黄牌" value="yellowCard"></el-option>
-                    <el-option label="乌龙球" value="ownGoal"></el-option>
-                  </el-select>
-                </el-form-item>
-                <el-form-item label="事件球员">
-                  <el-select v-model="eventForm.playerName" placeholder="请选择球员">
-                    <el-option v-for="player in filteredPlayers" :key="player.id" :label="player.name" :value="player.name"></el-option>
-                  </el-select>
-                </el-form-item>
-                <el-form-item label="事件时间">
-                  <el-input v-model="eventForm.eventTime" placeholder="请输入事件发生时间（分钟）"></el-input>
+                <el-form-item label="事件信息">
+                  <div class="event-header">
+                    <el-button type="primary" @click="addEvent">添加事件</el-button>
+                    <span class="event-count">已添加 {{ eventForm.events.length }} 个事件</span>
+                  </div>
+                  <div class="events-container">
+                    <div v-for="(event, index) in eventForm.events" :key="index" class="event-card">
+                      <div class="event-card-header">
+                        <span class="event-index">事件 {{ index + 1 }}</span>
+                        <el-button type="text" icon="el-icon-delete" @click="removeEvent(index)" class="delete-btn">删除</el-button>
+                      </div>
+                      <div class="event-inputs">
+                        <el-select v-model="event.eventType" placeholder="事件类型" class="event-input">
+                          <el-option label="进球" value="goal"></el-option>
+                          <el-option label="红牌" value="redCard"></el-option>
+                          <el-option label="黄牌" value="yellowCard"></el-option>
+                          <el-option label="乌龙球" value="ownGoal"></el-option>
+                        </el-select>
+                        <el-select v-model="event.playerName" placeholder="选择球员" class="event-input">
+                          <el-option v-for="player in currentMatchPlayers" :key="player.id" :label="player.name" :value="player.name"></el-option>
+                        </el-select>
+                        <el-input v-model="event.eventTime" placeholder="事件时间（分钟）" class="event-input"></el-input>
+                      </div>
+                    </div>
+                  </div>
                 </el-form-item>
                 <el-form-item>
-                  <el-button type="primary" @click="submitEvent">提交事件信息</el-button>
+                  <el-button type="primary" @click="submitEvents">提交事件信息</el-button>
                 </el-form-item>
               </el-form>
             </el-card>
@@ -142,6 +163,17 @@
                 <el-table-column label="球员数量" width="120">
                   <template slot-scope="scope">
                     {{ scope.row.players ? scope.row.players.length : 0 }}
+                  </template>
+                </el-table-column>
+                <el-table-column label="球员信息" min-width="200">
+                  <template slot-scope="scope">
+                    <div v-if="scope.row.players && scope.row.players.length > 0" class="players-preview">
+                      <el-tag v-for="player in scope.row.players.slice(0, 3)" :key="player.name" size="mini" class="player-tag">
+                        {{ player.name }}({{ player.number }})
+                      </el-tag>
+                      <span v-if="scope.row.players.length > 3" class="more-players">+{{ scope.row.players.length - 3 }}人</span>
+                    </div>
+                    <span v-else class="no-players">暂无球员</span>
                   </template>
                 </el-table-column>
                 <el-table-column label="操作" width="200">
@@ -245,10 +277,18 @@
         </el-form-item>
         <el-form-item label="球员信息">
           <el-button type="primary" @click="addEditPlayer">添加球员</el-button>
-          <div v-for="(player, index) in editTeamForm.players" :key="index" class="player-item">
-            <el-input v-model="player.name" placeholder="球员姓名"></el-input>
-            <el-input v-model="player.number" placeholder="球员号码"></el-input>
-            <el-button type="danger" @click="removeEditPlayer(index)">删除</el-button>
+          <div class="players-container">
+            <div v-for="(player, index) in editTeamForm.players" :key="index" class="player-card">
+              <div class="player-card-header">
+                <span class="player-index">球员 {{ index + 1 }}</span>
+                <el-button type="text" icon="el-icon-delete" @click="removeEditPlayer(index)" class="delete-btn">删除</el-button>
+              </div>
+              <div class="player-inputs">
+                <el-input v-model="player.name" placeholder="球员姓名" class="player-input"></el-input>
+                <el-input v-model="player.number" placeholder="球员号码" class="player-input"></el-input>
+                <el-input v-model="player.studentId" placeholder="学号" class="player-input"></el-input>
+              </div>
+            </div>
           </div>
         </el-form-item>
       </el-form>
@@ -331,6 +371,7 @@ export default {
       activeTab: 'input',
       manageActiveTab: 'teams',
       manageMatchType: '',
+      loading: false, // 添加加载状态
       matchTypeForm: {
         matchType: ''
       },
@@ -348,10 +389,9 @@ export default {
       },
       eventForm: {
         matchName: '',
-        eventType: '',
-        playerName: '',
-        eventTime: ''
+        events: []
       },
+      currentMatchPlayers: [],
       teams: [],
       matches: [],
       players: [],
@@ -386,7 +426,6 @@ export default {
     };
   },
   computed: {
-    // ...existing computed properties...
     filteredTeams() {
       return this.teams.filter(team => team.matchType === this.currentMatchType);
     },
@@ -413,132 +452,26 @@ export default {
     }
   },
   methods: {
-    // ...existing methods...
-    handleMatchTypeChange(value) {
-      this.currentMatchType = value;
-      this.teamForm = { teamName: '', players: [] };
-      this.scheduleForm = { matchName: '', team1: '', team2: '', date: '', location: '' };
-      this.eventForm = { matchName: '', eventType: '', playerName: '', eventTime: '' };
-    },
-    addPlayer() {
-      this.teamForm.players.push({ name: '', number: '' });
-    },
-    removePlayer(index) {
-      this.teamForm.players.splice(index, 1);
-    },
-    submitTeam() {
-      const teamData = {
-        ...this.teamForm,
-        matchType: this.currentMatchType
-      };
-      
-      axios.post('/api/auth/teams', teamData)
-        .then(response => {
-          if (response.data.status === 'success') {
-            this.$message.success('球队信息录入成功');
-            this.teamForm = { teamName: '', players: [] };
-            this.fetchTeams();
-          } else {
-            this.$message.error('球队信息录入失败');
-          }
-        })
-        .catch(error => {
-          console.error('球队信息录入失败:', error);
-          this.$message.error('球队信息录入失败');
-        });
-    },
-    submitSchedule() {
-      const scheduleData = {
-        ...this.scheduleForm,
-        matchType: this.currentMatchType
-      };
-      
-      axios.post('/api/matches', scheduleData)
-        .then(response => {
-          if (response.data.status === 'success') {
-            this.$message.success('赛程信息录入成功');
-            this.scheduleForm = { matchName: '', team1: '', team2: '', date: '', location: '' };
-            this.fetchMatches();
-          } else {
-            this.$message.error('赛程信息录入失败');
-          }
-        })
-        .catch(error => {
-          console.error('赛程信息录入失败:', error);
-          this.$message.error('赛程信息录入失败');
-        });
-    },
-    submitEvent() {
-      const eventData = {
-        ...this.eventForm,
-        matchType: this.currentMatchType
-      };
-      
-      axios.post('/api/events', eventData)
-        .then(response => {
-          if (response.data.status === 'success') {
-            this.$message.success('事件信息录入成功');
-            this.eventForm = { matchName: '', eventType: '', playerName: '', eventTime: '' };
-            this.fetchEvents();
-          } else {
-            this.$message.error('事件信息录入失败');
-          }
-        })
-        .catch(error => {
-          console.error('事件信息录入失败:', error);
-          this.$message.error('事件信息录入失败');
-        });
-    },
-    fetchTeams() {
-      axios.get('/api/auth/teams')
-        .then(response => {
-          if (response.data.status === 'success') {
-            this.teams = response.data.data;
-          }
-        })
-        .catch(error => {
-          console.error('获取球队信息失败:', error);
-        });
-    },
-    fetchMatches() {
-      axios.get('/api/matches')
-        .then(response => {
-          if (response.data.status === 'success') {
-            this.matches = response.data.data;
-          }
-        })
-        .catch(error => {
-          console.error('获取比赛信息失败:', error);
-        });
-    },
-    fetchPlayers() {
-      axios.get('/api/auth/players')
-        .then(response => {
-          if (response.data.status === 'success') {
-            this.players = response.data.data;
-          }
-        })
-        .catch(error => {
-          console.error('获取球员信息失败:', error);
-        });
-    },
-    fetchEvents() {
-      axios.get('/api/events')
-        .then(response => {
-          if (response.data.status === 'success') {
-            this.events = response.data.data;
-          }
-        })
-        .catch(error => {
-          console.error('获取事件信息失败:', error);
-        });
-    },
-    // 新增方法
     handleTabClick(tab) {
       if (tab.name === 'manage') {
-        this.fetchTeams();
-        this.fetchMatches();
-        this.fetchEvents();
+        this.loadAllData();
+      }
+    },
+    // 统一加载所有数据的方法
+    async loadAllData() {
+      this.loading = true;
+      try {
+        await Promise.all([
+          this.fetchTeams(),
+          this.fetchMatches(),
+          this.fetchEvents(),
+          this.fetchPlayers()
+        ]);
+      } catch (error) {
+        console.error('加载数据失败:', error);
+        this.$message.error('数据加载失败，请刷新页面重试');
+      } finally {
+        this.loading = false;
       }
     },
     filterManageData() {
@@ -563,7 +496,11 @@ export default {
     },
     formatDate(date) {
       if (!date) return '';
-      return new Date(date).toLocaleString('zh-CN');
+      try {
+        return new Date(date).toLocaleString('zh-CN');
+      } catch (error) {
+        return date;
+      }
     },
     // 编辑球队
     editTeam(team) {
@@ -576,7 +513,7 @@ export default {
       this.editTeamDialog = true;
     },
     addEditPlayer() {
-      this.editTeamForm.players.push({ name: '', number: '' });
+      this.editTeamForm.players.push({ name: '', number: '', studentId: '' });
     },
     removeEditPlayer(index) {
       this.editTeamForm.players.splice(index, 1);
@@ -584,12 +521,12 @@ export default {
     updateTeam() {
       axios.put(`/api/auth/teams/${this.editTeamForm.id}`, this.editTeamForm)
         .then(response => {
-          if (response.data.status === 'success') {
+          if (response.data && response.data.status === 'success') {
             this.$message.success('球队信息更新成功');
             this.editTeamDialog = false;
             this.fetchTeams();
           } else {
-            this.$message.error('球队信息更新失败');
+            this.$message.error(response.data?.message || '球队信息更新失败');
           }
         })
         .catch(error => {
@@ -605,11 +542,11 @@ export default {
       }).then(() => {
         axios.delete(`/api/auth/teams/${teamId}`)
           .then(response => {
-            if (response.data.status === 'success') {
+            if (response.data && response.data.status === 'success') {
               this.$message.success('删除成功');
               this.fetchTeams();
             } else {
-              this.$message.error('删除失败');
+              this.$message.error(response.data?.message || '删除失败');
             }
           })
           .catch(error => {
@@ -634,12 +571,12 @@ export default {
     updateMatch() {
       axios.put(`/api/matches/${this.editMatchForm.id}`, this.editMatchForm)
         .then(response => {
-          if (response.data.status === 'success') {
+          if (response.data && response.data.status === 'success') {
             this.$message.success('比赛信息更新成功');
             this.editMatchDialog = false;
             this.fetchMatches();
           } else {
-            this.$message.error('比赛信息更新失败');
+            this.$message.error(response.data?.message || '比赛信息更新失败');
           }
         })
         .catch(error => {
@@ -655,11 +592,11 @@ export default {
       }).then(() => {
         axios.delete(`/api/matches/${matchId}`)
           .then(response => {
-            if (response.data.status === 'success') {
+            if (response.data && response.data.status === 'success') {
               this.$message.success('删除成功');
               this.fetchMatches();
             } else {
-              this.$message.error('删除失败');
+              this.$message.error(response.data?.message || '删除失败');
             }
           })
           .catch(error => {
@@ -683,12 +620,12 @@ export default {
     updateEvent() {
       axios.put(`/api/events/${this.editEventForm.id}`, this.editEventForm)
         .then(response => {
-          if (response.data.status === 'success') {
+          if (response.data && response.data.status === 'success') {
             this.$message.success('事件信息更新成功');
             this.editEventDialog = false;
             this.fetchEvents();
           } else {
-            this.$message.error('事件信息更新失败');
+            this.$message.error(response.data?.message || '事件信息更新失败');
           }
         })
         .catch(error => {
@@ -704,11 +641,11 @@ export default {
       }).then(() => {
         axios.delete(`/api/events/${eventId}`)
           .then(response => {
-            if (response.data.status === 'success') {
+            if (response.data && response.data.status === 'success') {
               this.$message.success('删除成功');
               this.fetchEvents();
             } else {
-              this.$message.error('删除失败');
+              this.$message.error(response.data?.message || '删除失败');
             }
           })
           .catch(error => {
@@ -742,13 +679,197 @@ export default {
       }).catch(() => {
         // 取消退出
       });
-    }
+    },
+    addPlayer() {
+      this.teamForm.players.push({ name: '', number: '', studentId: '' });
+    },
+    removePlayer(index) {
+      this.teamForm.players.splice(index, 1);
+    },
+    submitTeam() {
+      const teamData = {
+        ...this.teamForm,
+        matchType: this.currentMatchType
+      };
+      
+      axios.post('/api/auth/teams', teamData)
+        .then(response => {
+          if (response.data && response.data.status === 'success') {
+            this.$message.success('球队信息录入成功');
+            this.teamForm = { teamName: '', players: [] };
+            this.fetchTeams();
+          } else {
+            this.$message.error(response.data?.message || '球队信息录入失败');
+          }
+        })
+        .catch(error => {
+          console.error('球队信息录入失败:', error);
+          this.$message.error('球队信息录入失败');
+        });
+    },
+    submitSchedule() {
+      const scheduleData = {
+        ...this.scheduleForm,
+        matchType: this.currentMatchType
+      };
+      
+      axios.post('/api/matches', scheduleData)
+        .then(response => {
+          if (response.data && response.data.status === 'success') {
+            this.$message.success('赛程信息录入成功');
+            this.scheduleForm = { matchName: '', team1: '', team2: '', date: '', location: '' };
+            this.fetchMatches();
+          } else {
+            this.$message.error(response.data?.message || '赛程信息录入失败');
+          }
+        })
+        .catch(error => {
+          console.error('赛程信息录入失败:', error);
+          this.$message.error('赛程信息录入失败');
+        });
+    },
+    addEvent() {
+      this.eventForm.events.push({ eventType: '', playerName: '', eventTime: '' });
+    },
+    removeEvent(index) {
+      this.eventForm.events.splice(index, 1);
+    },
+    handleMatchSelect(matchName) {
+      // 根据选择的比赛获取相关球员
+      const selectedMatch = this.filteredMatches.find(match => match.matchName === matchName);
+      if (selectedMatch) {
+        // 获取参赛两队的所有球员
+        const team1Players = this.teams.find(team => team.teamName === selectedMatch.team1)?.players || [];
+        const team2Players = this.teams.find(team => team.teamName === selectedMatch.team2)?.players || [];
+        this.currentMatchPlayers = [...team1Players, ...team2Players];
+      }
+    },
+    submitEvents() {
+      if (!this.eventForm.matchName) {
+        this.$message.error('请选择比赛');
+        return;
+      }
+      if (this.eventForm.events.length === 0) {
+        this.$message.error('请至少添加一个事件');
+        return;
+      }
+
+      const eventPromises = this.eventForm.events.map(event => {
+        const eventData = {
+          matchName: this.eventForm.matchName,
+          eventType: event.eventType,
+          playerName: event.playerName,
+          eventTime: event.eventTime,
+          matchType: this.currentMatchType
+        };
+        return axios.post('/api/events', eventData);
+      });
+
+      Promise.all(eventPromises)
+        .then(responses => {
+          const successCount = responses.filter(response => response.data.status === 'success').length;
+          if (successCount === this.eventForm.events.length) {
+            this.$message.success(`成功录入 ${successCount} 个事件`);
+            this.eventForm = { matchName: '', events: [] };
+            this.currentMatchPlayers = [];
+            this.fetchEvents();
+          } else {
+            this.$message.warning(`录入了 ${successCount}/${this.eventForm.events.length} 个事件`);
+          }
+        })
+        .catch(error => {
+          console.error('事件信息录入失败:', error);
+          this.$message.error('事件信息录入失败');
+        });
+    },
+    handleMatchTypeChange(value) {
+      this.currentMatchType = value;
+      this.teamForm = { teamName: '', players: [] };
+      this.scheduleForm = { matchName: '', team1: '', team2: '', date: '', location: '' };
+      this.eventForm = { matchName: '', events: [] };
+      this.currentMatchPlayers = [];
+    },
+    async fetchTeams() {
+      try {
+        const response = await axios.get('/api/teams');
+        console.log('获取球队数据:', response.data); // 调试用
+        if (response.data && response.data.status === 'success') {
+          this.teams = Array.isArray(response.data.data) ? response.data.data : [];
+        } else if (response.data && Array.isArray(response.data)) {
+          // 如果直接返回数组
+          this.teams = response.data;
+        } else {
+          console.warn('球队数据格式异常:', response.data);
+          this.teams = [];
+        }
+      } catch (error) {
+        console.error('获取球队信息失败:', error);
+        this.$message.error('获取球队信息失败');
+        this.teams = [];
+      }
+    },
+    async fetchMatches() {
+      try {
+        const response = await axios.get('/api/matches');
+        console.log('获取比赛数据:', response.data); // 调试用
+        if (response.data && response.data.status === 'success') {
+          this.matches = Array.isArray(response.data.data) ? response.data.data : [];
+        } else if (response.data && Array.isArray(response.data)) {
+          // 如果直接返回数组
+          this.matches = response.data;
+        } else {
+          console.warn('比赛数据格式异常:', response.data);
+          this.matches = [];
+        }
+      } catch (error) {
+        console.error('获取比赛信息失败:', error);
+        this.$message.error('获取比赛信息失败');
+        this.matches = [];
+      }
+    },
+    async fetchPlayers() {
+      try {
+        const response = await axios.get('/api/players');
+        console.log('获取球员数据:', response.data); // 调试用
+        if (response.data && response.data.status === 'success') {
+          this.players = Array.isArray(response.data.data) ? response.data.data : [];
+        } else if (response.data && Array.isArray(response.data)) {
+          // 如果直接返回数组
+          this.players = response.data;
+        } else {
+          console.warn('球员数据格式异常:', response.data);
+          this.players = [];
+        }
+      } catch (error) {
+        console.error('获取球员信息失败:', error);
+        this.$message.error('获取球员信息失败');
+        this.players = [];
+      }
+    },
+    async fetchEvents() {
+      try {
+        const response = await axios.get('/api/events');
+        console.log('获取事件数据:', response.data); // 调试用
+        if (response.data && response.data.status === 'success') {
+          this.events = Array.isArray(response.data.data) ? response.data.data : [];
+        } else if (response.data && Array.isArray(response.data)) {
+          // 如果直接返回数组
+          this.events = response.data;
+        } else {
+          console.warn('事件数据格式异常:', response.data);
+          this.events = [];
+        }
+      } catch (error) {
+        console.error('获取事件信息失败:', error);
+        this.$message.error('获取事件信息失败');
+        this.events = [];
+      }
+    },
+    // ...existing code...
   },
-  created() {
-    this.fetchTeams();
-    this.fetchMatches();
-    this.fetchPlayers();
-    this.fetchEvents();
+  async created() {
+    // 页面创建时加载所有数据
+    await this.loadAllData();
   }
 };
 </script>
@@ -794,15 +915,102 @@ export default {
   border-radius: 4px;
 }
 
-.player-item {
+.player-header,
+.event-header {
   display: flex;
+  justify-content: space-between;
   align-items: center;
-  margin-bottom: 10px;
+  margin-bottom: 15px;
+  padding: 10px;
+  background: #f8f9fa;
+  border-radius: 4px;
+}
+
+.player-count,
+.event-count {
+  color: #909399;
+  font-size: 14px;
+}
+
+.players-container,
+.events-container {
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.player-card,
+.event-card {
+  border: 1px solid #e4e7ed;
+  border-radius: 6px;
+  padding: 15px;
+  margin-bottom: 15px;
+  background: #fff;
+  transition: box-shadow 0.2s;
+}
+
+.player-card:hover,
+.event-card:hover {
+  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
+}
+
+.player-card-header,
+.event-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #f0f2f5;
+}
+
+.player-index,
+.event-index {
+  font-weight: 500;
+  color: #303133;
+  font-size: 14px;
+}
+
+.delete-btn {
+  color: #f56c6c;
+  padding: 0;
+}
+
+.delete-btn:hover {
+  color: #f78989;
+}
+
+.player-inputs,
+.event-inputs {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
   gap: 10px;
 }
 
-.player-item .el-input {
-  flex: 1;
+.player-input,
+.event-input {
+  width: 100%;
+}
+
+.players-preview {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  align-items: center;
+}
+
+.player-tag {
+  margin: 0;
+}
+
+.more-players {
+  color: #909399;
+  font-size: 12px;
+  margin-left: 4px;
+}
+
+.no-players {
+  color: #c0c4cc;
+  font-style: italic;
 }
 
 .el-form-item {
@@ -832,4 +1040,11 @@ export default {
     align-items: stretch;
   }
 }
-</style>
+
+@media (max-width: 1024px) {
+  .player-inputs,
+  .event-inputs {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+</style>style

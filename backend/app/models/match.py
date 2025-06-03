@@ -28,7 +28,7 @@ class Match(db.Model):
     away_team = db.relationship('Team', foreign_keys=[away_team_id], 
                                backref=db.backref('away_matches', lazy=True))
     tournament = db.relationship('Tournament', backref=db.backref('matches', lazy=True))
-    events = db.relationship('Event', backref=db.backref('match', lazy=True))
+    events = db.relationship('Event', back_populates='match', lazy=True)
     
     def __repr__(self):
         return f'<Match {self.id} {self.home_team.name if self.home_team else "Unknown"} vs {self.away_team.name if self.away_team else "Unknown"}>'

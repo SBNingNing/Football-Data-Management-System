@@ -5,6 +5,9 @@ from app.models.user import User
 from app.models.team import Team
 from app.models.player import Player
 from app.models.player_team_history import PlayerTeamHistory
+from app.models.match import Match
+from app.models.event import Event
+from app.models.tournament import Tournament
 from datetime import datetime
 
 auth_bp = Blueprint('auth', __name__)
@@ -111,8 +114,8 @@ def create_team():
         # 根据matchType确定赛事ID
         match_type_to_tournament = {
             'champions-cup': 1,  # 冠军杯
-            'women-cup': 2,      # 巾帼杯
-            'eight-man': 3       # 八人制比赛
+            'womens-cup': 2,     # 巾帼杯
+            'eight-a-side': 3    # 八人制比赛
         }
         tournament_id = match_type_to_tournament.get(data.get('matchType', 'champions-cup'), 1)
         
@@ -120,32 +123,33 @@ def create_team():
         new_team = Team(
             name=data['teamName'],
             tournament_id=tournament_id,
-            group_id=data.get('groupId')  # 如果有分组信息
+            group_id=data.get('groupId')
         )
         db.session.add(new_team)
-        db.session.flush()  # 获取球队ID
+        db.session.flush()
         
         # 创建球员和球员-队伍历史记录
         players_data = data.get('players', [])
-        for i, player_data in enumerate(players_data):
-            if player_data.get('name'):
-                # 生成球员ID（使用简单的格式，实际应该是学号）
-                player_id = f"STU{new_team.id:03d}{i+1:02d}"
+        for player_data in players_data:
+            if player_data.get('name') and player_data.get('studentId'):
+                player_id = player_data['studentId']
                 
                 # 检查球员是否已存在
                 existing_player = Player.query.get(player_id)
                 if not existing_player:
-                    # 创建新球员
                     new_player = Player(
                         id=player_id,
                         name=player_data['name']
                     )
                     db.session.add(new_player)
+                else:
+                    # 更新球员姓名
+                    existing_player.name = player_data['name']
                 
                 # 创建球员-队伍历史记录
                 player_history = PlayerTeamHistory(
                     player_id=player_id,
-                    player_number=player_data.get('number', i+1),
+                    player_number=int(player_data.get('number', 1)),
                     team_id=new_team.id,
                     tournament_id=tournament_id
                 )
@@ -163,6 +167,7 @@ def create_team():
             team_players.append({
                 'name': history.player.name,
                 'number': str(history.player_number),
+                'studentId': history.player_id,
                 'id': history.player_id
             })
         
@@ -197,13 +202,14 @@ def get_teams():
                 team_players.append({
                     'name': history.player.name,
                     'number': str(history.player_number),
+                    'studentId': history.player_id,
                     'id': history.player_id
                 })
             
             team_dict['players'] = team_players
             
             # 根据tournament_id确定matchType
-            tournament_to_match_type = {1: 'champions-cup', 2: 'women-cup', 3: 'eight-man'}
+            tournament_to_match_type = {1: 'champions-cup', 2: 'womens-cup', 3: 'eight-a-side'}
             team_dict['matchType'] = tournament_to_match_type.get(team.tournament_id, 'champions-cup')
             
             teams_data.append(team_dict)
@@ -233,10 +239,9 @@ def update_team(team_id):
         
         # 添加新的球员和历史记录
         players_data = data.get('players', [])
-        for i, player_data in enumerate(players_data):
-            if player_data.get('name'):
-                # 如果提供了player_id则使用，否则生成新的
-                player_id = player_data.get('id') or f"STU{team_id:03d}{i+1:02d}"
+        for player_data in players_data:
+            if player_data.get('name') and player_data.get('studentId'):
+                player_id = player_data['studentId']
                 
                 # 检查球员是否已存在
                 existing_player = Player.query.get(player_id)
@@ -253,7 +258,7 @@ def update_team(team_id):
                 # 创建新的球员-队伍历史记录
                 player_history = PlayerTeamHistory(
                     player_id=player_id,
-                    player_number=player_data.get('number', i+1),
+                    player_number=int(player_data.get('number', 1)),
                     team_id=team_id,
                     tournament_id=team.tournament_id
                 )
@@ -321,3 +326,82 @@ def get_players():
         
     except Exception as e:
         return jsonify({'status': 'error', 'message': f'获取失败: {str(e)}'}), 500
+
+@auth_bp.route('/players', methods=['POST'])
+@jwt_required()
+def create_player():
+    """创建球员信息"""
+    data = request.get_json()
+    
+    if not data or not data.get('name') or not data.get('studentId'):
+        return jsonify({'status': 'error', 'message': '球员姓名和学号不能为空'}), 400
+    
+    try:
+        player_id = data['studentId']
+        
+        # 检查球员是否已存在
+        existing_player = Player.query.get(player_id)
+        if existing_player:
+            return jsonify({'status': 'error', 'message': '球员已存在'}), 400
+        
+        # 创建新球员
+        new_player = Player(
+            id=player_id,
+            name=data['name']
+        )
+        db.session.add(new_player)
+        db.session.commit()
+        
+        return jsonify({
+            'status': 'success', 
+            'message': '球员创建成功',
+            'data': new_player.to_dict()
+        }), 201
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'status': 'error', 'message': f'创建失败: {str(e)}'}), 500
+
+@auth_bp.route('/players/<string:player_id>', methods=['PUT'])
+@jwt_required()
+def update_player(player_id):
+    """更新球员信息"""
+    data = request.get_json()
+    
+    try:
+        player = Player.query.get(player_id)
+        if not player:
+            return jsonify({'status': 'error', 'message': '球员不存在'}), 404
+        
+        # 更新球员信息
+        if data.get('name'):
+            player.name = data['name']
+        
+        db.session.commit()
+        return jsonify({'status': 'success', 'message': '更新成功'}), 200
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'status': 'error', 'message': f'更新失败: {str(e)}'}), 500
+
+@auth_bp.route('/players/<string:player_id>', methods=['DELETE'])
+@jwt_required()
+def delete_player(player_id):
+    """删除球员"""
+    try:
+        player = Player.query.get(player_id)
+        if not player:
+            return jsonify({'status': 'error', 'message': '球员不存在'}), 404
+        
+        # 删除关联的球员-队伍历史记录
+        PlayerTeamHistory.query.filter_by(player_id=player_id).delete()
+        
+        # 删除球员
+        db.session.delete(player)
+        db.session.commit()
+        
+        return jsonify({'status': 'success', 'message': '删除成功'}), 200
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'status': 'error', 'message': f'删除失败: {str(e)}'}), 500

@@ -23,7 +23,7 @@ class Team(db.Model):
     
     # 关系
     tournament = db.relationship('Tournament', backref=db.backref('teams', lazy=True))
-    player_histories = db.relationship('PlayerTeamHistory', backref=db.backref('team', lazy=True))
+    player_histories = db.relationship('PlayerTeamHistory', back_populates='team')
     
     def __repr__(self):
         return f'<Team {self.name}>'

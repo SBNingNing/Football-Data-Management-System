@@ -16,8 +16,8 @@ class Player(db.Model):
     career_yellow_cards = db.Column('职业生涯总黄牌数', db.Integer, default=0, comment='职业生涯总黄牌数')
     
     # 关系
-    team_histories = db.relationship('PlayerTeamHistory', backref=db.backref('player', lazy=True))
-    events = db.relationship('Event', backref=db.backref('player', lazy=True))
+    team_histories = db.relationship('PlayerTeamHistory', back_populates='player')
+    events = db.relationship('Event', back_populates='player', lazy='dynamic')
     
     def __repr__(self):
         return f'<Player {self.id}: {self.name}>'
