@@ -151,23 +151,23 @@
                   <el-option label="巾帼杯" value="womens-cup"></el-option>
                   <el-option label="八人制比赛" value="eight-a-side"></el-option>
                 </el-select>
-                <el-button type="primary" @click="fetchTeams" icon="el-icon-refresh">刷新</el-button>
+                <el-button type="primary" @click="loadAllData" icon="el-icon-refresh">刷新</el-button>
               </div>
               <el-table :data="displayTeams" border style="width: 100%">
                 <el-table-column prop="teamName" label="球队名称" width="200"></el-table-column>
                 <el-table-column prop="matchType" label="比赛类型" width="150">
                   <template slot-scope="scope">
-                    {{ getMatchTypeLabel(scope.row.matchType) }}
+                    <span v-if="scope && scope.row">{{ getMatchTypeLabel(scope.row.matchType) }}</span>
                   </template>
                 </el-table-column>
                 <el-table-column label="球员数量" width="120">
                   <template slot-scope="scope">
-                    {{ scope.row.players ? scope.row.players.length : 0 }}
+                    <span v-if="scope && scope.row">{{ scope.row.players ? scope.row.players.length : 0 }}</span>
                   </template>
                 </el-table-column>
                 <el-table-column label="球员信息" min-width="200">
                   <template slot-scope="scope">
-                    <div v-if="scope.row.players && scope.row.players.length > 0" class="players-preview">
+                    <div v-if="scope && scope.row && scope.row.players && scope.row.players.length > 0" class="players-preview">
                       <el-tag v-for="player in scope.row.players.slice(0, 3)" :key="player.name" size="mini" class="player-tag">
                         {{ player.name }}({{ player.number }})
                       </el-tag>
@@ -178,15 +178,17 @@
                 </el-table-column>
                 <el-table-column label="操作" width="200">
                   <template slot-scope="scope">
-                    <el-button size="mini" type="primary" @click="editTeam(scope.row)">编辑</el-button>
-                    <el-button size="mini" type="danger" @click="deleteTeam(scope.row.id)">删除</el-button>
+                    <div v-if="scope && scope.row">
+                      <el-button size="mini" type="primary" @click="editTeam(scope.row)">编辑</el-button>
+                      <el-button size="mini" type="danger" @click="deleteTeam(scope.row.id)">删除</el-button>
+                    </div>
                   </template>
                 </el-table-column>
               </el-table>
             </el-tab-pane>
 
-            <!-- 赛事管理 -->
-            <el-tab-pane label="赛事管理" name="matches">
+            <!-- 比赛管理 -->
+            <el-tab-pane label="比赛管理" name="matches">
               <div class="manage-header">
                 <el-select v-model="manageMatchType" placeholder="请选择比赛类型" @change="filterManageData" style="width: 200px;">
                   <el-option label="全部" value=""></el-option>
@@ -194,7 +196,7 @@
                   <el-option label="巾帼杯" value="womens-cup"></el-option>
                   <el-option label="八人制比赛" value="eight-a-side"></el-option>
                 </el-select>
-                <el-button type="primary" @click="fetchMatches" icon="el-icon-refresh">刷新</el-button>
+                <el-button type="primary" @click="loadAllData" icon="el-icon-refresh">刷新</el-button>
               </div>
               <el-table :data="displayMatches" border style="width: 100%">
                 <el-table-column prop="matchName" label="比赛名称" width="200"></el-table-column>
@@ -202,19 +204,21 @@
                 <el-table-column prop="team2" label="球队2" width="150"></el-table-column>
                 <el-table-column prop="date" label="比赛时间" width="180">
                   <template slot-scope="scope">
-                    {{ formatDate(scope.row.date) }}
+                    <span v-if="scope && scope.row">{{ formatDate(scope.row.date) }}</span>
                   </template>
                 </el-table-column>
                 <el-table-column prop="location" label="比赛地点" width="150"></el-table-column>
                 <el-table-column prop="matchType" label="比赛类型" width="120">
                   <template slot-scope="scope">
-                    {{ getMatchTypeLabel(scope.row.matchType) }}
+                    <span v-if="scope && scope.row">{{ getMatchTypeLabel(scope.row.matchType) }}</span>
                   </template>
                 </el-table-column>
                 <el-table-column label="操作" width="200">
                   <template slot-scope="scope">
-                    <el-button size="mini" type="primary" @click="editMatch(scope.row)">编辑</el-button>
-                    <el-button size="mini" type="danger" @click="deleteMatch(scope.row.id)">删除</el-button>
+                    <div v-if="scope && scope.row">
+                      <el-button size="mini" type="primary" @click="editMatch(scope.row)">编辑</el-button>
+                      <el-button size="mini" type="danger" @click="deleteMatch(scope.row.id)">删除</el-button>
+                    </div>
                   </template>
                 </el-table-column>
               </el-table>
@@ -229,30 +233,32 @@
                   <el-option label="巾帼杯" value="womens-cup"></el-option>
                   <el-option label="八人制比赛" value="eight-a-side"></el-option>
                 </el-select>
-                <el-button type="primary" @click="fetchEvents" icon="el-icon-refresh">刷新</el-button>
+                <el-button type="primary" @click="loadAllData" icon="el-icon-refresh">刷新</el-button>
               </div>
               <el-table :data="displayEvents" border style="width: 100%">
                 <el-table-column prop="matchName" label="比赛名称" width="200"></el-table-column>
                 <el-table-column prop="eventType" label="事件类型" width="120">
                   <template slot-scope="scope">
-                    {{ getEventTypeLabel(scope.row.eventType) }}
+                    <span v-if="scope && scope.row">{{ getEventTypeLabel(scope.row.eventType) }}</span>
                   </template>
                 </el-table-column>
                 <el-table-column prop="playerName" label="球员" width="150"></el-table-column>
                 <el-table-column prop="eventTime" label="事件时间" width="120">
                   <template slot-scope="scope">
-                    {{ scope.row.eventTime }}分钟
+                    <span v-if="scope && scope.row">{{ scope.row.eventTime }}分钟</span>
                   </template>
                 </el-table-column>
                 <el-table-column prop="matchType" label="比赛类型" width="120">
                   <template slot-scope="scope">
-                    {{ getMatchTypeLabel(scope.row.matchType) }}
+                    <span v-if="scope && scope.row">{{ getMatchTypeLabel(scope.row.matchType) }}</span>
                   </template>
                 </el-table-column>
                 <el-table-column label="操作" width="200">
                   <template slot-scope="scope">
-                    <el-button size="mini" type="primary" @click="editEvent(scope.row)">编辑</el-button>
-                    <el-button size="mini" type="danger" @click="deleteEvent(scope.row.id)">删除</el-button>
+                    <div v-if="scope && scope.row">
+                      <el-button size="mini" type="primary" @click="editEvent(scope.row)">编辑</el-button>
+                      <el-button size="mini" type="danger" @click="deleteEvent(scope.row.id)">删除</el-button>
+                    </div>
                   </template>
                 </el-table-column>
               </el-table>
@@ -371,7 +377,6 @@ export default {
       activeTab: 'input',
       manageActiveTab: 'teams',
       manageMatchType: '',
-      loading: false, // 添加加载状态
       matchTypeForm: {
         matchType: ''
       },
@@ -392,10 +397,6 @@ export default {
         events: []
       },
       currentMatchPlayers: [],
-      teams: [],
-      matches: [],
-      players: [],
-      events: [],
       // 编辑相关数据
       editTeamDialog: false,
       editMatchDialog: false,
@@ -426,6 +427,25 @@ export default {
     };
   },
   computed: {
+    userStore() {
+      return useUserStore();
+    },
+    // 使用 Store 中的数据
+    teams() {
+      return this.userStore.teams;
+    },
+    matches() {
+      return this.userStore.matches;
+    },
+    players() {
+      return this.userStore.players;
+    },
+    events() {
+      return this.userStore.events;
+    },
+    loading() {
+      return this.userStore.loading;
+    },
     filteredTeams() {
       return this.teams.filter(team => team.matchType === this.currentMatchType);
     },
@@ -452,58 +472,53 @@ export default {
     }
   },
   methods: {
-    handleTabClick(tab) {
+    async handleTabClick(tab) {
       if (tab.name === 'manage') {
-        this.loadAllData();
+        await this.loadAllData();
       }
     },
-    // 统一加载所有数据的方法
+    // 统一加载所有数据的方法 - 使用 Store 方法
     async loadAllData() {
-      this.loading = true;
+      this.userStore.loading = true;
       try {
-        await Promise.all([
-          this.fetchTeams(),
-          this.fetchMatches(),
-          this.fetchEvents(),
-          this.fetchPlayers()
+        console.log('开始加载数据...');
+        const results = await Promise.allSettled([
+          this.userStore.fetchTeams(),
+          this.userStore.fetchMatches(),
+          this.userStore.fetchEvents(),
+          this.userStore.fetchPlayers()
         ]);
+        
+        // 检查加载结果
+        results.forEach((result, index) => {
+          const names = ['球队', '比赛', '事件', '球员'];
+          if (result.status === 'rejected') {
+            console.error(`加载${names[index]}数据失败:`, result.reason);
+          } else {
+            console.log(`加载${names[index]}数据成功:`, result.value);
+          }
+        });
+        
+        console.log('数据加载完成，当前数据状态:', {
+          teams: this.teams.length,
+          matches: this.matches.length,
+          events: this.events.length,
+          players: this.players.length
+        });
       } catch (error) {
         console.error('加载数据失败:', error);
         this.$message.error('数据加载失败，请刷新页面重试');
       } finally {
-        this.loading = false;
+        this.userStore.loading = false;
       }
     },
     filterManageData() {
       // 筛选数据的方法，通过计算属性实现
+      console.log('筛选数据，当前筛选条件:', this.manageMatchType);
     },
-    getMatchTypeLabel(type) {
-      const labels = {
-        'champions-cup': '冠军杯',
-        'womens-cup': '巾帼杯',
-        'eight-a-side': '八人制比赛'
-      };
-      return type ? labels[type] : labels[this.currentMatchType] || '';
-    },
-    getEventTypeLabel(type) {
-      const labels = {
-        'goal': '进球',
-        'redCard': '红牌',
-        'yellowCard': '黄牌',
-        'ownGoal': '乌龙球'
-      };
-      return labels[type] || type;
-    },
-    formatDate(date) {
-      if (!date) return '';
-      try {
-        return new Date(date).toLocaleString('zh-CN');
-      } catch (error) {
-        return date;
-      }
-    },
-    // 编辑球队
+    // 添加缺失的 editTeam 方法
     editTeam(team) {
+      console.log('编辑球队:', team);
       this.editTeamForm = {
         id: team.id,
         teamName: team.teamName,
@@ -518,41 +533,27 @@ export default {
     removeEditPlayer(index) {
       this.editTeamForm.players.splice(index, 1);
     },
-    updateTeam() {
-      axios.put(`/api/auth/teams/${this.editTeamForm.id}`, this.editTeamForm)
-        .then(response => {
-          if (response.data && response.data.status === 'success') {
-            this.$message.success('球队信息更新成功');
-            this.editTeamDialog = false;
-            this.fetchTeams();
-          } else {
-            this.$message.error(response.data?.message || '球队信息更新失败');
-          }
-        })
-        .catch(error => {
-          console.error('更新球队信息失败:', error);
-          this.$message.error('球队信息更新失败');
-        });
+    async updateTeam() {
+      const result = await this.userStore.updateTeam(this.editTeamForm.id, this.editTeamForm);
+      if (result.success) {
+        this.$message.success('球队信息更新成功');
+        this.editTeamDialog = false;
+      } else {
+        this.$message.error(result.error || '球队信息更新失败');
+      }
     },
     deleteTeam(teamId) {
       this.$confirm('此操作将永久删除该球队, 是否继续?', '提示', {
         confirmButtonText: '确定',
         cancelButtonText: '取消',
         type: 'warning'
-      }).then(() => {
-        axios.delete(`/api/auth/teams/${teamId}`)
-          .then(response => {
-            if (response.data && response.data.status === 'success') {
-              this.$message.success('删除成功');
-              this.fetchTeams();
-            } else {
-              this.$message.error(response.data?.message || '删除失败');
-            }
-          })
-          .catch(error => {
-            console.error('删除球队失败:', error);
-            this.$message.error('删除失败');
-          });
+      }).then(async () => {
+        const result = await this.userStore.deleteTeam(teamId);
+        if (result.success) {
+          this.$message.success('删除成功');
+        } else {
+          this.$message.error(result.error || '删除失败');
+        }
       });
     },
     // 编辑比赛
@@ -568,41 +569,27 @@ export default {
       };
       this.editMatchDialog = true;
     },
-    updateMatch() {
-      axios.put(`/api/matches/${this.editMatchForm.id}`, this.editMatchForm)
-        .then(response => {
-          if (response.data && response.data.status === 'success') {
-            this.$message.success('比赛信息更新成功');
-            this.editMatchDialog = false;
-            this.fetchMatches();
-          } else {
-            this.$message.error(response.data?.message || '比赛信息更新失败');
-          }
-        })
-        .catch(error => {
-          console.error('更新比赛信息失败:', error);
-          this.$message.error('比赛信息更新失败');
-        });
+    async updateMatch() {
+      const result = await this.userStore.updateMatch(this.editMatchForm.id, this.editMatchForm);
+      if (result.success) {
+        this.$message.success('比赛信息更新成功');
+        this.editMatchDialog = false;
+      } else {
+        this.$message.error(result.error || '比赛信息更新失败');
+      }
     },
     deleteMatch(matchId) {
       this.$confirm('此操作将永久删除该比赛, 是否继续?', '提示', {
         confirmButtonText: '确定',
         cancelButtonText: '取消',
         type: 'warning'
-      }).then(() => {
-        axios.delete(`/api/matches/${matchId}`)
-          .then(response => {
-            if (response.data && response.data.status === 'success') {
-              this.$message.success('删除成功');
-              this.fetchMatches();
-            } else {
-              this.$message.error(response.data?.message || '删除失败');
-            }
-          })
-          .catch(error => {
-            console.error('删除比赛失败:', error);
-            this.$message.error('删除失败');
-          });
+      }).then(async () => {
+        const result = await this.userStore.deleteMatch(matchId);
+        if (result.success) {
+          this.$message.success('删除成功');
+        } else {
+          this.$message.error(result.error || '删除失败');
+        }
       });
     },
     // 编辑事件
@@ -617,41 +604,27 @@ export default {
       };
       this.editEventDialog = true;
     },
-    updateEvent() {
-      axios.put(`/api/events/${this.editEventForm.id}`, this.editEventForm)
-        .then(response => {
-          if (response.data && response.data.status === 'success') {
-            this.$message.success('事件信息更新成功');
-            this.editEventDialog = false;
-            this.fetchEvents();
-          } else {
-            this.$message.error(response.data?.message || '事件信息更新失败');
-          }
-        })
-        .catch(error => {
-          console.error('更新事件信息失败:', error);
-          this.$message.error('事件信息更新失败');
-        });
+    async updateEvent() {
+      const result = await this.userStore.updateEvent(this.editEventForm.id, this.editEventForm);
+      if (result.success) {
+        this.$message.success('事件信息更新成功');
+        this.editEventDialog = false;
+      } else {
+        this.$message.error(result.error || '事件信息更新失败');
+      }
     },
     deleteEvent(eventId) {
       this.$confirm('此操作将永久删除该事件, 是否继续?', '提示', {
         confirmButtonText: '确定',
         cancelButtonText: '取消',
         type: 'warning'
-      }).then(() => {
-        axios.delete(`/api/events/${eventId}`)
-          .then(response => {
-            if (response.data && response.data.status === 'success') {
-              this.$message.success('删除成功');
-              this.fetchEvents();
-            } else {
-              this.$message.error(response.data?.message || '删除失败');
-            }
-          })
-          .catch(error => {
-            console.error('删除事件失败:', error);
-            this.$message.error('删除失败');
-          });
+      }).then(async () => {
+        const result = await this.userStore.deleteEvent(eventId);
+        if (result.success) {
+          this.$message.success('删除成功');
+        } else {
+          this.$message.error(result.error || '删除失败');
+        }
       });
     },
     goToHome() {
@@ -686,47 +659,33 @@ export default {
     removePlayer(index) {
       this.teamForm.players.splice(index, 1);
     },
-    submitTeam() {
+    async submitTeam() {
       const teamData = {
         ...this.teamForm,
         matchType: this.currentMatchType
       };
       
-      axios.post('/api/auth/teams', teamData)
-        .then(response => {
-          if (response.data && response.data.status === 'success') {
-            this.$message.success('球队信息录入成功');
-            this.teamForm = { teamName: '', players: [] };
-            this.fetchTeams();
-          } else {
-            this.$message.error(response.data?.message || '球队信息录入失败');
-          }
-        })
-        .catch(error => {
-          console.error('球队信息录入失败:', error);
-          this.$message.error('球队信息录入失败');
-        });
+      const result = await this.userStore.createTeam(teamData);
+      if (result.success) {
+        this.$message.success('球队信息录入成功');
+        this.teamForm = { teamName: '', players: [] };
+      } else {
+        this.$message.error(result.error || '球队信息录入失败');
+      }
     },
-    submitSchedule() {
+    async submitSchedule() {
       const scheduleData = {
         ...this.scheduleForm,
         matchType: this.currentMatchType
       };
       
-      axios.post('/api/matches', scheduleData)
-        .then(response => {
-          if (response.data && response.data.status === 'success') {
-            this.$message.success('赛程信息录入成功');
-            this.scheduleForm = { matchName: '', team1: '', team2: '', date: '', location: '' };
-            this.fetchMatches();
-          } else {
-            this.$message.error(response.data?.message || '赛程信息录入失败');
-          }
-        })
-        .catch(error => {
-          console.error('赛程信息录入失败:', error);
-          this.$message.error('赛程信息录入失败');
-        });
+      const result = await this.userStore.createMatch(scheduleData);
+      if (result.success) {
+        this.$message.success('赛程信息录入成功');
+        this.scheduleForm = { matchName: '', team1: '', team2: '', date: '', location: '' };
+      } else {
+        this.$message.error(result.error || '赛程信息录入失败');
+      }
     },
     addEvent() {
       this.eventForm.events.push({ eventType: '', playerName: '', eventTime: '' });
@@ -744,7 +703,7 @@ export default {
         this.currentMatchPlayers = [...team1Players, ...team2Players];
       }
     },
-    submitEvents() {
+    async submitEvents() {
       if (!this.eventForm.matchName) {
         this.$message.error('请选择比赛');
         return;
@@ -762,25 +721,23 @@ export default {
           eventTime: event.eventTime,
           matchType: this.currentMatchType
         };
-        return axios.post('/api/events', eventData);
+        return this.userStore.createEvent(eventData);
       });
 
-      Promise.all(eventPromises)
-        .then(responses => {
-          const successCount = responses.filter(response => response.data.status === 'success').length;
-          if (successCount === this.eventForm.events.length) {
-            this.$message.success(`成功录入 ${successCount} 个事件`);
-            this.eventForm = { matchName: '', events: [] };
-            this.currentMatchPlayers = [];
-            this.fetchEvents();
-          } else {
-            this.$message.warning(`录入了 ${successCount}/${this.eventForm.events.length} 个事件`);
-          }
-        })
-        .catch(error => {
-          console.error('事件信息录入失败:', error);
-          this.$message.error('事件信息录入失败');
-        });
+      try {
+        const results = await Promise.all(eventPromises);
+        const successCount = results.filter(result => result.success).length;
+        if (successCount === this.eventForm.events.length) {
+          this.$message.success(`成功录入 ${successCount} 个事件`);
+          this.eventForm = { matchName: '', events: [] };
+          this.currentMatchPlayers = [];
+        } else {
+          this.$message.warning(`录入了 ${successCount}/${this.eventForm.events.length} 个事件`);
+        }
+      } catch (error) {
+        console.error('事件信息录入失败:', error);
+        this.$message.error('事件信息录入失败');
+      }
     },
     handleMatchTypeChange(value) {
       this.currentMatchType = value;
@@ -789,86 +746,35 @@ export default {
       this.eventForm = { matchName: '', events: [] };
       this.currentMatchPlayers = [];
     },
-    async fetchTeams() {
-      try {
-        const response = await axios.get('/api/teams');
-        console.log('获取球队数据:', response.data); // 调试用
-        if (response.data && response.data.status === 'success') {
-          this.teams = Array.isArray(response.data.data) ? response.data.data : [];
-        } else if (response.data && Array.isArray(response.data)) {
-          // 如果直接返回数组
-          this.teams = response.data;
-        } else {
-          console.warn('球队数据格式异常:', response.data);
-          this.teams = [];
-        }
-      } catch (error) {
-        console.error('获取球队信息失败:', error);
-        this.$message.error('获取球队信息失败');
-        this.teams = [];
-      }
+    getMatchTypeLabel(type) {
+      const labels = {
+        'champions-cup': '冠军杯',
+        'womens-cup': '巾帼杯',
+        'eight-a-side': '八人制比赛'
+      };
+      return type ? labels[type] : labels[this.currentMatchType] || '';
     },
-    async fetchMatches() {
-      try {
-        const response = await axios.get('/api/matches');
-        console.log('获取比赛数据:', response.data); // 调试用
-        if (response.data && response.data.status === 'success') {
-          this.matches = Array.isArray(response.data.data) ? response.data.data : [];
-        } else if (response.data && Array.isArray(response.data)) {
-          // 如果直接返回数组
-          this.matches = response.data;
-        } else {
-          console.warn('比赛数据格式异常:', response.data);
-          this.matches = [];
-        }
-      } catch (error) {
-        console.error('获取比赛信息失败:', error);
-        this.$message.error('获取比赛信息失败');
-        this.matches = [];
-      }
+    getEventTypeLabel(type) {
+      const labels = {
+        'goal': '进球',
+        'redCard': '红牌',
+        'yellowCard': '黄牌',
+        'ownGoal': '乌龙球'
+      };
+      return labels[type] || type;
     },
-    async fetchPlayers() {
+    formatDate(date) {
+      if (!date) return '';
       try {
-        const response = await axios.get('/api/players');
-        console.log('获取球员数据:', response.data); // 调试用
-        if (response.data && response.data.status === 'success') {
-          this.players = Array.isArray(response.data.data) ? response.data.data : [];
-        } else if (response.data && Array.isArray(response.data)) {
-          // 如果直接返回数组
-          this.players = response.data;
-        } else {
-          console.warn('球员数据格式异常:', response.data);
-          this.players = [];
-        }
+        return new Date(date).toLocaleString('zh-CN');
       } catch (error) {
-        console.error('获取球员信息失败:', error);
-        this.$message.error('获取球员信息失败');
-        this.players = [];
+        return date;
       }
-    },
-    async fetchEvents() {
-      try {
-        const response = await axios.get('/api/events');
-        console.log('获取事件数据:', response.data); // 调试用
-        if (response.data && response.data.status === 'success') {
-          this.events = Array.isArray(response.data.data) ? response.data.data : [];
-        } else if (response.data && Array.isArray(response.data)) {
-          // 如果直接返回数组
-          this.events = response.data;
-        } else {
-          console.warn('事件数据格式异常:', response.data);
-          this.events = [];
-        }
-      } catch (error) {
-        console.error('获取事件信息失败:', error);
-        this.$message.error('获取事件信息失败');
-        this.events = [];
-      }
-    },
-    // ...existing code...
+    }
   },
   async created() {
     // 页面创建时加载所有数据
+    console.log('管理员页面创建，开始加载数据...');
     await this.loadAllData();
   }
 };
@@ -1047,4 +953,4 @@ export default {
     grid-template-columns: 1fr 1fr;
   }
 }
-</style>style
+</style>
