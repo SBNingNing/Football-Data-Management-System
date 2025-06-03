@@ -19,6 +19,28 @@ export const useUserStore = defineStore('user', {
   },
   
   actions: {
+    // 统一的数据处理方法
+    _handleApiResponse(response, dataType = 'data') {
+      console.log(`获取${dataType}响应:`, response.data);
+      
+      if (response.data && response.data.status === 'success') {
+        return Array.isArray(response.data.data) ? response.data.data : [];
+      } else if (Array.isArray(response.data)) {
+        return response.data;
+      } else {
+        console.warn(`${dataType}格式异常:`, response.data);
+        return [];
+      }
+    },
+
+    // 统一的错误处理方法
+    _handleApiError(error, operation) {
+      console.error(`${operation}失败:`, error);
+      const errorMessage = error.response?.data?.message || `${operation}失败`;
+      this.error = errorMessage;
+      return { success: false, error: errorMessage };
+    },
+
     async login(credentials) {
       this.loading = true
       this.error = null
@@ -117,7 +139,7 @@ export const useUserStore = defineStore('user', {
       this.error = null
       
       try {
-        const response = await axios.post('/api/auth/teams', teamData)
+        const response = await axios.post('/api/teams', teamData)
         this.loading = false
         
         if (response.data.status === 'success') {
@@ -126,9 +148,8 @@ export const useUserStore = defineStore('user', {
         }
         return { success: false, error: response.data.message }
       } catch (error) {
-        this.error = error.response?.data?.message || '创建球队失败'
         this.loading = false
-        return { success: false, error: this.error }
+        return this._handleApiError(error, '创建球队')
       }
     },
     
@@ -137,18 +158,21 @@ export const useUserStore = defineStore('user', {
       this.error = null
       
       try {
+        console.log('正在获取球队数据...');
         const response = await axios.get('/api/teams')
+        console.log('球队API响应:', response);
         
-        if (response.data.status === 'success') {
-          this.teams = response.data.data
-        }
+        const teamsData = this._handleApiResponse(response, '球队数据')
+        console.log('处理后的球队数据:', teamsData);
         
+        this.teams = teamsData
         this.loading = false
-        return { success: true, data: response.data.data }
+        return { success: true, data: teamsData }
       } catch (error) {
-        this.error = error.response?.data?.message || '获取球队列表失败'
+        console.error('获取球队数据失败:', error);
         this.loading = false
-        return { success: false, error: this.error }
+        this.teams = [] // 确保出错时清空数据
+        return this._handleApiError(error, '获取球队列表')
       }
     },
     
@@ -157,7 +181,7 @@ export const useUserStore = defineStore('user', {
       this.error = null
       
       try {
-        const response = await axios.put(`/api/auth/teams/${teamId}`, teamData)
+        const response = await axios.put(`/api/teams/${teamId}`, teamData)
         this.loading = false
         
         if (response.data.status === 'success') {
@@ -166,9 +190,8 @@ export const useUserStore = defineStore('user', {
         }
         return { success: false, error: response.data.message }
       } catch (error) {
-        this.error = error.response?.data?.message || '更新球队失败'
         this.loading = false
-        return { success: false, error: this.error }
+        return this._handleApiError(error, '更新球队')
       }
     },
     
@@ -177,7 +200,7 @@ export const useUserStore = defineStore('user', {
       this.error = null
       
       try {
-        const response = await axios.delete(`/api/auth/teams/${teamId}`)
+        const response = await axios.delete(`/api/teams/${teamId}`)
         this.loading = false
         
         if (response.data.status === 'success') {
@@ -186,9 +209,8 @@ export const useUserStore = defineStore('user', {
         }
         return { success: false, error: response.data.message }
       } catch (error) {
-        this.error = error.response?.data?.message || '删除球队失败'
         this.loading = false
-        return { success: false, error: this.error }
+        return this._handleApiError(error, '删除球队')
       }
     },
     
@@ -198,17 +220,15 @@ export const useUserStore = defineStore('user', {
       
       try {
         const response = await axios.get('/api/players')
+        const playersData = this._handleApiResponse(response, '球员数据')
         
-        if (response.data.status === 'success') {
-          this.players = response.data.data
-        }
-        
+        this.players = playersData
         this.loading = false
-        return { success: true, data: response.data.data }
+        return { success: true, data: playersData }
       } catch (error) {
-        this.error = error.response?.data?.message || '获取球员列表失败'
         this.loading = false
-        return { success: false, error: this.error }
+        this.players = [] // 确保出错时清空数据
+        return this._handleApiError(error, '获取球员列表')
       }
     },
     
@@ -226,9 +246,8 @@ export const useUserStore = defineStore('user', {
         }
         return { success: false, error: response.data.message }
       } catch (error) {
-        this.error = error.response?.data?.message || '创建比赛失败'
         this.loading = false
-        return { success: false, error: this.error }
+        return this._handleApiError(error, '创建比赛')
       }
     },
     
@@ -238,17 +257,15 @@ export const useUserStore = defineStore('user', {
       
       try {
         const response = await axios.get('/api/matches')
+        const matchesData = this._handleApiResponse(response, '比赛数据')
         
-        if (response.data.status === 'success') {
-          this.matches = response.data.data
-        }
-        
+        this.matches = matchesData
         this.loading = false
-        return { success: true, data: response.data.data }
+        return { success: true, data: matchesData }
       } catch (error) {
-        this.error = error.response?.data?.message || '获取比赛列表失败'
         this.loading = false
-        return { success: false, error: this.error }
+        this.matches = [] // 确保出错时清空数据
+        return this._handleApiError(error, '获取比赛列表')
       }
     },
     
@@ -266,9 +283,8 @@ export const useUserStore = defineStore('user', {
         }
         return { success: false, error: response.data.message }
       } catch (error) {
-        this.error = error.response?.data?.message || '更新比赛失败'
         this.loading = false
-        return { success: false, error: this.error }
+        return this._handleApiError(error, '更新比赛')
       }
     },
     
@@ -286,9 +302,8 @@ export const useUserStore = defineStore('user', {
         }
         return { success: false, error: response.data.message }
       } catch (error) {
-        this.error = error.response?.data?.message || '删除比赛失败'
         this.loading = false
-        return { success: false, error: this.error }
+        return this._handleApiError(error, '删除比赛')
       }
     },
     
@@ -306,9 +321,8 @@ export const useUserStore = defineStore('user', {
         }
         return { success: false, error: response.data.message }
       } catch (error) {
-        this.error = error.response?.data?.message || '创建事件失败'
         this.loading = false
-        return { success: false, error: this.error }
+        return this._handleApiError(error, '创建事件')
       }
     },
     
@@ -318,17 +332,15 @@ export const useUserStore = defineStore('user', {
       
       try {
         const response = await axios.get('/api/events')
+        const eventsData = this._handleApiResponse(response, '事件数据')
         
-        if (response.data.status === 'success') {
-          this.events = response.data.data
-        }
-        
+        this.events = eventsData
         this.loading = false
-        return { success: true, data: response.data.data }
+        return { success: true, data: eventsData }
       } catch (error) {
-        this.error = error.response?.data?.message || '获取事件列表失败'
         this.loading = false
-        return { success: false, error: this.error }
+        this.events = [] // 确保出错时清空数据
+        return this._handleApiError(error, '获取事件列表')
       }
     },
     
@@ -346,9 +358,8 @@ export const useUserStore = defineStore('user', {
         }
         return { success: false, error: response.data.message }
       } catch (error) {
-        this.error = error.response?.data?.message || '更新事件失败'
         this.loading = false
-        return { success: false, error: this.error }
+        return this._handleApiError(error, '更新事件')
       }
     },
     
@@ -366,9 +377,8 @@ export const useUserStore = defineStore('user', {
         }
         return { success: false, error: response.data.message }
       } catch (error) {
-        this.error = error.response?.data?.message || '删除事件失败'
         this.loading = false
-        return { success: false, error: this.error }
+        return this._handleApiError(error, '删除事件')
       }
     },
     
@@ -377,7 +387,7 @@ export const useUserStore = defineStore('user', {
       this.error = null
       
       try {
-        const response = await axios.post('/api/auth/players', playerData)
+        const response = await axios.post('/api/players', playerData)
         this.loading = false
         
         if (response.data.status === 'success') {
@@ -397,7 +407,7 @@ export const useUserStore = defineStore('user', {
       this.error = null
       
       try {
-        const response = await axios.put(`/api/auth/players/${playerId}`, playerData)
+        const response = await axios.put(`/api/players/${playerId}`, playerData)
         this.loading = false
         
         if (response.data.status === 'success') {
@@ -417,7 +427,7 @@ export const useUserStore = defineStore('user', {
       this.error = null
       
       try {
-        const response = await axios.delete(`/api/auth/players/${playerId}`)
+        const response = await axios.delete(`/api/players/${playerId}`)
         this.loading = false
         
         if (response.data.status === 'success') {
