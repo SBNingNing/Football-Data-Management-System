@@ -6,20 +6,21 @@ class Match(db.Model):
     __tablename__ = 'match'
     
     # 主键
-    id = db.Column('MatchID', db.Integer, primary_key=True, comment='MatchID')
+    id = db.Column('MatchID', db.String(10), primary_key=True, comment='MatchID')
     
     # 比赛信息
-    match_time = db.Column('比赛时间', db.DateTime, nullable=False, default=datetime.utcnow, comment='比赛时间')
-    location = db.Column('比赛地点', db.String(100), comment='比赛地点')
+    match_time = db.Column('比赛时间', db.DateTime, nullable=False, comment='比赛时间')
+    location = db.Column('比赛地点', db.String(100), nullable=False, comment='比赛地点')
     home_score = db.Column('主队比分', db.Integer, default=0, comment='主队比分')
     away_score = db.Column('客队比分', db.Integer, default=0, comment='客队比分')
+    group_id = db.Column('小组ID', db.String(1), comment='小组ID')
     status = db.Column('比赛状态', db.String(1), default='P', comment='比赛状态(F: 已结束，P: 未结束)')
+    knockout_round = db.Column('淘汰赛轮次', db.Integer, comment='淘汰赛轮次(0:常规赛, 1:附加赛, 2:1/4决赛, 3:半决赛, 4:决赛)')
     
     # 外键关系
-    home_team_id = db.Column('主队ID', db.Integer, db.ForeignKey('team.球队ID'), comment='主队ID')
-    away_team_id = db.Column('客队ID', db.Integer, db.ForeignKey('team.球队ID'), comment='客队ID')
-    tournament_id = db.Column('赛事ID', db.Integer, db.ForeignKey('tournament.赛事ID'), comment='赛事ID')
-    season_id = db.Column('赛季ID', db.Integer, db.ForeignKey('season.赛季ID'), comment='赛季ID')
+    home_team_id = db.Column('主队ID', db.Integer, db.ForeignKey('team.球队ID'), nullable=False, comment='主队ID')
+    away_team_id = db.Column('客队ID', db.Integer, db.ForeignKey('team.球队ID'), nullable=False, comment='客队ID')
+    tournament_id = db.Column('赛事ID', db.Integer, db.ForeignKey('tournament.赛事ID'), nullable=False, comment='赛事ID')
     
     # 关系
     home_team = db.relationship('Team', foreign_keys=[home_team_id], 
@@ -27,7 +28,6 @@ class Match(db.Model):
     away_team = db.relationship('Team', foreign_keys=[away_team_id], 
                                backref=db.backref('away_matches', lazy=True))
     tournament = db.relationship('Tournament', backref=db.backref('matches', lazy=True))
-    season = db.relationship('Season', backref=db.backref('matches', lazy=True))
     events = db.relationship('Event', backref=db.backref('match', lazy=True))
     
     def __repr__(self):
@@ -45,8 +45,9 @@ class Match(db.Model):
             'away_team_name': self.away_team.name if self.away_team else None,
             'home_score': self.home_score,
             'away_score': self.away_score,
+            'group_id': self.group_id,
             'tournament_id': self.tournament_id,
             'tournament_name': self.tournament.name if self.tournament else None,
-            'season_id': self.season_id,
-            'status': self.status
+            'status': self.status,
+            'knockout_round': self.knockout_round
         }

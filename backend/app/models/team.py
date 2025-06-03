@@ -9,26 +9,21 @@ class Team(db.Model):
     
     # 球队信息
     name = db.Column('球队名称', db.String(100), nullable=False, comment='球队名称')
+    group_id = db.Column('小组ID', db.String(1), comment='小组ID')
     
     # 外键关系
-    tournament_id = db.Column('赛事ID', db.Integer, db.ForeignKey('tournament.赛事ID'), comment='赛事ID')
-    season_id = db.Column('赛季ID', db.Integer, db.ForeignKey('season.赛季ID'), comment='赛季ID')
+    tournament_id = db.Column('赛事ID', db.Integer, db.ForeignKey('tournament.赛事ID'), nullable=False, comment='赛事ID')
     
     # 统计数据
-    goals_season = db.Column('赛季总进球数', db.Integer, default=0, comment='赛季总进球数')
-    yellow_cards_season = db.Column('赛季黄牌数', db.Integer, default=0, comment='赛季黄牌数')
-    red_cards_season = db.Column('赛季红牌数', db.Integer, default=0, comment='赛季红牌数')
-    points_season = db.Column('赛季积分', db.Integer, default=0, comment='赛季积分')
-    rank_season = db.Column('赛季排名', db.Integer, comment='赛季排名')
-    goals_history = db.Column('历史总进球数', db.Integer, default=0, comment='历史总进球数')
-    yellow_cards_history = db.Column('历史总黄牌数', db.Integer, default=0, comment='历史总黄牌数')
-    red_cards_history = db.Column('历史总红牌数', db.Integer, default=0, comment='历史总红牌数')
+    tournament_goals = db.Column('赛事总进球数', db.Integer, default=0, comment='赛事总进球数')
+    tournament_red_cards = db.Column('赛事红牌数', db.Integer, default=0, comment='赛事红牌数')
+    tournament_yellow_cards = db.Column('赛事黄牌数', db.Integer, default=0, comment='赛事黄牌数')
+    tournament_points = db.Column('赛事积分', db.Integer, default=0, comment='赛事积分')
+    tournament_rank = db.Column('赛事排名', db.Integer, comment='赛事排名')
     
-    # 关系（Match关系在Match模型中定义，避免循环引用）
+    # 关系
     tournament = db.relationship('Tournament', backref=db.backref('teams', lazy=True))
-    season = db.relationship('Season', backref=db.backref('teams', lazy=True))
-    events = db.relationship('Event', backref=db.backref('team', lazy=True), 
-                            foreign_keys='Event.team_id')
+    player_histories = db.relationship('PlayerTeamHistory', backref=db.backref('team', lazy=True))
     
     def __repr__(self):
         return f'<Team {self.name}>'
@@ -38,15 +33,12 @@ class Team(db.Model):
         return {
             'id': self.id,
             'name': self.name,
+            'group_id': self.group_id,
             'tournament_id': self.tournament_id,
             'tournament_name': self.tournament.name if self.tournament else None,
-            'season_id': self.season_id,
-            'goals_season': self.goals_season,
-            'yellow_cards_season': self.yellow_cards_season,
-            'red_cards_season': self.red_cards_season,
-            'points_season': self.points_season,
-            'rank_season': self.rank_season,
-            'goals_history': self.goals_history,
-            'yellow_cards_history': self.yellow_cards_history,
-            'red_cards_history': self.red_cards_history
+            'tournament_goals': self.tournament_goals,
+            'tournament_red_cards': self.tournament_red_cards,
+            'tournament_yellow_cards': self.tournament_yellow_cards,
+            'tournament_points': self.tournament_points,
+            'tournament_rank': self.tournament_rank
         }

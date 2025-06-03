@@ -1,7 +1,8 @@
 from app import db
+from datetime import datetime
 
 class Tournament(db.Model):
-    """赛事表 - 存储赛事信息"""
+    """赛事表 - 存储赛事信息（合并了赛季信息）"""
     __tablename__ = 'tournament'
     
     # 主键
@@ -9,11 +10,11 @@ class Tournament(db.Model):
     
     # 赛事信息
     name = db.Column('赛事名称', db.String(100), nullable=False, comment='赛事名称')
-    type = db.Column('赛事类型', db.String(50), nullable=False, comment='赛事类型(11人制、8人制等)')
-    participant_type = db.Column('参赛单位类型', db.String(50), comment='参赛单位类型(学院、俱乐部等)')
-    gender_restriction = db.Column('性别限制', db.String(1), default='U', comment='性别限制(M: 男，F: 女，U: 不限)')
-    
-    # 关系在其他模型中定义
+    type = db.Column('赛事类型', db.String(50), nullable=False, comment='赛事类型')
+    season_name = db.Column('赛季名称', db.String(50), nullable=False, comment='赛季名称')
+    is_grouped = db.Column('是否分组', db.Boolean, default=False, comment='是否需要分组进行')
+    season_start_time = db.Column('赛季开始时间', db.DateTime, nullable=False, comment='赛季开始时间')
+    season_end_time = db.Column('赛季结束时间', db.DateTime, nullable=False, comment='赛季结束时间')
     
     def __repr__(self):
         return f'<Tournament {self.name}>'
@@ -24,6 +25,8 @@ class Tournament(db.Model):
             'id': self.id,
             'name': self.name,
             'type': self.type,
-            'participant_type': self.participant_type,
-            'gender_restriction': self.gender_restriction
+            'season_name': self.season_name,
+            'is_grouped': self.is_grouped,
+            'season_start_time': self.season_start_time.isoformat() if self.season_start_time else None,
+            'season_end_time': self.season_end_time.isoformat() if self.season_end_time else None
         }

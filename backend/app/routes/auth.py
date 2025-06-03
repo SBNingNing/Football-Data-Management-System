@@ -4,6 +4,7 @@ from app import db
 from app.models.user import User
 from app.models.team import Team
 from app.models.player import Player
+from app.models.player_team_history import PlayerTeamHistory
 from datetime import datetime
 
 auth_bp = Blueprint('auth', __name__)
@@ -107,34 +108,65 @@ def create_team():
         return jsonify({'status': 'error', 'message': '球队名称已存在'}), 400
     
     try:
+        # 根据matchType确定赛事ID
+        match_type_to_tournament = {
+            'champions-cup': 1,  # 冠军杯
+            'women-cup': 2,      # 巾帼杯
+            'eight-man': 3       # 八人制比赛
+        }
+        tournament_id = match_type_to_tournament.get(data.get('matchType', 'champions-cup'), 1)
+        
         # 创建球队
         new_team = Team(
             name=data['teamName'],
-            tournament_id=1,  # 根据matchType设置对应的赛事ID
-            season_id=1       # 当前赛季ID
+            tournament_id=tournament_id,
+            group_id=data.get('groupId')  # 如果有分组信息
         )
         db.session.add(new_team)
         db.session.flush()  # 获取球队ID
         
-        # 创建球员
+        # 创建球员和球员-队伍历史记录
         players_data = data.get('players', [])
-        for player_data in players_data:
-            if player_data.get('name') and player_data.get('number'):
-                new_player = Player(
-                    name=player_data['name'],
-                    gender='M',  # 默认性别，可根据比赛类型调整
+        for i, player_data in enumerate(players_data):
+            if player_data.get('name'):
+                # 生成球员ID（使用简单的格式，实际应该是学号）
+                player_id = f"STU{new_team.id:03d}{i+1:02d}"
+                
+                # 检查球员是否已存在
+                existing_player = Player.query.get(player_id)
+                if not existing_player:
+                    # 创建新球员
+                    new_player = Player(
+                        id=player_id,
+                        name=player_data['name']
+                    )
+                    db.session.add(new_player)
+                
+                # 创建球员-队伍历史记录
+                player_history = PlayerTeamHistory(
+                    player_id=player_id,
+                    player_number=player_data.get('number', i+1),
                     team_id=new_team.id,
-                    season_id=1
+                    tournament_id=tournament_id
                 )
-                db.session.add(new_player)
+                db.session.add(player_history)
         
         db.session.commit()
         
         # 返回创建成功的球队信息
         team_dict = new_team.to_dict()
-        team_dict['teamName'] = team_dict['name']  # 前端期望的字段名
-        team_dict['players'] = [{'name': p.name, 'number': str(p.id)} for p in 
-                               Player.query.filter_by(team_id=new_team.id).all()]
+        team_dict['teamName'] = team_dict['name']
+        
+        # 获取球员信息
+        team_players = []
+        for history in PlayerTeamHistory.query.filter_by(team_id=new_team.id, tournament_id=tournament_id).all():
+            team_players.append({
+                'name': history.player.name,
+                'number': str(history.player_number),
+                'id': history.player_id
+            })
+        
+        team_dict['players'] = team_players
         team_dict['matchType'] = data.get('matchType', 'champions-cup')
         
         return jsonify({
@@ -157,12 +189,23 @@ def get_teams():
         
         for team in teams:
             team_dict = team.to_dict()
-            # 添加前端期望的字段名
             team_dict['teamName'] = team_dict['name']
-            # 添加球员信息
-            players = Player.query.filter_by(team_id=team.id).all()
-            team_dict['players'] = [{'name': p.name, 'number': str(p.id)} for p in players]
-            team_dict['matchType'] = 'champions-cup'  # 根据实际业务逻辑设置
+            
+            # 获取球队在当前赛事中的球员
+            team_players = []
+            for history in team.player_histories:
+                team_players.append({
+                    'name': history.player.name,
+                    'number': str(history.player_number),
+                    'id': history.player_id
+                })
+            
+            team_dict['players'] = team_players
+            
+            # 根据tournament_id确定matchType
+            tournament_to_match_type = {1: 'champions-cup', 2: 'women-cup', 3: 'eight-man'}
+            team_dict['matchType'] = tournament_to_match_type.get(team.tournament_id, 'champions-cup')
+            
             teams_data.append(team_dict)
         
         return jsonify({'status': 'success', 'data': teams_data}), 200
@@ -185,20 +228,36 @@ def update_team(team_id):
         if data.get('teamName'):
             team.name = data['teamName']
         
-        # 删除原有球员
-        Player.query.filter_by(team_id=team_id).delete()
+        # 删除原有的球员-队伍历史记录
+        PlayerTeamHistory.query.filter_by(team_id=team_id, tournament_id=team.tournament_id).delete()
         
-        # 添加新球员
+        # 添加新的球员和历史记录
         players_data = data.get('players', [])
-        for player_data in players_data:
+        for i, player_data in enumerate(players_data):
             if player_data.get('name'):
-                new_player = Player(
-                    name=player_data['name'],
-                    gender='M',
+                # 如果提供了player_id则使用，否则生成新的
+                player_id = player_data.get('id') or f"STU{team_id:03d}{i+1:02d}"
+                
+                # 检查球员是否已存在
+                existing_player = Player.query.get(player_id)
+                if not existing_player:
+                    new_player = Player(
+                        id=player_id,
+                        name=player_data['name']
+                    )
+                    db.session.add(new_player)
+                else:
+                    # 更新球员姓名
+                    existing_player.name = player_data['name']
+                
+                # 创建新的球员-队伍历史记录
+                player_history = PlayerTeamHistory(
+                    player_id=player_id,
+                    player_number=player_data.get('number', i+1),
                     team_id=team_id,
-                    season_id=1
+                    tournament_id=team.tournament_id
                 )
-                db.session.add(new_player)
+                db.session.add(player_history)
         
         db.session.commit()
         return jsonify({'status': 'success', 'message': '更新成功'}), 200
@@ -216,8 +275,8 @@ def delete_team(team_id):
         if not team:
             return jsonify({'status': 'error', 'message': '球队不存在'}), 404
         
-        # 删除关联的球员
-        Player.query.filter_by(team_id=team_id).delete()
+        # 删除关联的球员-队伍历史记录
+        PlayerTeamHistory.query.filter_by(team_id=team_id).delete()
         
         # 删除球队
         db.session.delete(team)
@@ -239,7 +298,23 @@ def get_players():
         
         for player in players:
             player_dict = player.to_dict()
-            player_dict['matchType'] = 'champions-cup'  # 根据实际业务逻辑设置
+            
+            # 获取球员当前的队伍信息
+            current_history = PlayerTeamHistory.query.filter_by(player_id=player.id).first()
+            if current_history:
+                player_dict['team_name'] = current_history.team.name
+                player_dict['team_id'] = current_history.team_id
+                player_dict['player_number'] = current_history.player_number
+                
+                # 根据tournament_id确定matchType
+                tournament_to_match_type = {1: 'champions-cup', 2: 'women-cup', 3: 'eight-man'}
+                player_dict['matchType'] = tournament_to_match_type.get(current_history.tournament_id, 'champions-cup')
+            else:
+                player_dict['team_name'] = None
+                player_dict['team_id'] = None
+                player_dict['player_number'] = None
+                player_dict['matchType'] = 'champions-cup'
+            
             players_data.append(player_dict)
         
         return jsonify({'status': 'success', 'data': players_data}), 200

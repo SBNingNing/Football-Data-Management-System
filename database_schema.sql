@@ -7,8 +7,8 @@ CREATE TABLE tournament (
     赛事ID INT PRIMARY KEY AUTO_INCREMENT,
     赛事名称 VARCHAR(100) NOT NULL,
     赛事类型 VARCHAR(50) NOT NULL,
-    性别限制 CHAR(1) NOT NULL CHECK (性别限制 IN ('M', 'F', 'U')),
     赛季名称 VARCHAR(50) NOT NULL,
+    是否分组 BOOLEAN DEFAULT FALSE COMMENT '是否需要分组进行',
     赛季开始时间 DATETIME NOT NULL,
     赛季结束时间 DATETIME NOT NULL
 );
@@ -17,65 +17,60 @@ CREATE TABLE tournament (
 CREATE TABLE team (
     球队ID INT PRIMARY KEY AUTO_INCREMENT,
     球队名称 VARCHAR(100) NOT NULL,
+    小组ID CHAR(1) NULL,
     赛事ID INT NOT NULL,
-    赛季总进球数 INT DEFAULT 0,
-    赛季红牌数 INT DEFAULT 0,
-    赛季黄牌数 INT DEFAULT 0,
-    赛季积分 INT DEFAULT 0,
-    赛季排名 INT,
-    FOREIGN KEY (赛事ID) REFERENCES tournament(赛事ID)
+    赛事总进球数 INT DEFAULT 0 CHECK (赛事总进球数 >= 0),
+    赛事红牌数 INT DEFAULT 0 CHECK (赛事红牌数 >= 0),
+    赛事黄牌数 INT DEFAULT 0 CHECK (赛事黄牌数 >= 0),
+    赛事积分 INT DEFAULT 0 CHECK (赛事积分 >= 0),
+    赛事排名 INT CHECK (赛事排名 > 0),
+    FOREIGN KEY (赛事ID) REFERENCES tournament(赛事ID),
+    INDEX idx_team_tournament (赛事ID)
 );
 
 -- 创建球员表(player) - 修改为支持一对多关系，使用学号作为主键
 CREATE TABLE player (
-     球员ID VARCHAR(20) PRIMARY KEY,
+    球员ID VARCHAR(20) PRIMARY KEY,
     球员姓名 VARCHAR(50) NOT NULL,
-    性别 CHAR(1) NOT NULL CHECK (性别 IN ('M', 'F')),
-    当前球队ID INT,
-    职业生涯总进球数 INT DEFAULT 0,
-    职业生涯总红牌数 INT DEFAULT 0,
-    职业生涯总黄牌数 INT DEFAULT 0,
-    注册时间 DATETIME DEFAULT CURRENT_TIMESTAMP,
-    状态 CHAR(1) DEFAULT 'A' CHECK (状态 IN ('A', 'I', 'R')), -- A:激活 I:非激活 R:退役
-    FOREIGN KEY (当前球队ID) REFERENCES team(球队ID)
+    职业生涯总进球数 INT DEFAULT 0 CHECK (职业生涯总进球数 >= 0),
+    职业生涯总红牌数 INT DEFAULT 0 CHECK (职业生涯总红牌数 >= 0),
+    职业生涯总黄牌数 INT DEFAULT 0 CHECK (职业生涯总黄牌数 >= 0)
 );
 
--- 创建球员转会记录表(player_team_history) - 优化支持多球队同时效力
+-- 创建球员-队伍记录表(player_team_history) 
 CREATE TABLE player_team_history (
     记录ID INT PRIMARY KEY AUTO_INCREMENT,
     球员ID VARCHAR(20) NOT NULL,
+    球员号码 INT NOT NULL,
     球队ID INT NOT NULL,
     赛事ID INT NOT NULL,
-    加入时间 DATETIME NOT NULL,
-    离开时间 DATETIME,
-    赛季进球数 INT DEFAULT 0,
-    赛季红牌数 INT DEFAULT 0,
-    赛季黄牌数 INT DEFAULT 0,
-    状态 CHAR(1) DEFAULT 'A' CHECK (状态 IN ('A', 'T', 'L')), -- A:当前激活 T:已转会 L:租借
+    赛事进球数 INT DEFAULT 0 CHECK (赛事进球数 >= 0),
+    赛事红牌数 INT DEFAULT 0 CHECK (赛事红牌数 >= 0),
+    赛事黄牌数 INT DEFAULT 0 CHECK (赛事黄牌数 >= 0),
     备注 TEXT,
     FOREIGN KEY (球员ID) REFERENCES player(球员ID),
     FOREIGN KEY (球队ID) REFERENCES team(球队ID),
     FOREIGN KEY (赛事ID) REFERENCES tournament(赛事ID),
     -- 确保同一球员在同一赛事中的同一球队不能有重复的激活记录
-    UNIQUE KEY unique_active_player_team_tournament (球员ID, 球队ID, 赛事ID, 状态),
+    UNIQUE KEY unique_active_player_team_tournament (球员ID, 球队ID, 赛事ID),
     -- 添加索引提高查询性能
-    INDEX idx_player_active (球员ID, 状态),
-    INDEX idx_team_tournament (球队ID, 赛事ID)
+    INDEX idx_team_tournament (球队ID, 赛事ID),
+    INDEX idx_player_tournament (球员ID, 赛事ID)
 );
 
 -- 创建比赛表(match) - 添加淘汰赛轮次信息
 CREATE TABLE `match` (
-    MatchID INT PRIMARY KEY AUTO_INCREMENT,
+    MatchID VARCHAR(10) PRIMARY KEY,
     比赛时间 DATETIME NOT NULL,
     比赛地点 VARCHAR(100) NOT NULL,
     主队ID INT NOT NULL,
     客队ID INT NOT NULL,
     主队比分 INT DEFAULT 0,
     客队比分 INT DEFAULT 0,
+    小组ID CHAR(1) NULL,
     赛事ID INT NOT NULL,
     比赛状态 CHAR(1) NOT NULL CHECK (比赛状态 IN ('F', 'P')),
-    比赛类型 VARCHAR(20) DEFAULT '常规赛' CHECK (比赛类型 IN ('常规赛', '淘汰赛')),
-    淘汰赛轮次 INT, -- 1:1/8决赛, 2:1/4决赛, 3:半决赛, 4:决赛
+    淘汰赛轮次 INT, -- 0:常规赛, 1:附加赛, 2:1/4决赛, 3:半决赛, 4:决赛
     FOREIGN KEY (主队ID) REFERENCES team(球队ID),
     FOREIGN KEY (客队ID) REFERENCES team(球队ID),
     FOREIGN KEY (赛事ID) REFERENCES tournament(赛事ID)

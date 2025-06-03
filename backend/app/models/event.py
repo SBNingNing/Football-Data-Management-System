@@ -9,15 +9,14 @@ class Event(db.Model):
     
     # 事件信息
     event_type = db.Column('事件类型', db.String(50), nullable=False, comment='事件类型(goal, yellow_card, red_card等)')
-    time = db.Column('事件发生时间', db.Integer, comment='事件发生时间(分钟)')
     
     # 外键关系
-    match_id = db.Column('MatchID', db.Integer, db.ForeignKey('match.MatchID'), nullable=False, comment='比赛ID')
-    team_id = db.Column('球队ID', db.Integer, db.ForeignKey('team.球队ID'), comment='球队ID')
-    player_id = db.Column('球员ID', db.Integer, db.ForeignKey('player.球员ID'), comment='球员ID')
-    season_id = db.Column('赛季ID', db.Integer, db.ForeignKey('season.赛季ID'), comment='赛季ID')
+    match_id = db.Column('MatchID', db.String(10), db.ForeignKey('match.MatchID'), nullable=False, comment='比赛ID')
+    team_id = db.Column('球队ID', db.Integer, db.ForeignKey('team.球队ID'), nullable=False, comment='球队ID')
+    player_id = db.Column('球员ID', db.String(20), db.ForeignKey('player.球员ID'), nullable=False, comment='球员ID')
     
-    # 关系在其他模型中定义
+    # 关系
+    team = db.relationship('Team', backref=db.backref('events', lazy=True))
     
     def __repr__(self):
         return f'<Event {self.id} {self.event_type}>'
@@ -27,11 +26,9 @@ class Event(db.Model):
         return {
             'id': self.id,
             'event_type': self.event_type,
-            'time': self.time,
             'match_id': self.match_id,
             'team_id': self.team_id,
             'team_name': self.team.name if self.team else None,
             'player_id': self.player_id,
-            'player_name': self.player.name if hasattr(self, 'player') and self.player else None,
-            'season_id': self.season_id
+            'player_name': self.player.name if self.player else None
         }
