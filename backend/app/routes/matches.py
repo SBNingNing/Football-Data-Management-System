@@ -43,6 +43,7 @@ def create_match():
         # 创建比赛
         new_match = Match(
             id=match_id,
+            match_name=data['matchName'],
             match_time=match_time,
             location=data['location'],
             home_team_id=team1.id,
@@ -55,7 +56,7 @@ def create_match():
         
         # 返回比赛信息
         match_dict = new_match.to_dict()
-        match_dict['matchName'] = data['matchName']
+        match_dict['matchName'] = match_dict['match_name']
         match_dict['team1'] = data['team1']
         match_dict['team2'] = data['team2']
         match_dict['date'] = data['date']
@@ -83,7 +84,7 @@ def get_matches():
         
         for match in matches:
             match_dict = match.to_dict()
-            match_dict['matchName'] = f"{match.home_team.name} vs {match.away_team.name}"
+            match_dict['matchName'] = match_dict['match_name']
             match_dict['team1'] = match.home_team.name
             match_dict['team2'] = match.away_team.name
             match_dict['date'] = match.match_time.isoformat() if match.match_time else None
@@ -110,6 +111,8 @@ def update_match(match_id):
             return jsonify({'status': 'error', 'message': '比赛不存在'}), 404
         
         # 更新比赛信息
+        if data.get('matchName'):
+            match.match_name = data['matchName']
         if data.get('date'):
             match.match_time = datetime.fromisoformat(data['date'].replace('Z', '+00:00'))
         if data.get('location'):

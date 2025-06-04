@@ -9,6 +9,7 @@ class Match(db.Model):
     id = db.Column('MatchID', db.String(50), primary_key=True, comment='MatchID')
     
     # 比赛信息
+    match_name = db.Column('比赛名称', db.String(50), nullable=False, comment='比赛名称')
     match_time = db.Column('比赛时间', db.DateTime, nullable=False, comment='比赛时间')
     location = db.Column('比赛地点', db.String(50), nullable=False, comment='比赛地点')
     home_score = db.Column('主队比分', db.Integer, default=0, comment='主队比分')
@@ -37,6 +38,7 @@ class Match(db.Model):
         """将对象转换为字典，便于API返回JSON"""
         return {
             'id': self.id,
+            'match_name': self.match_name,
             'match_time': self.match_time.isoformat() if self.match_time else None,
             'location': self.location,
             'home_team_id': self.home_team_id,

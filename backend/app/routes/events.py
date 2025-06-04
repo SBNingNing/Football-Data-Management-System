@@ -45,29 +45,34 @@ def create_event():
             return jsonify({'status': 'error', 'message': '事件时间格式错误'}), 405
         
         # 根据比赛名称查找比赛
-        # 直接使用比赛名称查找，不强制要求包含 "vs"
         match = None
         
-        # 首先尝试直接匹配比赛ID（如果传入的是ID格式）
-        try:
-            match = Match.query.filter_by(id=data['matchName']).first()
-        except:
-            pass
+        # 首先尝试根据比赛名称查找
+        match = Match.query.filter_by(match_name=data['matchName']).first()
         
-        # 如果没找到，尝试解析包含 "vs" 的格式
-        if not match and ' vs ' in data['matchName']:
-            match_teams = data['matchName'].split(' vs ')
-            if len(match_teams) == 2:
-                home_team = Team.query.filter_by(name=match_teams[0].strip()).first()
-                away_team = Team.query.filter_by(name=match_teams[1].strip()).first()
-                
-                if home_team and away_team:
-                    match = Match.query.filter(
-                        db.or_(
-                            db.and_(Match.home_team_id == home_team.id, Match.away_team_id == away_team.id),
-                            db.and_(Match.home_team_id == away_team.id, Match.away_team_id == home_team.id)
-                        )
-                    ).first()
+        # 如果没找到，尝试直接匹配比赛ID（如果传入的是ID格式）
+        if not match:
+            try:
+                match = Match.query.filter_by(id=data['matchName']).first()
+            except:
+                pass
+        
+        # 如果还没找到，尝试根据主队vs客队格式查找
+        if not match and 'vs' in data['matchName']:
+            try:
+                team_names = data['matchName'].split(' vs ')
+                if len(team_names) == 2:
+                    team1_name, team2_name = team_names[0].strip(), team_names[1].strip()
+                    matches = Match.query.join(Team, Match.home_team_id == Team.id)\
+                                       .join(Team, Match.away_team_id == Team.id, aliased=True)\
+                                       .all()
+                    for m in matches:
+                        if ((m.home_team.name == team1_name and m.away_team.name == team2_name) or
+                            (m.home_team.name == team2_name and m.away_team.name == team1_name)):
+                            match = m
+                            break
+            except:
+                pass
         
         if not match:
             return jsonify({'status': 'error', 'message': f'比赛不存在: {data["matchName"]}'}), 406
@@ -142,16 +147,20 @@ def get_events():
                 # 分别查询关联数据
                 match = Match.query.get(event.match_id)
                 if match:
-                    home_team = Team.query.get(match.home_team_id)
-                    away_team = Team.query.get(match.away_team_id)
-                    
-                    if home_team and away_team:
-                        event_dict['matchName'] = f"{home_team.name} vs {away_team.name}"
-                        tournament_to_match_type = {1: 'champions-cup', 2: 'womens-cup', 3: 'eight-a-side'}
-                        event_dict['matchType'] = tournament_to_match_type.get(match.tournament_id, 'champions-cup')
+                    # 优先使用比赛名称，如果没有则使用主队vs客队格式
+                    if match.match_name:
+                        event_dict['matchName'] = match.match_name
                     else:
-                        event_dict['matchName'] = '未知比赛'
-                        event_dict['matchType'] = 'champions-cup'
+                        home_team = Team.query.get(match.home_team_id)
+                        away_team = Team.query.get(match.away_team_id)
+                        
+                        if home_team and away_team:
+                            event_dict['matchName'] = f"{home_team.name} vs {away_team.name}"
+                        else:
+                            event_dict['matchName'] = '未知比赛'
+                    
+                    tournament_to_match_type = {1: 'champions-cup', 2: 'womens-cup', 3: 'eight-a-side'}
+                    event_dict['matchType'] = tournament_to_match_type.get(match.tournament_id, 'champions-cup')
                 else:
                     event_dict['matchName'] = '未知比赛'
                     event_dict['matchType'] = 'champions-cup'

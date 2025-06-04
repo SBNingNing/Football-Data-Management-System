@@ -68,7 +68,8 @@ CREATE TABLE player_team_history (
 
 -- 创建比赛表(match) - 添加淘汰赛轮次信息
 CREATE TABLE `match` (
-    MatchID VARCHAR(50) PRIMARY KEY, -- 示例：冠军杯第一轮地空VS化院
+    MatchID VARCHAR(50) PRIMARY KEY, 
+    比赛名称 VARCHAR(50) NOT NULL,
     赛事ID INT NOT NULL, -- 指明比赛赛事赛季信息
     小组ID CHAR(1) NULL,
     比赛时间 DATETIME NOT NULL,
