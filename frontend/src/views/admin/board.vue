@@ -118,10 +118,10 @@
                       </div>
                       <div class="event-inputs">
                         <el-select v-model="event.eventType" placeholder="事件类型" class="event-input">
-                          <el-option label="进球" value="goal"></el-option>
-                          <el-option label="红牌" value="redCard"></el-option>
-                          <el-option label="黄牌" value="yellowCard"></el-option>
-                          <el-option label="乌龙球" value="ownGoal"></el-option>
+                          <el-option label="进球" value="进球"></el-option>
+                          <el-option label="红牌" value="红牌"></el-option>
+                          <el-option label="黄牌" value="黄牌"></el-option>
+                          <el-option label="乌龙球" value="乌龙球"></el-option>
                         </el-select>
                         <el-select v-model="event.playerName" placeholder="选择球员" class="event-input">
                           <el-option v-for="player in currentMatchPlayers" :key="player.id" :label="player.name" :value="player.name"></el-option>

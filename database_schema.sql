@@ -87,10 +87,11 @@ CREATE TABLE `match` (
 -- 创建事件表(event) - 修复 MatchID 字段类型
 CREATE TABLE event (
     eventID INT PRIMARY KEY AUTO_INCREMENT,
-    MatchID VARCHAR(10) NOT NULL,
+    MatchID VARCHAR(50) NOT NULL,
     事件类型 VARCHAR(50) NOT NULL,
     球队ID INT NOT NULL,
     球员ID VARCHAR(20) NOT NULL,
+    事件时间 INT NULL COMMENT '事件发生时间（比赛第几分钟）',
     FOREIGN KEY (MatchID) REFERENCES `match`(MatchID),
     FOREIGN KEY (球队ID) REFERENCES team(球队ID),
     FOREIGN KEY (球员ID) REFERENCES player(球员ID)

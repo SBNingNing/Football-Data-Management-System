@@ -331,16 +331,29 @@ export const useUserStore = defineStore('user', {
       this.error = null
       
       try {
+        console.log('正在获取事件数据...');
         const response = await axios.get('/api/events')
+        console.log('事件API响应:', response);
+        
         const eventsData = this._handleApiResponse(response, '事件数据')
+        console.log('处理后的事件数据:', eventsData);
         
         this.events = eventsData
         this.loading = false
         return { success: true, data: eventsData }
       } catch (error) {
+        console.error('获取事件数据失败:', error);
+        console.error('错误详情:', error.response?.data);
+        
         this.loading = false
         this.events = [] // 确保出错时清空数据
-        return this._handleApiError(error, '获取事件列表')
+        
+        // 提供更详细的错误信息
+        const errorMessage = error.response?.data?.message || 
+                           error.response?.data?.error || 
+                           '获取事件列表失败';
+        
+        return { success: false, error: errorMessage }
       }
     },
     
@@ -349,17 +362,29 @@ export const useUserStore = defineStore('user', {
       this.error = null
       
       try {
+        console.log('正在更新事件:', eventId, eventData);
         const response = await axios.put(`/api/events/${eventId}`, eventData)
+        console.log('更新事件响应:', response);
+        
         this.loading = false
         
         if (response.data.status === 'success') {
+          // 更新成功后重新获取事件列表
           await this.fetchEvents()
           return { success: true, data: response.data }
         }
         return { success: false, error: response.data.message }
       } catch (error) {
+        console.error('更新事件失败:', error);
+        console.error('错误详情:', error.response?.data);
+        
         this.loading = false
-        return this._handleApiError(error, '更新事件')
+        
+        const errorMessage = error.response?.data?.message || 
+                           error.response?.data?.error || 
+                           '更新事件失败';
+        
+        return { success: false, error: errorMessage }
       }
     },
     
