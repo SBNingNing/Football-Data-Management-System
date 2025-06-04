@@ -14,7 +14,6 @@ class Match(db.Model):
     home_score = db.Column('主队比分', db.Integer, default=0, comment='主队比分')
     away_score = db.Column('客队比分', db.Integer, default=0, comment='客队比分')
     group_id = db.Column('小组ID', db.String(1), comment='小组ID')
-    game_round = db.Column('比赛轮次',db.Integer,default = 0,comment='比赛轮次')
     status = db.Column('比赛状态', db.String(1), default='P', comment='比赛状态(F: 已结束，P: 未结束)')
     knockout_round = db.Column('淘汰赛轮次', db.Integer, comment='淘汰赛轮次(0:常规赛, 1:附加赛, 2:1/4决赛, 3:半决赛, 4:决赛)')
     
@@ -47,7 +46,6 @@ class Match(db.Model):
             'home_score': self.home_score,
             'away_score': self.away_score,
             'group_id': self.group_id,
-            'game_round':self.game_round,
             'tournament_id': self.tournament_id,
             'tournament_name': self.tournament.name if self.tournament else None,
             'status': self.status,

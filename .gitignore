@@ -22,6 +22,7 @@ yarn-error.log*
 # 环境变量文件
 .env.local
 .env.*.local
+.env
 
 # Python 字节码文件
 __pycache__/
@@ -37,5 +38,5 @@ ENV/
 *.db
 *.sqlite
 
-# 忽略配置文件
+# 配置文件（包含敏感信息）
 backend/app/config.py

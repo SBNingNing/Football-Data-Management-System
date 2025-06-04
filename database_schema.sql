@@ -71,7 +71,6 @@ CREATE TABLE `match` (
     MatchID VARCHAR(50) PRIMARY KEY, -- 示例：冠军杯第一轮地空VS化院
     赛事ID INT NOT NULL, -- 指明比赛赛事赛季信息
     小组ID CHAR(1) NULL,
-    比赛轮次 INT, -- 指明第几轮，便于在前端查询榜单中标明
     比赛时间 DATETIME NOT NULL,
     比赛地点 VARCHAR(50) NOT NULL,
     主队ID INT NOT NULL,
