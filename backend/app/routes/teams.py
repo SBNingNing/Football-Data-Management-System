@@ -7,68 +7,202 @@ from app.models.player_team_history import PlayerTeamHistory
 
 teams_bp = Blueprint('teams', __name__)
 
-@teams_bp.route('', methods=['GET'])
-def get_teams():
-    """获取所有球队信息（公共接口）"""
+def determine_match_type(tournament):
+    """根据赛事名称确定matchType"""
+    if tournament:
+        tournament_name = tournament.name.lower()
+        if '冠军杯' in tournament_name or 'champions' in tournament_name:
+            return 'champions-cup'
+        elif '巾帼杯' in tournament_name or 'womens' in tournament_name:
+            return 'womens-cup'
+        elif '八人制' in tournament_name or 'eight' in tournament_name:
+            return 'eight-a-side'
+        else:
+            return 'champions-cup'
+    else:
+        return 'champions-cup'
+
+@teams_bp.route('/<team_name>', methods=['GET'])
+def get_team(team_name):
+    """根据球队名称获取球队统计信息和历史记录"""
     try:
-        teams = Team.query.all()
-        teams_data = []
+        # 查询该球队名称的所有记录
+        team_records = Team.query.filter_by(name=team_name).all()
+        if not team_records:
+            return jsonify({'status': 'error', 'message': '球队不存在'}), 404
         
-        for team in teams:
-            team_dict = team.to_dict()
-            team_dict['teamName'] = team_dict['name']
+        # 统计总数据
+        total_goals = sum(record.tournament_goals for record in team_records)
+        total_goals_conceded = sum(record.tournament_goals_conceded for record in team_records)
+        total_goal_difference = sum(record.tournament_goal_difference for record in team_records)
+        total_red_cards = sum(record.tournament_red_cards for record in team_records)
+        total_yellow_cards = sum(record.tournament_yellow_cards for record in team_records)
+        total_points = sum(record.tournament_points for record in team_records)
+        
+        # 计算历史最好排名（最小的非零排名）
+        valid_ranks = [record.tournament_rank for record in team_records if record.tournament_rank and record.tournament_rank > 0]
+        best_rank = min(valid_ranks) if valid_ranks else None
+        
+        # 构建返回数据
+        team_info = {
+            'teamName': team_name,
+            'totalGoals': total_goals,
+            'totalGoalsConceded': total_goals_conceded,
+            'totalGoalDifference': total_goal_difference,
+            'totalRedCards': total_red_cards,
+            'totalYellowCards': total_yellow_cards,
+            'totalPoints': total_points,
+            'bestRank': best_rank,
+            'records': []
+        }
+        
+        # 添加每条记录的详细信息
+        for record in team_records:
+            record_dict = record.to_dict()
+            record_dict['teamName'] = record_dict['name']
             
-            # 获取球队在当前赛事中的球员
+            # 根据赛事名称确定matchType
+            record_dict['matchType'] = determine_match_type(record.tournament)
+            
+            # 获取该记录对应的球员信息（从PlayerTeamHistory中获取）
             team_players = []
-            for history in team.player_histories:
+            player_histories = PlayerTeamHistory.query.filter_by(
+                team_id=record.id, 
+                tournament_id=record.tournament_id
+            ).all()
+            
+            for history in player_histories:
                 team_players.append({
                     'name': history.player.name,
-                    'number': str(history.player_number),
+                    'playerId': history.player_id,
                     'studentId': history.player_id,
-                    'id': history.player_id
+                    'id': history.player_id,
+                    'number': str(history.player_number),
+                    'goals': history.tournament_goals,
+                    'redCards': history.tournament_red_cards,
+                    'yellowCards': history.tournament_yellow_cards
                 })
             
-            team_dict['players'] = team_players
+            record_dict['players'] = team_players
             
-            # 根据tournament_id确定matchType
-            tournament_to_match_type = {1: 'champions-cup', 2: 'womens-cup', 3: 'eight-a-side'}
-            team_dict['matchType'] = tournament_to_match_type.get(team.tournament_id, 'champions-cup')
+            # 添加详细统计信息
+            record_dict.update({
+                'rank': record.tournament_rank,
+                'goals': record.tournament_goals,
+                'goalsConceded': record.tournament_goals_conceded,
+                'goalDifference': record.tournament_goal_difference,
+                'redCards': record.tournament_red_cards,
+                'yellowCards': record.tournament_yellow_cards,
+                'points': record.tournament_points,
+                'tournamentId': record.tournament_id,
+                'tournamentName': record.tournament.name if record.tournament else None
+            })
             
-            teams_data.append(team_dict)
+            team_info['records'].append(record_dict)
         
-        return jsonify({'status': 'success', 'data': teams_data}), 200
+        return jsonify({'status': 'success', 'data': team_info}), 200
         
     except Exception as e:
         return jsonify({'status': 'error', 'message': f'获取失败: {str(e)}'}), 500
 
-@teams_bp.route('/<int:team_id>', methods=['GET'])
-def get_team(team_id):
-    """获取单个球队信息"""
+@teams_bp.route('', methods=['GET'])
+def get_teams():
+    """获取所有球队信息（公共接口）"""
     try:
-        team = Team.query.get(team_id)
-        if not team:
-            return jsonify({'status': 'error', 'message': '球队不存在'}), 404
+        # 检查是否需要按球队名称分组
+        group_by_name = request.args.get('group_by_name', 'false').lower() == 'true'
         
-        team_dict = team.to_dict()
-        team_dict['teamName'] = team_dict['name']
-        
-        # 获取球员信息
-        team_players = []
-        for history in team.player_histories:
-            team_players.append({
-                'name': history.player.name,
-                'number': str(history.player_number),
-                'studentId': history.player_id,
-                'id': history.player_id
-            })
-        
-        team_dict['players'] = team_players
-        
-        # 根据tournament_id确定matchType
-        tournament_to_match_type = {1: 'champions-cup', 2: 'womens-cup', 3: 'eight-a-side'}
-        team_dict['matchType'] = tournament_to_match_type.get(team.tournament_id, 'champions-cup')
-        
-        return jsonify({'status': 'success', 'data': team_dict}), 200
+        if group_by_name:
+            # 按球队名称分组返回统计信息
+            teams = Team.query.all()
+            teams_grouped = {}
+            
+            for team in teams:
+                team_name = team.name
+                if team_name not in teams_grouped:
+                    teams_grouped[team_name] = {
+                        'teamName': team_name,
+                        'totalGoals': 0,
+                        'totalGoalsConceded': 0,
+                        'totalGoalDifference': 0,
+                        'totalRedCards': 0,
+                        'totalYellowCards': 0,
+                        'totalPoints': 0,
+                        'bestRank': None,
+                        'tournaments': []
+                    }
+                
+                # 累加统计数据
+                teams_grouped[team_name]['totalGoals'] += team.tournament_goals
+                teams_grouped[team_name]['totalGoalsConceded'] += team.tournament_goals_conceded
+                teams_grouped[team_name]['totalGoalDifference'] += team.tournament_goal_difference
+                teams_grouped[team_name]['totalRedCards'] += team.tournament_red_cards
+                teams_grouped[team_name]['totalYellowCards'] += team.tournament_yellow_cards
+                teams_grouped[team_name]['totalPoints'] += team.tournament_points
+                
+                # 更新最好排名
+                if team.tournament_rank and team.tournament_rank > 0:
+                    current_best = teams_grouped[team_name]['bestRank']
+                    if current_best is None or team.tournament_rank < current_best:
+                        teams_grouped[team_name]['bestRank'] = team.tournament_rank
+                
+                # 添加赛事信息
+                teams_grouped[team_name]['tournaments'].append({
+                    'tournament_id': team.tournament_id,
+                    'matchType': determine_match_type(team.tournament),
+                    'tournament_name': team.tournament.name if team.tournament else None
+                })
+            
+            return jsonify({'status': 'success', 'data': list(teams_grouped.values())}), 200
+        else:
+            # 原有逻辑：返回所有球队记录
+            teams = Team.query.all()
+            teams_data = []
+            
+            for team in teams:
+                team_dict = team.to_dict()
+                team_dict['teamName'] = team_dict['name']
+                
+                # 获取球队在当前赛事中的球员信息（从PlayerTeamHistory中获取）
+                team_players = []
+                player_histories = PlayerTeamHistory.query.filter_by(
+                    team_id=team.id, 
+                    tournament_id=team.tournament_id
+                ).all()
+                
+                for history in player_histories:
+                    team_players.append({
+                        'name': history.player.name,
+                        'playerId': history.player_id,
+                        'studentId': history.player_id,
+                        'id': history.player_id,
+                        'number': str(history.player_number),
+                        'goals': history.tournament_goals,
+                        'redCards': history.tournament_red_cards,
+                        'yellowCards': history.tournament_yellow_cards
+                    })
+                
+                team_dict['players'] = team_players
+                
+                # 根据赛事名称确定matchType
+                team_dict['matchType'] = determine_match_type(team.tournament)
+                
+                # 添加详细统计信息
+                team_dict.update({
+                    'rank': team.tournament_rank,
+                    'goals': team.tournament_goals,
+                    'goalsConceded': team.tournament_goals_conceded,
+                    'goalDifference': team.tournament_goal_difference,
+                    'redCards': team.tournament_red_cards,
+                    'yellowCards': team.tournament_yellow_cards,
+                    'points': team.tournament_points,
+                    'tournamentId': team.tournament_id,
+                    'tournamentName': team.tournament.name if team.tournament else None
+                })
+                
+                teams_data.append(team_dict)
+            
+            return jsonify({'status': 'success', 'data': teams_data}), 200
         
     except Exception as e:
         return jsonify({'status': 'error', 'message': f'获取失败: {str(e)}'}), 500
@@ -82,20 +216,20 @@ def create_team():
     if not data or not data.get('teamName'):
         return jsonify({'status': 'error', 'message': '球队名称不能为空'}), 400
     
-    # 检查球队名称是否已存在
-    existing_team = Team.query.filter_by(name=data['teamName']).first()
+    # 根据matchType确定赛事ID
+    match_type_to_tournament = {
+        'champions-cup': 1,  # 冠军杯
+        'womens-cup': 2,     # 巾帼杯
+        'eight-a-side': 3    # 八人制比赛
+    }
+    tournament_id = match_type_to_tournament.get(data.get('matchType', 'champions-cup'), 1)
+    
+    # 检查在同一赛事中球队名称是否已存在
+    existing_team = Team.query.filter_by(name=data['teamName'], tournament_id=tournament_id).first()
     if existing_team:
-        return jsonify({'status': 'error', 'message': '球队名称已存在'}), 400
+        return jsonify({'status': 'error', 'message': '该赛事中球队名称已存在'}), 400
     
     try:
-        # 根据matchType确定赛事ID
-        match_type_to_tournament = {
-            'champions-cup': 1,  # 冠军杯
-            'womens-cup': 2,     # 巾帼杯
-            'eight-a-side': 3    # 八人制比赛
-        }
-        tournament_id = match_type_to_tournament.get(data.get('matchType', 'champions-cup'), 1)
-        
         # 创建球队
         new_team = Team(
             name=data['teamName'],
@@ -138,18 +272,35 @@ def create_team():
         team_dict = new_team.to_dict()
         team_dict['teamName'] = team_dict['name']
         
-        # 获取球员信息
+        # 获取球员信息（保持与其他接口一致的格式）
         team_players = []
         for history in PlayerTeamHistory.query.filter_by(team_id=new_team.id, tournament_id=tournament_id).all():
             team_players.append({
                 'name': history.player.name,
-                'number': str(history.player_number),
+                'playerId': history.player_id,
                 'studentId': history.player_id,
-                'id': history.player_id
+                'id': history.player_id,
+                'number': str(history.player_number),
+                'goals': history.tournament_goals,
+                'redCards': history.tournament_red_cards,
+                'yellowCards': history.tournament_yellow_cards
             })
         
         team_dict['players'] = team_players
-        team_dict['matchType'] = data.get('matchType', 'champions-cup')
+        team_dict['matchType'] = determine_match_type(new_team.tournament)
+        
+        # 添加详细统计信息
+        team_dict.update({
+            'rank': new_team.tournament_rank,
+            'goals': new_team.tournament_goals,
+            'goalsConceded': new_team.tournament_goals_conceded,
+            'goalDifference': new_team.tournament_goal_difference,
+            'redCards': new_team.tournament_red_cards,
+            'yellowCards': new_team.tournament_yellow_cards,
+            'points': new_team.tournament_points,
+            'tournamentId': new_team.tournament_id,
+            'tournamentName': new_team.tournament.name if new_team.tournament else None
+        })
         
         return jsonify({
             'status': 'success', 

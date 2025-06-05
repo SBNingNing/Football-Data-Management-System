@@ -28,6 +28,8 @@ CREATE TABLE team (
     小组ID CHAR(1) NULL,
     赛事ID INT NOT NULL,
     赛事总进球数 INT DEFAULT 0 CHECK (赛事总进球数 >= 0),
+    赛事总失球数量 INT DEFAULT 0 CHECK (赛事总失球数量 >= 0),
+    赛事总净胜球 INT DEFAULT 0,
     赛事红牌数 INT DEFAULT 0 CHECK (赛事红牌数 >= 0),
     赛事黄牌数 INT DEFAULT 0 CHECK (赛事黄牌数 >= 0),
     赛事积分 INT DEFAULT 0 CHECK (赛事积分 >= 0),

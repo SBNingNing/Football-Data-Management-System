@@ -1,4 +1,4 @@
-<template>
+ <template>
   <div>
     <!-- 比赛类型选择 -->
     <el-form ref="matchTypeForm" :model="matchTypeForm" label-width="120px" class="match-type-form">

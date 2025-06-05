@@ -166,10 +166,12 @@ export default {
     },
     getEventTypeLabel(type) {
       const labels = {
-        'goal': '进球',
-        'redCard': '红牌',
-        'yellowCard': '黄牌',
-        'ownGoal': '乌龙球'
+        '进球': '进球',
+        '红牌': '红牌', 
+        '黄牌': '黄牌',
+        '乌龙球': '乌龙球',
+        // 兼容旧的英文格式
+
       };
       return labels[type] || type;
     },

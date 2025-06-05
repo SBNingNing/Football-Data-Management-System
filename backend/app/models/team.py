@@ -16,6 +16,8 @@ class Team(db.Model):
     
     # 统计数据
     tournament_goals = db.Column('赛事总进球数', db.Integer, default=0, comment='赛事总进球数')
+    tournament_goals_conceded = db.Column('赛事总失球数量', db.Integer, default=0, comment='赛事总失球数量')
+    tournament_goal_difference = db.Column('赛事总净胜球', db.Integer, default=0, comment='赛事总净胜球')
     tournament_red_cards = db.Column('赛事红牌数', db.Integer, default=0, comment='赛事红牌数')
     tournament_yellow_cards = db.Column('赛事黄牌数', db.Integer, default=0, comment='赛事黄牌数')
     tournament_points = db.Column('赛事积分', db.Integer, default=0, comment='赛事积分')
@@ -38,6 +40,8 @@ class Team(db.Model):
             'tournament_id': self.tournament_id,
             'tournament_name': self.tournament.name if self.tournament else None,
             'tournament_goals': self.tournament_goals,
+            'tournament_goals_conceded': self.tournament_goals_conceded,
+            'tournament_goal_difference': self.tournament_goal_difference,
             'tournament_red_cards': self.tournament_red_cards,
             'tournament_yellow_cards': self.tournament_yellow_cards,
             'tournament_points': self.tournament_points,

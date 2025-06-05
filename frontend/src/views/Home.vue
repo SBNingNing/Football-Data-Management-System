@@ -51,7 +51,7 @@
       <!-- 赛事类型卡片区域 -->
       <el-row :gutter="20" class="match-types">
         <el-col :span="8">
-          <el-card shadow="hover" @click.native="$router.push('/matches/champions-cup')">
+          <el-card shadow="hover" @click.native="$router.push('/tournament')">
             <div class="match-type-card">
               <i class="el-icon-trophy"></i>
               <h3>冠军杯</h3>
@@ -61,7 +61,7 @@
         </el-col>
 
         <el-col :span="8">
-          <el-card shadow="hover" @click.native="$router.push('/matches/womens-cup')">
+          <el-card shadow="hover" @click.native="$router.push('/tournament')">
             <div class="match-type-card">
               <i class="el-icon-female"></i>
               <h3>巾帼杯</h3>
@@ -71,7 +71,7 @@
         </el-col>
 
         <el-col :span="8">
-          <el-card shadow="hover" @click.native="$router.push('/matches/eight-a-side')">
+          <el-card shadow="hover" @click.native="$router.push('/tournament')">
             <div class="match-type-card">
               <i class="el-icon-football"></i>
               <h3>八人制比赛</h3>

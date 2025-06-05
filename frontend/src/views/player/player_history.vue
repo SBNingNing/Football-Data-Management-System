@@ -121,58 +121,105 @@ export default {
     return {
       activeSeason: null,
       player: {
-        name: '张三',
-        totalGoals: 120,
-        totalYellowCards: 30,
-        totalRedCards: 5,
-        seasons: [
-          {
-            year: '2023',
-            totalGoals: 20,
-            totalYellowCards: 5,
-            totalRedCards: 1,
-            leagues: [
-              {
-                name: '冠军杯',
-                team: '红牛队',
-                goals: 10,
-                yellowCards: 3,
-                redCards: 1
-              },
-              {
-                name: '八人制比赛',
-                team: '蓝狮队',
-                goals: 10,
-                yellowCards: 2,
-                redCards: 0
-              }
-            ]
-          },
-          {
-            year: '2022',
-            totalGoals: 18,
-            totalYellowCards: 4,
-            totalRedCards: 0,
-            leagues: [
-              {
-                name: '冠军杯',
-                team: '蓝狮队',
-                goals: 9,
-                yellowCards: 2,
-                redCards: 0
-              },
-              {
-                name: '八人制比赛',
-                team: '红牛队',
-                goals: 9,
-                yellowCards: 2,
-                redCards: 0
-              }
-            ]
-          }
-        ]
+        name: '',
+        totalGoals: 0,
+        totalYellowCards: 0,
+        totalRedCards: 0,
+        seasons: [],
+        currentTeam: '',
+        currentTournament: ''
       }
     };
+  },
+  async mounted() {
+    await this.loadPlayerData();
+  },
+  methods: {
+    async loadPlayerData() {
+      try {
+        // 从路由参数获取球员ID
+        const playerId = this.$route.query.playerId || this.$route.params.playerId;
+        if (!playerId) {
+          this.$message.error('未指定球员ID');
+          return;
+        }
+        
+        // 使用后端的获取单个球员信息接口
+        const response = await this.$http.get(`/api/players/${playerId}`);
+        
+        if (response.data.status === 'success') {
+          const playerData = response.data.data;
+          
+          // 适配后端返回的数据结构
+          this.player = {
+            name: playerData.name,
+            studentId: playerData.id,
+            currentTeam: playerData.team_name || '暂无队伍',
+            currentTournament: playerData.tournament_name || '暂无赛事',
+            currentSeason: playerData.season_name || '暂无赛季',
+            matchType: playerData.matchType || 'champions-cup',
+            playerNumber: playerData.player_number || 0,
+            totalGoals: playerData.career_goals || 0,
+            totalYellowCards: playerData.career_yellow_cards || 0,
+            totalRedCards: playerData.career_red_cards || 0,
+            seasons: this.formatSeasonsData(playerData.seasons || [])
+          };
+        } else {
+          this.$message.error(response.data.message || '获取球员数据失败');
+        }
+      } catch (error) {
+        console.error('加载球员数据失败:', error);
+        if (error.response && error.response.status === 404) {
+          this.$message.error('球员不存在');
+        } else {
+          this.$message.error('网络错误，无法获取球员数据');
+        }
+      }
+    },
+
+    formatSeasonsData(seasonsData) {
+      // 将后端返回的seasons数据格式化为前端需要的格式
+      if (!Array.isArray(seasonsData)) {
+        console.warn('seasonsData is not an array:', seasonsData);
+        return [];
+      }
+
+      return seasonsData.map(season => {
+        const leagues = [];
+        
+        try {
+          // 遍历该赛季的所有赛事
+          const tournaments = season.tournaments || {};
+          if (typeof tournaments === 'object' && tournaments !== null) {
+            Object.values(tournaments).forEach(tournament => {
+              if (tournament && Array.isArray(tournament.teams)) {
+                tournament.teams.forEach(team => {
+                  if (team) {
+                    leagues.push({
+                      name: tournament.tournament_name || '未知赛事',
+                      team: team.team_name || '未知队伍',
+                      goals: Number(team.tournament_goals) || 0,
+                      yellowCards: Number(team.tournament_yellow_cards) || 0,
+                      redCards: Number(team.tournament_red_cards) || 0
+                    });
+                  }
+                });
+              }
+            });
+          }
+        } catch (error) {
+          console.error('Error processing tournaments for season:', season, error);
+        }
+
+        return {
+          year: season.season_name || '未知赛季',
+          totalGoals: Number(season.total_goals) || 0,
+          totalYellowCards: Number(season.total_yellow_cards) || 0,
+          totalRedCards: Number(season.total_red_cards) || 0,
+          leagues: leagues
+        };
+      });
+    }
   }
 };
 </script>
