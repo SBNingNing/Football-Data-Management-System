@@ -44,6 +44,10 @@ const routes = [
   },
   {
     path: '/tournament',
+    redirect: '/home'
+  },
+  {
+    path: '/tournament/:tournamentName',
     name: 'TournamentHistory',
     component: TournamentHistory
   }

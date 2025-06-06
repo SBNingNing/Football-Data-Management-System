@@ -6,9 +6,25 @@ from app.models.match import Match
 from app.models.player import Player
 from app.models.team import Team
 from app.models.player_team_history import PlayerTeamHistory
+from app.models.tournament import Tournament
 import logging
 
 events_bp = Blueprint('events', __name__)
+
+def determine_match_type(tournament):
+    """根据赛事名称确定matchType"""
+    if tournament:
+        tournament_name = tournament.name.lower()
+        if '冠军杯' in tournament_name or 'champions' in tournament_name:
+            return 'champions-cup'
+        elif '巾帼杯' in tournament_name or 'womens' in tournament_name:
+            return 'womens-cup'
+        elif '八人制' in tournament_name or 'eight' in tournament_name:
+            return 'eight-a-side'
+        else:
+            return 'champions-cup'
+    else:
+        return 'champions-cup'
 
 # 配置日志
 logging.basicConfig(level=logging.INFO)
@@ -117,8 +133,8 @@ def create_event():
         event_dict = new_event.to_dict()
         event_dict['matchName'] = data['matchName']
         
-        tournament_to_match_type = {1: 'champions-cup', 2: 'womens-cup', 3: 'eight-a-side'}
-        event_dict['matchType'] = tournament_to_match_type.get(match.tournament_id, 'champions-cup')
+        tournament = Tournament.query.get(match.tournament_id)
+        event_dict['matchType'] = determine_match_type(tournament)
         
         return jsonify({
             'status': 'success',
@@ -159,8 +175,8 @@ def get_events():
                         else:
                             event_dict['matchName'] = '未知比赛'
                     
-                    tournament_to_match_type = {1: 'champions-cup', 2: 'womens-cup', 3: 'eight-a-side'}
-                    event_dict['matchType'] = tournament_to_match_type.get(match.tournament_id, 'champions-cup')
+                    tournament = Tournament.query.get(match.tournament_id)
+                    event_dict['matchType'] = determine_match_type(tournament)
                 else:
                     event_dict['matchName'] = '未知比赛'
                     event_dict['matchType'] = 'champions-cup'

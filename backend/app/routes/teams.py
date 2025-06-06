@@ -373,15 +373,103 @@ def delete_team(team_id):
         if not team:
             return jsonify({'status': 'error', 'message': '球队不存在'}), 404
         
-        # 删除关联的球员-队伍历史记录
-        PlayerTeamHistory.query.filter_by(team_id=team_id).delete()
+        team_name = team.name  # 保存球队名称用于日志
+        print(f"开始删除球队: {team_name} (ID: {team_id})")
         
-        # 删除球队
-        db.session.delete(team)
-        db.session.commit()
-        
-        return jsonify({'status': 'success', 'message': '删除成功'}), 200
+        # 使用事务来确保数据一致性
+        try:
+            # 1. 删除所有相关的事件记录
+            try:
+                from app.models.event import Event
+                events_to_delete = Event.query.filter_by(team_id=team_id).all()
+                for event in events_to_delete:
+                    db.session.delete(event)
+                print(f"准备删除 {len(events_to_delete)} 条事件记录")
+            except ImportError:
+                print("Event模型不存在，跳过事件记录删除")
+            except Exception as event_error:
+                print(f"删除事件记录时出错: {str(event_error)}")
+            
+            # 2. 删除所有相关的比赛记录
+            try:
+                from app.models.match import Match
+                # 先查找所有相关比赛
+                home_matches = Match.query.filter_by(home_team_id=team_id).all()
+                away_matches = Match.query.filter_by(away_team_id=team_id).all()
+                
+                # 逐个删除比赛记录
+                for match in home_matches + away_matches:
+                    db.session.delete(match)
+                
+                print(f"准备删除 {len(home_matches)} 场主场比赛和 {len(away_matches)} 场客场比赛")
+                
+            except ImportError:
+                print("Match模型不存在，跳过比赛记录删除")
+            except Exception as match_error:
+                print(f"删除比赛记录时出错: {str(match_error)}")
+                # 如果ORM删除失败，尝试使用原生SQL
+                try:
+                    print("尝试使用原生SQL删除比赛记录...")
+                    db.session.execute(
+                        "DELETE FROM `match` WHERE `主队ID` = :team_id OR `客队ID` = :team_id",
+                        {"team_id": team_id}
+                    )
+                    print("使用原生SQL删除比赛记录成功")
+                except Exception as sql_error:
+                    print(f"原生SQL删除也失败: {str(sql_error)}")
+                    raise sql_error
+            
+            # 3. 删除球员-队伍历史记录
+            try:
+                histories_to_delete = PlayerTeamHistory.query.filter_by(team_id=team_id).all()
+                for history in histories_to_delete:
+                    db.session.delete(history)
+                print(f"准备删除 {len(histories_to_delete)} 条球员历史记录")
+            except Exception as history_error:
+                print(f"删除球员历史记录时出错: {str(history_error)}")
+                raise history_error
+            
+            # 4. 删除球队本身
+            db.session.delete(team)
+            print(f"准备删除球队: {team_name}")
+            
+            # 5. 提交所有删除操作
+            db.session.commit()
+            print(f"成功删除球队: {team_name} (ID: {team_id})")
+            
+            return jsonify({
+                'status': 'success', 
+                'message': f'球队 {team_name} 删除成功'
+            }), 200
+            
+        except Exception as delete_error:
+            print(f"删除过程中发生错误: {str(delete_error)}")
+            db.session.rollback()
+            
+            # 提供更详细的错误信息
+            error_message = str(delete_error)
+            if "foreign key constraint" in error_message.lower():
+                return jsonify({
+                    'status': 'error', 
+                    'message': '删除失败：该球队存在关联数据，请先删除相关比赛或事件记录'
+                }), 500
+            elif "cannot be null" in error_message.lower():
+                return jsonify({
+                    'status': 'error', 
+                    'message': '删除失败：数据库约束错误，请联系管理员'
+                }), 500
+            else:
+                return jsonify({
+                    'status': 'error', 
+                    'message': f'删除失败: {error_message}'
+                }), 500
         
     except Exception as e:
         db.session.rollback()
-        return jsonify({'status': 'error', 'message': f'删除失败: {str(e)}'}), 500
+        print(f"删除球队时发生未预期的错误: {str(e)}")
+        import traceback
+        print(f"错误详情: {traceback.format_exc()}")
+        return jsonify({
+            'status': 'error', 
+            'message': f'删除失败: {str(e)}'
+        }), 500

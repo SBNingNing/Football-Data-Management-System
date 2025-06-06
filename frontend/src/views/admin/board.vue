@@ -65,10 +65,10 @@
 
 <script>
 import { useUserStore } from '@/store';
-import WelcomeCard from './components/WelcomeCard.vue';
-import DataInput from './components/DataInput.vue';
-import DataManagement from './components/DataManagement.vue';
-import EditDialogs from './components/EditDialogs.vue';
+import WelcomeCard from '@/components/admin/WelcomeCard.vue';
+import DataInput from '@/components/admin/DataInput.vue';
+import DataManagement from '@/components/admin/DataManagement.vue';
+import EditDialogs from '@/components/admin/EditDialogs.vue';
 
 export default {
   name: 'Admin',
@@ -337,8 +337,8 @@ export default {
       });
     },
     goToHome() {
-      // 使用页面刷新来跳转到前台
-      window.location.href = '/home';
+      // 使用路由跳转到前台主页
+      this.$router.push('/home');
     },
     logout() {
       // 确认退出登录
@@ -354,9 +354,9 @@ export default {
         localStorage.removeItem('userInfo');
         sessionStorage.clear();
         this.$message.success('已退出登录');
-        // 使用页面刷新跳转到登录页
+        // 使用路由跳转到登录页
         setTimeout(() => {
-          window.location.href = '/login';
+          this.$router.push('/login');
         }, 500);
       }).catch(() => {
         // 取消退出

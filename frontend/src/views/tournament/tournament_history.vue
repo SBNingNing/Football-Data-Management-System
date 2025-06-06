@@ -2,23 +2,39 @@
   <div class="competition-history">
     <!-- 赛事基本信息卡片 -->
     <el-card class="competition-basic-info">
-      <div slot="header" class="clearfix competition-name-header">
-        <span>{{ competition.tournamentName }}</span>
-      </div>
-      <div class="competition-description">
-        <p>{{ competition.description || '暂无描述' }}</p>
+      <div class="competition-name-header">
+        <div class="back-button-container">
+          <el-button 
+            type="primary" 
+            :icon="ArrowLeft" 
+            plain
+            @click="goToHomePage"
+            class="back-button"
+          >
+            返回主页
+          </el-button>
+        </div>
+        <h1 class="tournament-title">{{ competition.tournamentName }}</h1>
+        <div class="tournament-meta">
+          <span class="meta-item">
+            <el-icon><Calendar /></el-icon>
+            总赛季数: {{ competition.totalSeasons }}
+          </span>
+        </div>
       </div>
     </el-card>
 
     <!-- 赛事历史数据 -->
     <el-card class="competition-history-stats">
-      <div slot="header" class="clearfix">
-        <span>赛事历史数据</span>
-      </div>
+      <template #header>
+        <div class="clearfix">
+          <span>赛事历史数据</span>
+        </div>
+      </template>
       <el-row :gutter="20">
         <el-col :span="6">
           <div class="stat-item" style="background-color: #1e88e5; color: white;">
-            <i class="el-icon-finished" style="color: #ffffff; font-size: 40px;"></i>
+            <el-icon style="color: #ffffff; font-size: 40px;"><Finished /></el-icon>
             <div class="stat-info">
               <div class="stat-number">{{ competition.totalGoals }}</div>
               <div class="stat-label">总进球数</div>
@@ -27,7 +43,7 @@
         </el-col>
         <el-col :span="6">
           <div class="stat-item" style="background-color: #f39c12; color: white;">
-            <i class="el-icon-warning" style="color: #ffffff; font-size: 40px;"></i>
+            <el-icon style="color: #ffffff; font-size: 40px;"><Warning /></el-icon>
             <div class="stat-info">
               <div class="stat-number">{{ competition.totalYellowCards }}</div>
               <div class="stat-label">黄牌数</div>
@@ -36,7 +52,7 @@
         </el-col>
         <el-col :span="6">
           <div class="stat-item" style="background-color: #e74c3c; color: white;">
-            <i class="el-icon-error" style="color: #ffffff; font-size: 40px;"></i>
+            <el-icon style="color: #ffffff; font-size: 40px;"><CircleClose /></el-icon>
             <div class="stat-info">
               <div class="stat-number">{{ competition.totalRedCards }}</div>
               <div class="stat-label">红牌数</div>
@@ -45,7 +61,7 @@
         </el-col>
         <el-col :span="6">
           <div class="stat-item" style="background-color: #27ae60; color: white;">
-            <i class="el-icon-user" style="color: #ffffff; font-size: 40px;"></i>
+            <el-icon style="color: #ffffff; font-size: 40px;"><User /></el-icon>
             <div class="stat-info">
               <div class="stat-number">{{ competition.totalSeasons }}</div>
               <div class="stat-label">赛季数</div>
@@ -57,12 +73,14 @@
 
     <!-- 赛事赛季表现 -->
     <el-card class="competition-seasons">
-      <div slot="header" class="clearfix">
-        <span>赛事赛季表现</span>
-      </div>
+      <template #header>
+        <div class="clearfix">
+          <span>赛事赛季表现</span>
+        </div>
+      </template>
       <el-collapse v-model="activeSeason">
         <el-collapse-item v-for="season in competition.records" :key="season.id" :name="season.id">
-          <template slot="title">
+          <template #title>
             <div class="season-title">
               <span>{{ season.seasonName }} ({{ season.seasonStartTime ? new Date(season.seasonStartTime).getFullYear() : '' }})</span>
               <span class="season-info">球队数: {{ season.teamCount }} | 总进球: {{ season.totalGoals }}</span>
@@ -119,114 +137,166 @@
   </div>
 </template>
 
-<script>
+<script setup>
+import { ref, onMounted } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import { ElMessage } from 'element-plus'
+import { Finished, Warning, CircleClose, User, Calendar, ArrowLeft } from '@element-plus/icons-vue'
 import { getTournamentStats } from '@/api/tournaments'
 
-export default {
-  name: 'CompetitionHistory',
-  data() {
-    return {
-      activeSeason: null,
-      competition: {
-        tournamentName: '',
-        description: '',
+const route = useRoute()
+const router = useRouter()
+
+const activeSeason = ref(null)
+const competition = ref({
+  tournamentName: '',
+  totalGoals: 0,
+  totalYellowCards: 0,
+  totalRedCards: 0,
+  totalSeasons: 0,
+  records: []
+})
+
+onMounted(async () => {
+  await loadTournamentData()
+})
+
+const loadTournamentData = async () => {
+  try {
+    const tournamentName = route.params.tournamentName
+    if (!tournamentName) {
+      ElMessage.error('缺少赛事名称参数')
+      return
+    }
+
+    console.log('原始赛事名称:', tournamentName)
+    console.log('解码后的赛事名称:', decodeURIComponent(tournamentName))
+    console.log('当前路由:', route.fullPath)
+    
+    // 添加loading状态
+    ElMessage.info('正在加载赛事数据...')
+    
+    const response = await getTournamentStats(tournamentName)
+    console.log('完整API响应:', response)
+    
+    if (response && response.data && response.data.status === 'success') {
+      const tournamentData = response.data.data
+      console.log('解析的赛事数据:', tournamentData)
+      
+      competition.value = {
+        tournamentName: tournamentData.tournamentName || decodeURIComponent(tournamentName),
         totalGoals: 0,
         totalYellowCards: 0,
         totalRedCards: 0,
-        totalSeasons: 0,
-        records: []
+        totalSeasons: tournamentData.totalSeasons || 0,
+        records: tournamentData.records || []
       }
-    };
-  },
-  async mounted() {
-    await this.loadTournamentData();
-  },
-  methods: {
-    async loadTournamentData() {
-      try {
-        // 从路由参数获取赛事名称
-        const tournamentName = this.$route.params.tournamentName || this.$route.query.tournamentName;
-        if (!tournamentName) {
-          this.$message.error('缺少赛事名称参数');
-          return;
-        }
-        
-        const response = await getTournamentStats(tournamentName);
-        
-        if (response.data.status === 'success') {
-          this.competition = response.data.data;
-          this.calculateTotalStats();
-        } else {
-          this.$message.error(response.data.message || '获取赛事数据失败');
-        }
-      } catch (error) {
-        console.error('加载赛事数据失败:', error);
-        this.$message.error('网络错误，无法获取赛事数据');
-      }
-    },
-    
-    calculateTotalStats() {
-      // 计算总统计数据
-      let totalGoals = 0;
-      let totalYellowCards = 0;
-      let totalRedCards = 0;
       
-      this.competition.records.forEach(season => {
-        totalGoals += season.totalGoals || 0;
-        season.teams.forEach(team => {
-          totalYellowCards += team.yellowCards || 0;
-          totalRedCards += team.redCards || 0;
-        });
-      });
+      console.log('设置的competition数据:', competition.value)
+      calculateTotalStats()
+      ElMessage.success('赛事数据加载成功')
+    } else {
+      const errorMsg = response?.data?.message || '获取赛事数据失败'
+      console.error('API返回错误:', errorMsg)
+      console.error('可用的赛事:', response?.data?.available_tournaments)
+      console.error('调试信息:', response?.data?.debug_info)
       
-      this.competition.totalGoals = totalGoals;
-      this.competition.totalYellowCards = totalYellowCards;
-      this.competition.totalRedCards = totalRedCards;
-    },
-    
-    getTopScorers(season) {
-      // 获取射手榜数据
-      const allPlayers = [];
-      if (season.teams && Array.isArray(season.teams)) {
-        season.teams.forEach(team => {
-          if (team.players && Array.isArray(team.players)) {
-            team.players.forEach(player => {
-              if (player.goals > 0) {
-                allPlayers.push({
-                  ...player,
-                  team_name: team.name
-                });
-              }
-            });
-          }
-        });
+      if (response?.data?.available_tournaments) {
+        ElMessage.error(`${errorMsg}。可用的赛事: ${response.data.available_tournaments.join(', ')}`)
+      } else {
+        ElMessage.error(errorMsg)
       }
-      return allPlayers.sort((a, b) => (b.goals || 0) - (a.goals || 0)).slice(0, 10);
-    },
+    }
+  } catch (error) {
+    console.error('加载赛事数据失败:', error)
+    console.error('错误详情:', {
+      message: error.message,
+      code: error.code,
+      response: error.response,
+      stack: error.stack
+    })
     
-    getTopCards(season) {
-      // 获取红黄牌榜数据
-      const allPlayers = [];
-      if (season.teams && Array.isArray(season.teams)) {
-        season.teams.forEach(team => {
-          if (team.players && Array.isArray(team.players)) {
-            team.players.forEach(player => {
-              if ((player.yellowCards || 0) > 0 || (player.redCards || 0) > 0) {
-                allPlayers.push({
-                  ...player,
-                  team_name: team.name
-                });
-              }
-            });
-          }
-        });
-      }
-      return allPlayers.sort((a, b) => 
-        ((b.redCards || 0) + (b.yellowCards || 0)) - ((a.redCards || 0) + (a.yellowCards || 0))
-      ).slice(0, 10);
+    if (error.code === 'NETWORK_ERROR' || error.message.includes('Network Error')) {
+      ElMessage.error('网络连接失败，请检查后端服务是否启动')
+    } else if (error.response) {
+      const status = error.response.status
+      const data = error.response.data
+      console.error(`服务器响应错误 ${status}:`, data)
+      ElMessage.error(`服务器错误 (${status}): ${data?.message || '未知错误'}`)
+    } else {
+      ElMessage.error('加载赛事数据失败，请稍后重试')
     }
   }
-};
+}
+
+const calculateTotalStats = () => {
+  // 计算总统计数据
+  let totalGoals = 0
+  let totalYellowCards = 0
+  let totalRedCards = 0
+  
+  if (competition.value.records && Array.isArray(competition.value.records)) {
+    competition.value.records.forEach(season => {
+      totalGoals += season.totalGoals || 0
+      if (season.teams && Array.isArray(season.teams)) {
+        season.teams.forEach(team => {
+          totalYellowCards += team.yellowCards || 0
+          totalRedCards += team.redCards || 0
+        })
+      }
+    })
+  }
+  
+  competition.value.totalGoals = totalGoals
+  competition.value.totalYellowCards = totalYellowCards
+  competition.value.totalRedCards = totalRedCards
+}
+
+const getTopScorers = (season) => {
+  // 获取射手榜数据
+  const allPlayers = []
+  if (season.teams && Array.isArray(season.teams)) {
+    season.teams.forEach(team => {
+      if (team.players && Array.isArray(team.players)) {
+        team.players.forEach(player => {
+          if (player.goals > 0) {
+            allPlayers.push({
+              ...player,
+              team_name: team.name
+            })
+          }
+        })
+      }
+    })
+  }
+  return allPlayers.sort((a, b) => (b.goals || 0) - (a.goals || 0)).slice(0, 10)
+}
+
+const getTopCards = (season) => {
+  // 获取红黄牌榜数据
+  const allPlayers = []
+  if (season.teams && Array.isArray(season.teams)) {
+    season.teams.forEach(team => {
+      if (team.players && Array.isArray(team.players)) {
+        team.players.forEach(player => {
+          if ((player.yellowCards || 0) > 0 || (player.redCards || 0) > 0) {
+            allPlayers.push({
+              ...player,
+              team_name: team.name
+            })
+          }
+        })
+      }
+    })
+  }
+  return allPlayers.sort((a, b) => 
+    ((b.redCards || 0) + (b.yellowCards || 0)) - ((a.redCards || 0) + (a.yellowCards || 0))
+  ).slice(0, 10)
+}
+
+const goToHomePage = () => {
+  router.push('/home')
+}
 </script>
 
 <style scoped>
@@ -242,17 +312,58 @@ export default {
 }
 
 .competition-name-header {
-  background-color: #1e88e5;
+  background: linear-gradient(135deg, #1e88e5 0%, #1976d2 100%);
   color: white;
-  font-size: 28px;
-  font-weight: bold;
+  padding: 30px 20px;
+  border-radius: 8px;
   text-align: center;
-  padding: 15px 0;
+  box-shadow: 0 4px 12px rgba(30, 136, 229, 0.3);
+  position: relative;
 }
 
-.competition-description {
-  text-align: center;
-  padding: 20px;
+.back-button-container {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+}
+
+.back-button {
+  background-color: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.3);
+  color: white;
+}
+
+.back-button:hover {
+  background-color: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.5);
+  color: white;
+}
+
+.tournament-title {
+  font-size: 36px;
+  font-weight: bold;
+  margin: 0 0 15px 0;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.tournament-meta {
+  display: flex;
+  justify-content: center;
+  gap: 30px;
+  margin-top: 15px;
+}
+
+.meta-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 16px;
+  font-weight: 500;
+  opacity: 0.9;
+}
+
+.meta-item .el-icon {
+  font-size: 18px;
 }
 
 .stat-item {
@@ -261,6 +372,12 @@ export default {
   height: 100px;
   padding: 15px;
   border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transition: transform 0.2s ease;
+}
+
+.stat-item:hover {
+  transform: translateY(-2px);
 }
 
 .stat-info {

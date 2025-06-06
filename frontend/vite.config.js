@@ -14,21 +14,14 @@ export default defineConfig({
     port: 3000,
     proxy: {
       '/api': {
-        target: 'http://127.0.0.1:5000',
+        target: 'http://localhost:5000',
         changeOrigin: true,
-        secure: false,
-        configure: (proxy, options) => {
-          proxy.on('error', (err, req, res) => {
-            console.log('代理错误:', err);
-          });
-          proxy.on('proxyReq', (proxyReq, req, res) => {
-            console.log('发送请求:', req.method, req.url);
-          });
-          proxy.on('proxyRes', (proxyRes, req, res) => {
-            console.log('接收响应:', proxyRes.statusCode, req.url);
-          });
-        }
+        secure: false
       }
     }
+  },
+  define: {
+    // 如果需要兼容旧的 process.env 写法
+    'process.env': {}
   }
 })

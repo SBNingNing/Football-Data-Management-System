@@ -5,103 +5,188 @@ from app.models.tournament import Tournament
 from app.models.team import Team
 from app.models.player_team_history import PlayerTeamHistory
 from datetime import datetime
+import urllib.parse
+import os
+from sqlalchemy import text
 
 tournaments_bp = Blueprint('tournaments', __name__)
 
 @tournaments_bp.route('/<tournament_name>', methods=['GET'])
 def get_tournament(tournament_name):
     """根据赛事名称获取赛事信息和统计数据"""
+    print(f"[DEBUG] get_tournament called with tournament_name: {tournament_name}")
     try:
-        # 查询该赛事名称的所有记录
-        tournament_records = Tournament.query.filter_by(name=tournament_name).all()
+        # URL解码处理中文名称
+        decoded_tournament_name = urllib.parse.unquote(tournament_name, encoding='utf-8').strip()
+        print(f"前端传入赛事名称: '{tournament_name}', 解码后: '{decoded_tournament_name}'")
+
+        # 检查数据库连接
+        try:
+            db.session.execute(text('SELECT 1'))
+            print("[DEBUG] 数据库连接正常")
+        except Exception as db_error:
+            print(f"[ERROR] 数据库连接失败: {db_error}")
+            return jsonify({'status': 'error', 'message': '数据库连接失败'}), 500
+
+        # 获取所有赛事用于调试
+        try:
+            all_tournaments = Tournament.query.all()
+            all_names = [t.name for t in all_tournaments]
+            print(f"数据库中所有赛事名称: {all_names}")
+            print(f"数据库中赛事总数: {len(all_tournaments)}")
+        except Exception as query_error:
+            print(f"[ERROR] 查询所有赛事失败: {query_error}")
+            return jsonify({'status': 'error', 'message': '查询数据库失败'}), 500
+
+        # 直接用SQL精确匹配
+        tournament_records = Tournament.query.filter(
+            Tournament.name == decoded_tournament_name
+        ).all()
+        print(f"[DEBUG] 精确匹配找到记录数: {len(tournament_records)}")
+
+        # 如果精确匹配失败，尝试模糊匹配
         if not tournament_records:
-            return jsonify({'status': 'error', 'message': '赛事不存在'}), 404
+            print(f"[DEBUG] 精确匹配失败，尝试模糊匹配")
+            tournament_records = Tournament.query.filter(
+                Tournament.name.like(f"%{decoded_tournament_name}%")
+            ).all()
+            print(f"[DEBUG] 模糊匹配找到记录数: {len(tournament_records)}")
+
+        # 如果还是没找到，尝试其他匹配方式
+        if not tournament_records:
+            # 尝试忽略大小写匹配
+            tournament_records = Tournament.query.filter(
+                Tournament.name.ilike(f"%{decoded_tournament_name}%")
+            ).all()
+            print(f"[DEBUG] 忽略大小写匹配找到记录数: {len(tournament_records)}")
+
+        if not tournament_records:
+            return jsonify({
+                'status': 'error', 
+                'message': f'赛事"{decoded_tournament_name}"不存在',
+                'available_tournaments': all_names,
+                'debug_info': {
+                    'original_name': tournament_name,
+                    'decoded_name': decoded_tournament_name,
+                    'total_tournaments': len(all_names)
+                }
+            }), 404
         
-        # 如果有多个同名赛事（不同赛季），返回所有记录
         tournament_info = {
-            'tournamentName': tournament_name,
+            'tournamentName': decoded_tournament_name,
             'totalSeasons': len(tournament_records),
             'records': []
         }
         
-        # 添加每条记录的详细信息
         for record in tournament_records:
-            record_dict = record.to_dict()
-            record_dict['tournamentName'] = record_dict['name']
-            
-            # 获取该赛事下的所有球队信息
-            tournament_teams = Team.query.filter_by(tournament_id=record.id).all()
-            teams_data = []
-            
-            for team in tournament_teams:
-                # 获取该球队在该赛事中的所有球员
-                team_players = PlayerTeamHistory.query.filter_by(
-                    team_id=team.id, 
-                    tournament_id=record.id
-                ).all()
+            try:
+                print(f"[DEBUG] 处理赛事记录 ID: {record.id}, 名称: {record.name}")
                 
-                players_data = []
-                for player_history in team_players:
-                    player_dict = {
-                        'player_id': player_history.player_id,
-                        'player_name': player_history.player.name if player_history.player else None,
-                        'player_number': player_history.player_number,
-                        'goals': player_history.tournament_goals or 0,
-                        'redCards': player_history.tournament_red_cards or 0,
-                        'yellowCards': player_history.tournament_yellow_cards or 0,
-                        'remarks': player_history.remarks or ''
+                # 获取该赛事下的所有球队信息
+                tournament_teams = Team.query.filter(Team.tournament_id == record.id).all()
+                print(f"[DEBUG] 找到球队数: {len(tournament_teams)}")
+                teams_data = []
+                
+                for team in tournament_teams:
+                    # 获取该球队在该赛事中的所有球员
+                    team_players = PlayerTeamHistory.query.filter(
+                        PlayerTeamHistory.team_id == team.id,
+                        PlayerTeamHistory.tournament_id == record.id
+                    ).all()
+                    
+                    players_data = []
+                    for player_history in team_players:
+                        try:
+                            player_dict = {
+                                'player_id': player_history.player_id,
+                                'player_name': player_history.player.name if hasattr(player_history, 'player') and player_history.player else f'球员{player_history.player_id}',
+                                'player_number': player_history.player_number,
+                                'goals': player_history.tournament_goals or 0,
+                                'redCards': player_history.tournament_red_cards or 0,
+                                'yellowCards': player_history.tournament_yellow_cards or 0,
+                                'remarks': player_history.remarks or ''
+                            }
+                            players_data.append(player_dict)
+                        except Exception as player_error:
+                            print(f"[ERROR] 处理球员数据失败: {player_error}")
+                            continue
+                    
+                    team_dict = {
+                        'id': team.id,
+                        'name': team.name or '',
+                        'goals': team.tournament_goals or 0,
+                        'goalsConceded': team.tournament_goals_conceded or 0,
+                        'goalDifference': team.tournament_goal_difference or 0,
+                        'points': team.tournament_points or 0,
+                        'rank': team.tournament_rank or 0,
+                        'redCards': team.tournament_red_cards or 0,
+                        'yellowCards': team.tournament_yellow_cards or 0,
+                        'groupId': team.group_id,
+                        'players': players_data,
+                        'playerCount': len(players_data)
                     }
-                    players_data.append(player_dict)
+                    teams_data.append(team_dict)
                 
-                team_dict = {
-                    'id': team.id,
-                    'name': team.name,
-                    'goals': team.tournament_goals,
-                    'goalsConceded': team.tournament_goals_conceded,
-                    'goalDifference': team.tournament_goal_difference,
-                    'points': team.tournament_points,
-                    'rank': team.tournament_rank,
-                    'redCards': team.tournament_red_cards,
-                    'yellowCards': team.tournament_yellow_cards,
-                    'groupId': team.group_id,
-                    'players': players_data,
-                    'playerCount': len(players_data)
+                # 计算赛事统计数据
+                total_goals = sum(team.tournament_goals or 0 for team in tournament_teams)
+                print(f"[DEBUG] 计算得出总进球数: {total_goals}")
+                
+                # 安全处理时间字段
+                season_start_time = None
+                season_end_time = None
+                if record.season_start_time:
+                    try:
+                        season_start_time = record.season_start_time.isoformat()
+                    except:
+                        season_start_time = str(record.season_start_time)
+                
+                if record.season_end_time:
+                    try:
+                        season_end_time = record.season_end_time.isoformat()
+                    except:
+                        season_end_time = str(record.season_end_time)
+                
+                record_dict = {
+                    'id': record.id,
+                    'name': record.name,
+                    'tournamentName': record.name,
+                    'teams': teams_data,
+                    'teamCount': len(teams_data),
+                    'totalGoals': total_goals,
+                    'totalTeams': len(teams_data),
+                    'seasonStartTime': season_start_time,
+                    'seasonEndTime': season_end_time,
+                    'isGrouped': record.is_grouped or False,
+                    'seasonName': record.season_name or record.name
                 }
-                teams_data.append(team_dict)
-            
-            record_dict['teams'] = teams_data
-            record_dict['teamCount'] = len(teams_data)
-            
-            # 计算赛事统计数据
-            total_goals = sum(team.tournament_goals or 0 for team in tournament_teams)
-            total_teams = len(teams_data)
-            
-            record_dict.update({
-                'totalGoals': total_goals,
-                'totalTeams': total_teams,
-                'seasonStartTime': record_dict['season_start_time'],
-                'seasonEndTime': record_dict['season_end_time'],
-                'isGrouped': record_dict['is_grouped'],
-                'seasonName': record_dict['season_name']
-            })
-            
-            tournament_info['records'].append(record_dict)
+                
+                tournament_info['records'].append(record_dict)
+                
+            except Exception as record_error:
+                print(f"[ERROR] 处理赛事记录失败: {record_error}")
+                continue
         
+        print(f"[DEBUG] 最终返回的赛事信息包含 {len(tournament_info['records'])} 条记录")
         return jsonify({'status': 'success', 'data': tournament_info}), 200
         
     except Exception as e:
+        print(f"[ERROR] 获取赛事信息失败: {str(e)}")
+        import traceback
+        print(f"[ERROR] 详细错误信息: {traceback.format_exc()}")
         return jsonify({'status': 'error', 'message': f'获取失败: {str(e)}'}), 500
 
 @tournaments_bp.route('', methods=['GET'])
 def get_tournaments():
     """获取所有赛事信息（公共接口）"""
     try:
-        # 检查是否需要按赛事名称分组
         group_by_name = request.args.get('group_by_name', 'false').lower() == 'true'
         
         if group_by_name:
-            # 按赛事名称分组返回统计信息
             tournaments = Tournament.query.all()
+            
+            if not tournaments:
+                return jsonify({'status': 'success', 'data': []}), 200
+            
             tournaments_grouped = {}
             
             for tournament in tournaments:
@@ -116,94 +201,113 @@ def get_tournaments():
                     }
                 
                 # 获取该赛事下的球队信息
-                tournament_teams = Team.query.filter_by(tournament_id=tournament.id).all()
+                tournament_teams = Team.query.filter(Team.tournament_id == tournament.id).all()
                 total_goals = sum(team.tournament_goals or 0 for team in tournament_teams)
                 
-                # 累加统计数据
                 tournaments_grouped[tournament_name]['totalSeasons'] += 1
                 tournaments_grouped[tournament_name]['totalTeams'] += len(tournament_teams)
                 tournaments_grouped[tournament_name]['totalGoals'] += total_goals
                 
-                # 添加赛季信息
-                tournaments_grouped[tournament_name]['seasons'].append({
+                season_info = {
                     'tournament_id': tournament.id,
-                    'season_name': tournament.season_name,
-                    'is_grouped': tournament.is_grouped,
+                    'season_name': tournament.season_name or '',
+                    'is_grouped': tournament.is_grouped or False,
                     'team_count': len(tournament_teams),
-                    'total_goals': total_goals,
-                    'season_start_time': tournament.season_start_time.isoformat() if tournament.season_start_time else None,
-                    'season_end_time': tournament.season_end_time.isoformat() if tournament.season_end_time else None
-                })
+                    'total_goals': total_goals
+                }
+                
+                # 安全处理时间字段
+                try:
+                    if tournament.season_start_time:
+                        season_info['season_start_time'] = tournament.season_start_time.isoformat()
+                    else:
+                        season_info['season_start_time'] = None
+                        
+                    if tournament.season_end_time:
+                        season_info['season_end_time'] = tournament.season_end_time.isoformat()
+                    else:
+                        season_info['season_end_time'] = None
+                except Exception as time_error:
+                    season_info['season_start_time'] = None
+                    season_info['season_end_time'] = None
+                
+                tournaments_grouped[tournament_name]['seasons'].append(season_info)
             
-            return jsonify({'status': 'success', 'data': list(tournaments_grouped.values())}), 200
+            result_data = list(tournaments_grouped.values())
+            return jsonify({'status': 'success', 'data': result_data}), 200
         else:
             # 原有逻辑：返回所有赛事记录
             tournaments = Tournament.query.all()
+            
+            if not tournaments:
+                return jsonify({'status': 'success', 'data': []}), 200
+            
             tournaments_data = []
             
             for tournament in tournaments:
-                tournament_dict = tournament.to_dict()
-                tournament_dict['tournamentName'] = tournament_dict['name']
-                
-                # 获取该赛事下的球队信息
-                tournament_teams = Team.query.filter_by(tournament_id=tournament.id).all()
-                teams_data = []
-                
-                for team in tournament_teams:
-                    # 获取该球队在该赛事中的所有球员
-                    team_players = PlayerTeamHistory.query.filter_by(
-                        team_id=team.id, 
-                        tournament_id=tournament.id
-                    ).all()
+                try:
+                    tournament_teams = Team.query.filter(Team.tournament_id == tournament.id).all()
+                    teams_data = []
                     
-                    players_data = []
-                    for player_history in team_players:
-                        player_dict = {
-                            'player_id': player_history.player_id,
-                            'player_name': player_history.player.name if player_history.player else None,
-                            'player_number': player_history.player_number,
-                            'goals': player_history.tournament_goals or 0,
-                            'redCards': player_history.tournament_red_cards or 0,
-                            'yellowCards': player_history.tournament_yellow_cards or 0,
-                            'remarks': player_history.remarks or ''
-                        }
-                        players_data.append(player_dict)
-                    
-                    teams_data.append({
-                        'id': team.id,
-                        'name': team.name,
-                        'goals': team.tournament_goals,
-                        'goalsConceded': team.tournament_goals_conceded,
-                        'goalDifference': team.tournament_goal_difference,
-                        'points': team.tournament_points,
-                        'rank': team.tournament_rank,
-                        'redCards': team.tournament_red_cards,
-                        'yellowCards': team.tournament_yellow_cards,
-                        'groupId': team.group_id,
-                        'players': players_data,
-                        'playerCount': len(players_data)
-                    })
+                    for team in tournament_teams:
+                        team_players = PlayerTeamHistory.query.filter(
+                            PlayerTeamHistory.team_id == team.id,
+                            PlayerTeamHistory.tournament_id == tournament.id
+                        ).all()
+                        
+                        players_data = []
+                        for player_history in team_players:
+                            player_dict = {
+                                'player_id': player_history.player_id,
+                                'player_name': player_history.player.name if hasattr(player_history, 'player') and player_history.player else f'球员{player_history.player_id}',
+                                'player_number': player_history.player_number,
+                                'goals': player_history.tournament_goals or 0,
+                                'redCards': player_history.tournament_red_cards or 0,
+                                'yellowCards': player_history.tournament_yellow_cards or 0,
+                                'remarks': player_history.remarks or ''
+                            }
+                            players_data.append(player_dict)
+                        
+                        teams_data.append({
+                            'id': team.id,
+                            'name': team.name or '',
+                            'goals': team.tournament_goals or 0,
+                            'goalsConceded': team.tournament_goals_conceded or 0,
+                            'goalDifference': team.tournament_goal_difference or 0,
+                            'points': team.tournament_points or 0,
+                            'rank': team.tournament_rank or 0,
+                            'redCards': team.tournament_red_cards or 0,
+                            'yellowCards': team.tournament_yellow_cards or 0,
+                            'groupId': team.group_id,
+                            'players': players_data,
+                            'playerCount': len(players_data)
+                        })
 
-                tournament_dict['teams'] = teams_data
-                tournament_dict['teamCount'] = len(teams_data)
-                
-                # 计算赛事统计数据
-                total_goals = sum(team.tournament_goals or 0 for team in tournament_teams)
-                tournament_dict['totalGoals'] = total_goals
-                
-                # 添加详细信息
-                tournament_dict.update({
-                    'seasonStartTime': tournament_dict['season_start_time'],
-                    'seasonEndTime': tournament_dict['season_end_time'],
-                    'isGrouped': tournament_dict['is_grouped'],
-                    'seasonName': tournament_dict['season_name']
-                })
-                
-                tournaments_data.append(tournament_dict)
+                    total_goals = sum(team.tournament_goals or 0 for team in tournament_teams)
+                    
+                    tournament_dict = {
+                        'id': tournament.id,
+                        'name': tournament.name,
+                        'tournamentName': tournament.name,
+                        'teams': teams_data,
+                        'teamCount': len(teams_data),
+                        'totalGoals': total_goals,
+                        'seasonStartTime': tournament.season_start_time.isoformat() if tournament.season_start_time else None,
+                        'seasonEndTime': tournament.season_end_time.isoformat() if tournament.season_end_time else None,
+                        'isGrouped': tournament.is_grouped or False,
+                        'seasonName': tournament.season_name or ''
+                    }
+                    
+                    tournaments_data.append(tournament_dict)
+                    
+                except Exception as tournament_error:
+                    print(f"[ERROR] 处理赛事数据失败: {tournament_error}")
+                    continue
             
             return jsonify({'status': 'success', 'data': tournaments_data}), 200
         
     except Exception as e:
+        print(f"[ERROR] 获取赛事列表失败: {str(e)}")
         return jsonify({'status': 'error', 'message': f'获取失败: {str(e)}'}), 500
 
 @tournaments_bp.route('', methods=['POST'])
@@ -255,6 +359,7 @@ def create_tournament():
         
     except Exception as e:
         db.session.rollback()
+        print(f"[ERROR] 创建赛事失败: {str(e)}")
         return jsonify({'status': 'error', 'message': f'创建失败: {str(e)}'}), 500
 
 @tournaments_bp.route('/<int:tournament_id>', methods=['PUT'])
@@ -285,6 +390,7 @@ def update_tournament(tournament_id):
         
     except Exception as e:
         db.session.rollback()
+        print(f"[ERROR] 更新赛事失败: {str(e)}")
         return jsonify({'status': 'error', 'message': f'更新失败: {str(e)}'}), 500
 
 @tournaments_bp.route('/<int:tournament_id>', methods=['DELETE'])
@@ -309,4 +415,11 @@ def delete_tournament(tournament_id):
         
     except Exception as e:
         db.session.rollback()
+        print(f"[ERROR] 删除赛事失败: {str(e)}")
         return jsonify({'status': 'error', 'message': f'删除失败: {str(e)}'}), 500
+
+# 添加一个测试路由来确认蓝图工作正常
+@tournaments_bp.route('/test', methods=['GET'])
+def test_route():
+    """测试路由是否工作"""
+    return jsonify({'status': 'success', 'message': '赛事路由工作正常'}), 200

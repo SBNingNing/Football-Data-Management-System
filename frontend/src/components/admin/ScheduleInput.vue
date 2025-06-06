@@ -50,7 +50,15 @@ export default {
   },
   methods: {
     submitSchedule() {
-      this.$emit('submit', this.scheduleForm);
+      // 修正：将日期转为字符串并加上时区（北京时间），避免时区丢失
+      let form = { ...this.scheduleForm };
+      if (form.date instanceof Date) {
+        // 转为北京时间字符串
+        const pad = n => n < 10 ? '0' + n : n;
+        const dt = new Date(form.date.getTime()); 
+        form.date = `${dt.getFullYear()}-${pad(dt.getMonth() + 1)}-${pad(dt.getDate())} ${pad(dt.getHours())}:${pad(dt.getMinutes())}:${pad(dt.getSeconds())}`;
+      }
+      this.$emit('submit', form);
       this.scheduleForm = { matchName: '', team1: '', team2: '', date: '', location: '' };
     },
     getMatchTypeLabel() {

@@ -1,20 +1,27 @@
 import axios from 'axios'
+import { ElMessage } from 'element-plus'
 
-// 创建 axios 实例
+// 创建axios实例
 const service = axios.create({
-  baseURL: import.meta.env?.VITE_API_BASE_URL || 'http://localhost:3000/api', // API 基础路径
-  timeout: 5000 // 请求超时时间
+  baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api', // 使用 Vite 的环境变量
+  timeout: 15000 // 请求超时时间
 })
 
 // 请求拦截器
 service.interceptors.request.use(
   config => {
-    // 在发送请求之前做些什么
+    console.log('发送请求:', config.method?.toUpperCase(), config.url)
+    console.log('请求配置:', config)
+    
+    // 如果有token，添加到请求头
+    const token = localStorage.getItem('token')
+    if (token) {
+      config.headers['Authorization'] = `Bearer ${token}`
+    }
     return config
   },
   error => {
-    // 对请求错误做些什么
-    console.log(error)
+    console.error('请求拦截器错误:', error)
     return Promise.reject(error)
   }
 )
@@ -22,11 +29,23 @@ service.interceptors.request.use(
 // 响应拦截器
 service.interceptors.response.use(
   response => {
-    const res = response.data
-    return res
+    console.log('收到响应:', response.status, response.data)
+    return response
   },
   error => {
-    console.log('err' + error)
+    console.error('响应错误:', error)
+    
+    if (error.code === 'ECONNABORTED') {
+      ElMessage.error('请求超时，请检查网络连接')
+    } else if (error.message.includes('Network Error')) {
+      ElMessage.error('网络连接失败，请检查后端服务是否启动')
+    } else if (error.response) {
+      const { status, data } = error.response
+      ElMessage.error(`服务器错误 (${status}): ${data?.message || '未知错误'}`)
+    } else {
+      ElMessage.error('请求失败，请稍后重试')
+    }
+    
     return Promise.reject(error)
   }
 )
