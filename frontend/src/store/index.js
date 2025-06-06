@@ -466,5 +466,35 @@ export const useUserStore = defineStore('user', {
         return { success: false, error: this.error }
       }
     },
+
+    async fetchPlayerById(playerId) {
+      this.loading = true
+      this.error = null
+      
+      try {
+        console.log('正在获取球员详情:', playerId);
+        const response = await axios.get(`/api/players/${playerId}`)
+        console.log('球员详情API响应:', response);
+        
+        this.loading = false
+        
+        if (response.data && response.data.status === 'success') {
+          return { success: true, data: response.data.data }
+        } else {
+          const errorMessage = response.data?.message || '获取球员详情失败'
+          console.error('API返回错误:', errorMessage);
+          return { success: false, error: errorMessage }
+        }
+      } catch (error) {
+        console.error('获取球员详情失败:', error);
+        this.loading = false
+        
+        const errorMessage = error.response?.data?.message || 
+                           error.response?.data?.error || 
+                           '网络错误，无法获取球员详情';
+        
+        return { success: false, error: errorMessage }
+      }
+    }
   }
 })

@@ -163,6 +163,7 @@ def get_rankings():
                 'topScorers': {
                     'players': [
                         {
+                            'id': player.player_id,
                             'name': player.player_name,
                             'team': player.team_name,
                             'goals': int(player.goals or 0)
@@ -178,6 +179,7 @@ def get_rankings():
                 'cards': {
                     'players': [
                         {
+                            'id': player.player_id,
                             'name': player.player_name,
                             'team': player.team_name,
                             'yellowCards': int(player.yellow_cards or 0),

@@ -2,20 +2,33 @@
   <div class="team-info">
     <!-- 球队名称卡片 -->
     <el-card class="team-name-card">
-      <div slot="header" class="clearfix team-name-header">
-        <span>{{ team.teamName }}</span>
+      <div class="team-name-header">
+        <div class="back-button-container">
+          <el-button 
+            type="primary" 
+            :icon="ArrowLeft" 
+            plain
+            @click="goToHomePage"
+            class="back-button"
+          >
+            返回主页
+          </el-button>
+        </div>
+        <h1 class="team-title">{{ team.teamName }}</h1>
       </div>
     </el-card>
 
     <!-- 球队关键统计数据 -->
     <el-card class="team-stats">
-      <div slot="header" class="clearfix">
-        <span>球队关键统计数据</span>
-      </div>
+      <template #header>
+        <div class="clearfix">
+          <span>球队关键统计数据</span>
+        </div>
+      </template>
       <el-row :gutter="20">
         <el-col :span="8">
           <div class="stat-item" style="background-color: #1e88e5; color: white;">
-            <i class="el-icon-finished" style="color: #ffffff; font-size: 40px;"></i>
+            <el-icon style="color: #ffffff; font-size: 40px;"><Finished /></el-icon>
             <div class="stat-info">
               <div class="stat-number">{{ team.totalGoals }}</div>
               <div class="stat-label">总进球数</div>
@@ -24,7 +37,7 @@
         </el-col>
         <el-col :span="8">
           <div class="stat-item" style="background-color: #f56c6c; color: white;">
-            <i class="el-icon-warning" style="color: #ffffff; font-size: 40px;"></i>
+            <el-icon style="color: #ffffff; font-size: 40px;"><Warning /></el-icon>
             <div class="stat-info">
               <div class="stat-number">{{ team.totalGoalsConceded }}</div>
               <div class="stat-label">总失球数</div>
@@ -33,7 +46,7 @@
         </el-col>
         <el-col :span="8">
           <div class="stat-item" style="background-color: #67c23a; color: white;">
-            <i class="el-icon-top" style="color: #ffffff; font-size: 40px;"></i>
+            <el-icon style="color: #ffffff; font-size: 40px;"><Top /></el-icon>
             <div class="stat-info">
               <div class="stat-number">{{ team.totalGoalDifference }}</div>
               <div class="stat-label">总净胜球</div>
@@ -44,7 +57,7 @@
       <el-row :gutter="20" style="margin-top: 20px;">
         <el-col :span="8">
           <div class="stat-item" style="background-color: #e6a23c; color: white;">
-            <i class="el-icon-warning" style="color: #ffffff; font-size: 40px;"></i>
+            <el-icon style="color: #ffffff; font-size: 40px;"><Warning /></el-icon>
             <div class="stat-info">
               <div class="stat-number">{{ team.totalYellowCards }}</div>
               <div class="stat-label">总黄牌数</div>
@@ -53,7 +66,7 @@
         </el-col>
         <el-col :span="8">
           <div class="stat-item" style="background-color: #f56c6c; color: white;">
-            <i class="el-icon-error" style="color: #ffffff; font-size: 40px;"></i>
+            <el-icon style="color: #ffffff; font-size: 40px;"><CircleClose /></el-icon>
             <div class="stat-info">
               <div class="stat-number">{{ team.totalRedCards }}</div>
               <div class="stat-label">总红牌数</div>
@@ -62,7 +75,7 @@
         </el-col>
         <el-col :span="8">
           <div class="stat-item" style="background-color: #1e88e5; color: white;">
-            <i class="el-icon-trophy" style="color: #ffffff; font-size: 40px;"></i>
+            <el-icon style="color: #ffffff; font-size: 40px;"><Trophy /></el-icon>
             <div class="stat-info">
               <div class="stat-number">{{ team.bestRank || '暂无' }}</div>
               <div class="stat-label">历史最好排名</div>
@@ -73,7 +86,7 @@
       <el-row :gutter="20" style="margin-top: 20px;">
         <el-col :span="24">
           <div class="stat-item" style="background-color: #909399; color: white;">
-            <i class="el-icon-star-on" style="color: #ffffff; font-size: 40px;"></i>
+            <el-icon style="color: #ffffff; font-size: 40px;"><Star /></el-icon>
             <div class="stat-info">
               <div class="stat-number">{{ team.totalPoints }}</div>
               <div class="stat-label">总积分</div>
@@ -85,9 +98,11 @@
 
     <!-- 球队参加的比赛信息 -->
     <el-card class="team-matches">
-      <div slot="header" class="clearfix">
-        <span>球队参加的比赛信息</span>
-      </div>
+      <template #header>
+        <div class="clearfix">
+          <span>球队参加的比赛信息</span>
+        </div>
+      </template>
       <el-collapse v-model="activeSeason">
         <el-collapse-item v-for="record in team.records" :key="record.id" :name="record.id">
           <template slot="title">
@@ -162,8 +177,19 @@
 </template>
 
 <script>
+import { Finished, Warning, CircleClose, Top, Trophy, Star, ArrowLeft } from '@element-plus/icons-vue'
+
 export default {
   name: 'TeamInfo',
+  components: {
+    Finished,
+    Warning,
+    CircleClose,
+    Top,
+    Trophy,
+    Star,
+    ArrowLeft
+  },
   data() {
     return {
       activeSeason: null,
@@ -214,6 +240,10 @@ export default {
         'eight-a-side': '八人制比赛'
       };
       return matchTypeMap[matchType] || '未知类型';
+    },
+    
+    goToHomePage() {
+      this.$router.push('/home')
     }
   }
 };
@@ -229,9 +259,38 @@ export default {
 }
 
 .team-name-header {
-  font-size: 24px;
+  background: linear-gradient(135deg, #1e88e5 0%, #1976d2 100%);
+  color: white;
+  padding: 30px 20px;
+  border-radius: 8px;
+  text-align: center;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  position: relative;
+}
+
+.back-button-container {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+}
+
+.back-button {
+  background-color: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.3);
+  color: white;
+}
+
+.back-button:hover {
+  background-color: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.5);
+  color: white;
+}
+
+.team-title {
+  font-size: 36px;
   font-weight: bold;
-  color: #1e88e5;
+  margin: 0;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
 .team-stats, .team-matches {

@@ -38,6 +38,15 @@ const routes = [
     component: PlayerHistory
   },
   {
+    path: '/player/:playerId',
+    name: 'PlayerDetail',
+    component: PlayerHistory,
+    props: route => ({ 
+      playerId: route.params.playerId,
+      ...route.query
+    })
+  },
+  {
     path: '/team',
     name: 'TeamHistory',
     component: TeamHistory

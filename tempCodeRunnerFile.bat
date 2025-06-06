@@ -1,3 +1,0 @@
-
-call npm install
-cd ..

@@ -97,109 +97,152 @@ export default {
       matchRecords: [],
       matchRecordsTotal: 0,
       recentMatches: [],
+      isDataLoaded: false
     };
   },
   created() {
+    console.log('Home component created, loading data...');
     this.loadAllData();
+  },
+  mounted() {
+    console.log('Home component mounted');
+    // 确保挂载后也执行数据加载
+    if (!this.isDataLoaded) {
+      this.$nextTick(() => {
+        this.loadAllData();
+      });
+    }
   },
   activated() {
-    // 当组件被激活时（包括从其他页面返回时）重新加载数据
+    console.log('Home component activated');
+    // 当组件被激活时重新加载数据
     this.loadAllData();
   },
+  beforeRouteEnter(to, from, next) {
+    console.log('beforeRouteEnter - from:', from.path, 'to:', to.path);
+    next(vm => {
+      // 确保进入路由后加载数据
+      vm.$nextTick(() => {
+        vm.loadAllData();
+      });
+    });
+  },
   watch: {
-    '$route'(to, from) {
-      // 监听路由变化，确保返回主页时重新加载数据
-      if (to.path === '/home' && from.path !== '/home') {
-        this.$nextTick(() => {
-          this.loadAllData();
-        });
-      }
+    '$route': {
+      handler(to, from) {
+        console.log('Route changed - from:', from?.path, 'to:', to.path);
+        // 监听路由变化，确保返回主页时重新加载数据
+        if (to.path === '/home' || to.name === 'Home') {
+          this.$nextTick(() => {
+            this.loadAllData();
+          });
+        }
+      },
+      immediate: true
     }
   },
   methods: {
-    loadAllData() {
+    async loadAllData() {
       console.log('Loading all home data...');
-      this.fetchStats();
-      this.fetchRankings();
-      this.fetchGroupRankings();
-      this.fetchPlayoffBracket();
-      this.fetchMatchRecords();
-      this.fetchRecentMatches();
+      this.isDataLoaded = false;
+      
+      try {
+        // 并行加载所有数据
+        await Promise.allSettled([
+          this.fetchStats(),
+          this.fetchRankings(),
+          this.fetchGroupRankings(),
+          this.fetchPlayoffBracket(),
+          this.fetchMatchRecords(),
+          this.fetchRecentMatches()
+        ]);
+        
+        this.isDataLoaded = true;
+        console.log('All data loaded successfully');
+      } catch (error) {
+        console.error('Error loading data:', error);
+        ElMessage.error('数据加载失败，请刷新页面重试');
+      }
     },
-    fetchStats() {
+    async fetchStats() {
       console.log('Fetching stats...');
-      axios.get('/api/stats')
-        .then(response => {
-          console.log('Stats response:', response.data);
-          if (response.data.status === 'success') {
-            this.statsData = {
-              totalMatches: response.data.data.totalMatches || 0,
-              upcomingMatches: response.data.data.upcomingMatches || 0,
-              completedMatches: response.data.data.completedMatches || 0
-            };
-          } else {
-            console.error('Stats API error:', response.data.message);
-            ElMessage.error('获取统计数据失败');
-          }
-        })
-        .catch(error => {
-          console.error('获取统计数据失败:', error);
-          console.error('Error details:', error.response?.data);
-          ElMessage.error('获取统计数据失败，请检查网络连接');
-          
+      try {
+        const response = await axios.get('/api/stats');
+        console.log('Stats response:', response.data);
+        
+        if (response.data.status === 'success') {
           this.statsData = {
-            totalMatches: 0,
-            upcomingMatches: 0,
-            completedMatches: 0
+            totalMatches: response.data.data.totalMatches || 0,
+            upcomingMatches: response.data.data.upcomingMatches || 0,
+            completedMatches: response.data.data.completedMatches || 0
           };
-        });
+        } else {
+          console.error('Stats API error:', response.data.message);
+          throw new Error(response.data.message || '获取统计数据失败');
+        }
+      } catch (error) {
+        console.error('获取统计数据失败:', error);
+        console.error('Error details:', error.response?.data);
+        
+        // 设置默认值
+        this.statsData = {
+          totalMatches: 0,
+          upcomingMatches: 0,
+          completedMatches: 0
+        };
+        
+        // 只在第一次加载失败时显示错误信息
+        if (!this.isDataLoaded) {
+          ElMessage.warning('获取统计数据失败，请检查网络连接');
+        }
+      }
     },
-    fetchRankings() {
-      axios.get('/api/rankings')
-        .then(response => {
-          if (response.data.status === 'success') {
-            this.rankings = response.data.data;
-          }
-        })
-        .catch(error => {
-          console.error('获取排行数据失败:', error);
-          ElMessage.error('获取排行数据失败');
-        });
+    async fetchRankings() {
+      try {
+        const response = await axios.get('/api/rankings');
+        if (response.data.status === 'success') {
+          this.rankings = response.data.data;
+        }
+      } catch (error) {
+        console.error('获取排行数据失败:', error);
+        if (!this.isDataLoaded) {
+          ElMessage.warning('获取排行数据失败');
+        }
+      }
     },
-    fetchGroupRankings() {
-      axios.get('/api/group-rankings')
-        .then(response => {
-          if (response.data.status === 'success') {
-            this.groupRankings = response.data.data;
-          }
-        })
-        .catch(error => {
-          console.error('获取分组排名失败:', error);
-        });
+    async fetchGroupRankings() {
+      try {
+        const response = await axios.get('/api/group-rankings');
+        if (response.data.status === 'success') {
+          this.groupRankings = response.data.data;
+        }
+      } catch (error) {
+        console.error('获取分组排名失败:', error);
+      }
     },
-    fetchPlayoffBracket() {
-      axios.get('/api/playoff-bracket')
-        .then(response => {
-          if (response.data.status === 'success') {
-            this.playoffBracket = response.data.data;
-          }
-        })
-        .catch(error => {
-          console.error('获取淘汰赛对阵失败:', error);
-        });
+    async fetchPlayoffBracket() {
+      try {
+        const response = await axios.get('/api/playoff-bracket');
+        if (response.data.status === 'success') {
+          this.playoffBracket = response.data.data;
+        }
+      } catch (error) {
+        console.error('获取淘汰赛对阵失败:', error);
+      }
     },
-    fetchMatchRecords(params = {}) {
+    async fetchMatchRecords(params = {}) {
       console.log('Fetching match records with params:', params);
-      const requestParams = {
-        type: params.type || '',
-        keyword: params.keyword || '',
-        page: params.page || 1,
-        pageSize: params.pageSize || 10
-      };
+      try {
+        const requestParams = {
+          type: params.type || '',
+          keyword: params.keyword || '',
+          page: params.page || 1,
+          pageSize: params.pageSize || 10
+        };
 
-      axios.get('/api/matches/match-records', { params: requestParams })
-      .then(response => {
+        const response = await axios.get('/api/matches/match-records', { params: requestParams });
         console.log('Match records response:', response.data);
+        
         if (response.data.status === 'success') {
           this.matchRecords = (response.data.data.records || []).map(item => ({
             ...item,
@@ -212,27 +255,29 @@ export default {
           this.matchRecords = [];
           this.matchRecordsTotal = 0;
         }
-      })
-      .catch(error => {
+      } catch (error) {
         console.error('获取比赛记录失败:', error);
         console.error('Error details:', error.response?.data);
         this.matchRecords = [];
         this.matchRecordsTotal = 0;
-        ElMessage.error('获取比赛记录失败');
-      });
+        
+        if (!this.isDataLoaded) {
+          ElMessage.warning('获取比赛记录失败');
+        }
+      }
     },
-    fetchRecentMatches() {
-      axios.get('/api/matches/match-records', {
-        params: { page: 1, pageSize: 5 }
-      })
-      .then(response => {
+    async fetchRecentMatches() {
+      try {
+        const response = await axios.get('/api/matches/match-records', {
+          params: { page: 1, pageSize: 5 }
+        });
+        
         if (response.data.status === 'success') {
           this.recentMatches = response.data.data.records || [];
         }
-      })
-      .catch(error => {
+      } catch (error) {
         console.error('获取近期比赛失败:', error);
-      });
+      }
     },
     logout() {
       ElMessageBox.confirm('确定要退出登录吗？', '提示', {
@@ -258,11 +303,9 @@ export default {
       });
     },
     onCompetitionChange(competition) {
-      // 处理赛事切换
       console.log('Competition changed to:', competition);
     },
     onRankingsTabChange(tab) {
-      // 处理排名标签切换
       console.log('Rankings tab changed to:', tab);
     },
     handleMatchSearch(params) {
