@@ -231,24 +231,82 @@ export const useUserStore = defineStore('user', {
       }
     },
     
+    // 获取所有球员
     async fetchPlayers() {
       this.loading = true
       this.error = null
       
       try {
+        console.log('开始获取球员数据...');
+        
         const response = await axios.get('/api/players')
+        console.log('球员API响应状态:', response.status);
+        console.log('球员API响应数据:', response.data);
+
         const playersData = this._handleApiResponse(response, '球员数据')
+        console.log('处理后的球员数据:', playersData);
         
         this.players = playersData
         this.loading = false
         return { success: true, data: playersData }
       } catch (error) {
+        console.error('获取球员数据出错:', error);
         this.loading = false
-        this.players = [] // 确保出错时清空数据
+        this.players = []
         return this._handleApiError(error, '获取球员列表')
       }
     },
-    
+
+    // 更新球员信息
+    async updatePlayer(playerId, playerData) {
+      this.loading = true
+      this.error = null
+      
+      try {
+        console.log('更新球员:', playerId, playerData);
+
+        const response = await axios.put(`/api/players/${playerId}`, playerData)
+        console.log('更新球员响应:', response.data);
+        
+        this.loading = false
+        
+        if (response.data.status === 'success') {
+          await this.fetchPlayers() // 刷新球员列表
+          return { success: true, data: response.data }
+        } else {
+          return { success: false, error: response.data.message || '更新失败' }
+        }
+      } catch (error) {
+        this.loading = false
+        return this._handleApiError(error, '更新球员')
+      }
+    },
+
+    // 删除球员
+    async deletePlayer(playerId) {
+      this.loading = true
+      this.error = null
+      
+      try {
+        console.log('删除球员:', playerId);
+
+        const response = await axios.delete(`/api/players/${playerId}`)
+        console.log('删除球员响应:', response.data);
+        
+        this.loading = false
+        
+        if (response.data.status === 'success') {
+          await this.fetchPlayers() // 刷新球员列表
+          return { success: true, data: response.data }
+        } else {
+          return { success: false, error: response.data.message || '删除失败' }
+        }
+      } catch (error) {
+        this.loading = false
+        return this._handleApiError(error, '删除球员')
+      }
+    },
+
     async createMatch(matchData) {
       this.loading = true
       this.error = null
@@ -443,9 +501,8 @@ export const useUserStore = defineStore('user', {
         }
         return { success: false, error: response.data.message }
       } catch (error) {
-        this.error = error.response?.data?.message || '创建球员失败'
         this.loading = false
-        return { success: false, error: this.error }
+        return this._handleApiError(error, '创建球员')
       }
     },
     
@@ -463,9 +520,8 @@ export const useUserStore = defineStore('user', {
         }
         return { success: false, error: response.data.message }
       } catch (error) {
-        this.error = error.response?.data?.message || '更新球员失败'
         this.loading = false
-        return { success: false, error: this.error }
+        return this._handleApiError(error, '更新球员')
       }
     },
     
@@ -483,9 +539,8 @@ export const useUserStore = defineStore('user', {
         }
         return { success: false, error: response.data.message }
       } catch (error) {
-        this.error = error.response?.data?.message || '删除球员失败'
         this.loading = false
-        return { success: false, error: this.error }
+        return this._handleApiError(error, '删除球员')
       }
     },
 
@@ -508,14 +563,8 @@ export const useUserStore = defineStore('user', {
           return { success: false, error: errorMessage }
         }
       } catch (error) {
-        console.error('获取球员详情失败:', error);
         this.loading = false
-        
-        const errorMessage = error.response?.data?.message || 
-                           error.response?.data?.error || 
-                           '网络错误，无法获取球员详情';
-        
-        return { success: false, error: errorMessage }
+        return this._handleApiError(error, '获取球员详情')
       }
     }
   }

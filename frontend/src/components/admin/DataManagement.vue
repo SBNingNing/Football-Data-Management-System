@@ -1,50 +1,5 @@
 <template>
   <el-tabs v-model="activeTab" type="card">
-    <!-- 球队管理 -->
-    <el-tab-pane label="球队管理" name="teams">
-      <div class="manage-header">
-        <el-select :model-value="manageMatchType" placeholder="请选择比赛类型" @update:model-value="$emit('filter-change', $event)" style="width: 200px;">
-          <el-option label="全部" value=""></el-option>
-          <el-option label="冠军杯" value="champions-cup"></el-option>
-          <el-option label="巾帼杯" value="womens-cup"></el-option>
-          <el-option label="八人制比赛" value="eight-a-side"></el-option>
-        </el-select>
-        <el-button type="primary" @click="$emit('refresh')" icon="el-icon-refresh">刷新</el-button>
-      </div>
-      <el-table :data="displayTeams" border style="width: 100%">
-        <el-table-column prop="teamName" label="球队名称" width="200"></el-table-column>
-        <el-table-column prop="matchType" label="比赛类型" width="150">
-          <template #default="{ row }">
-            <span v-if="row">{{ getMatchTypeLabel(row.matchType) }}</span>
-          </template>
-        </el-table-column>
-        <el-table-column label="球员数量" width="120">
-          <template #default="{ row }">
-            <span v-if="row">{{ row.players ? row.players.length : 0 }}</span>
-          </template>
-        </el-table-column>
-        <el-table-column label="球员信息" min-width="200">
-          <template #default="{ row }">
-            <div v-if="row && row.players && row.players.length > 0" class="players-preview">
-              <el-tag v-for="player in row.players.slice(0, 3)" :key="player.name" size="small" class="player-tag">
-                {{ player.name }}({{ player.number }})
-              </el-tag>
-              <span v-if="row.players.length > 3" class="more-players">+{{ row.players.length - 3 }}人</span>
-            </div>
-            <span v-else class="no-players">暂无球员</span>
-          </template>
-        </el-table-column>
-        <el-table-column label="操作" width="200">
-          <template #default="{ row }">
-            <div v-if="row">
-              <el-button size="small" type="primary" @click="$emit('edit-team', row)">编辑</el-button>
-              <el-button size="small" type="danger" @click="$emit('delete-team', row.id)">删除</el-button>
-            </div>
-          </template>
-        </el-table-column>
-      </el-table>
-    </el-tab-pane>
-
     <!-- 比赛管理 -->
     <el-tab-pane label="比赛管理" name="matches">
       <div class="manage-header">
@@ -121,6 +76,92 @@
         </el-table-column>
       </el-table>
     </el-tab-pane>
+
+    <!-- 球员管理 -->
+    <el-tab-pane label="球员管理" name="players">
+      <div class="manage-header">
+        <el-select :model-value="manageMatchType" placeholder="请选择比赛类型" @update:model-value="$emit('filter-change', $event)" style="width: 200px;">
+          <el-option label="全部" value=""></el-option>
+          <el-option label="冠军杯" value="champions-cup"></el-option>
+          <el-option label="巾帼杯" value="womens-cup"></el-option>
+          <el-option label="八人制比赛" value="eight-a-side"></el-option>
+        </el-select>
+        <el-button type="primary" @click="$emit('refresh')" icon="el-icon-refresh">刷新</el-button>
+      </div>
+      <el-table :data="displayPlayers" border style="width: 100%">
+        <el-table-column prop="name" label="球员姓名" width="150"></el-table-column>
+        <el-table-column prop="number" label="球衣号码" width="120"></el-table-column>
+        <el-table-column prop="studentId" label="学号" width="150"></el-table-column>
+        <el-table-column prop="teamName" label="所属球队" width="200"></el-table-column>
+        <el-table-column prop="matchType" label="比赛类型" width="120">
+          <template #default="{ row }">
+            <span v-if="row">{{ getMatchTypeLabel(row.matchType) }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="统计信息" min-width="200">
+          <template #default="{ row }">
+            <div v-if="row" class="player-stats">
+              <el-tag size="small" type="success">进球: {{ getPlayerGoals(row.name) }}</el-tag>
+              <el-tag size="small" type="warning">黄牌: {{ getPlayerCards(row.name, '黄牌') }}</el-tag>
+              <el-tag size="small" type="danger">红牌: {{ getPlayerCards(row.name, '红牌') }}</el-tag>
+            </div>
+          </template>
+        </el-table-column>
+        <el-table-column label="操作" width="200">
+          <template #default="{ row }">
+            <div v-if="row">
+              <el-button size="small" type="primary" @click="$emit('edit-player', row)">编辑</el-button>
+              <el-button size="small" type="danger" @click="$emit('delete-player', row.id || row.studentId)">删除</el-button>
+            </div>
+          </template>
+        </el-table-column>
+      </el-table>
+    </el-tab-pane>
+
+    <!-- 球队管理 -->
+    <el-tab-pane label="球队管理" name="teams">
+      <div class="manage-header">
+        <el-select :model-value="manageMatchType" placeholder="请选择比赛类型" @update:model-value="$emit('filter-change', $event)" style="width: 200px;">
+          <el-option label="全部" value=""></el-option>
+          <el-option label="冠军杯" value="champions-cup"></el-option>
+          <el-option label="巾帼杯" value="womens-cup"></el-option>
+          <el-option label="八人制比赛" value="eight-a-side"></el-option>
+        </el-select>
+        <el-button type="primary" @click="$emit('refresh')" icon="el-icon-refresh">刷新</el-button>
+      </div>
+      <el-table :data="displayTeams" border style="width: 100%">
+        <el-table-column prop="teamName" label="球队名称" width="200"></el-table-column>
+        <el-table-column prop="matchType" label="比赛类型" width="150">
+          <template #default="{ row }">
+            <span v-if="row">{{ getMatchTypeLabel(row.matchType) }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="球员数量" width="120">
+          <template #default="{ row }">
+            <span v-if="row">{{ row.players ? row.players.length : 0 }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="球员信息" min-width="200">
+          <template #default="{ row }">
+            <div v-if="row && row.players && row.players.length > 0" class="players-preview">
+              <el-tag v-for="player in row.players.slice(0, 3)" :key="player.name" size="small" class="player-tag">
+                {{ player.name }}({{ player.number }})
+              </el-tag>
+              <span v-if="row.players.length > 3" class="more-players">+{{ row.players.length - 3 }}人</span>
+            </div>
+            <span v-else class="no-players">暂无球员</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="操作" width="200">
+          <template #default="{ row }">
+            <div v-if="row">
+              <el-button size="small" type="primary" @click="$emit('edit-team', row)">编辑</el-button>
+              <el-button size="small" type="danger" @click="$emit('delete-team', row.id)">删除</el-button>
+            </div>
+          </template>
+        </el-table-column>
+      </el-table>
+    </el-tab-pane>
   </el-tabs>
 </template>
 
@@ -141,6 +182,10 @@ const props = defineProps({
     type: Array,
     default: () => []
   },
+  players: {
+    type: Array,
+    default: () => []
+  },
   manageMatchType: {
     type: String,
     default: ''
@@ -148,10 +193,10 @@ const props = defineProps({
 })
 
 // 定义 emits
-const emit = defineEmits(['filter-change', 'refresh', 'edit-team', 'delete-team', 'edit-match', 'delete-match', 'edit-event', 'delete-event'])
+const emit = defineEmits(['filter-change', 'refresh', 'edit-team', 'delete-team', 'edit-match', 'delete-match', 'edit-event', 'delete-event', 'edit-player', 'delete-player'])
 
 // 响应式数据
-const activeTab = ref('teams')
+const activeTab = ref('matches')
 
 // 计算属性
 const displayTeams = computed(() => {
@@ -170,6 +215,23 @@ const displayEvents = computed(() => {
   return props.manageMatchType ? 
     props.events.filter(event => event.matchType === props.manageMatchType) : 
     props.events
+})
+
+const displayPlayers = computed(() => {
+  try {
+    if (!props.players || !Array.isArray(props.players)) {
+      return []
+    }
+    
+    const filteredPlayers = props.manageMatchType ? 
+      props.players.filter(player => player && player.matchType === props.manageMatchType) : 
+      props.players.filter(player => player != null)
+    
+    return filteredPlayers
+  } catch (error) {
+    console.error('处理球员数据时出错:', error)
+    return []
+  }
 })
 
 // 方法
@@ -198,6 +260,36 @@ const formatDate = (date) => {
     return new Date(date).toLocaleString('zh-CN')
   } catch (error) {
     return date
+  }
+}
+
+// 获取球员进球数
+const getPlayerGoals = (playerName) => {
+  try {
+    if (!playerName || !props.events || !Array.isArray(props.events)) {
+      return 0
+    }
+    return props.events.filter(event => 
+      event && event.playerName === playerName && (event.eventType === '进球' || event.eventType === 'goal')
+    ).length
+  } catch (error) {
+    console.error('获取球员进球数时出错:', error)
+    return 0
+  }
+}
+
+// 获取球员卡牌数
+const getPlayerCards = (playerName, cardType) => {
+  try {
+    if (!playerName || !cardType || !props.events || !Array.isArray(props.events)) {
+      return 0
+    }
+    return props.events.filter(event => 
+      event && event.playerName === playerName && event.eventType === cardType
+    ).length
+  } catch (error) {
+    console.error('获取球员卡牌数时出错:', error)
+    return 0
   }
 }
 </script>
@@ -233,5 +325,15 @@ const formatDate = (date) => {
 .no-players {
   color: #c0c4cc;
   font-style: italic;
+}
+
+.player-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.player-stats .el-tag {
+  margin: 0;
 }
 </style>

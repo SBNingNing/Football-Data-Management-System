@@ -26,6 +26,7 @@
             :teams="teams"
             :matches="matches"
             :events="events"
+            :players="players"
             :manage-match-type="manageMatchType"
             @filter-change="handleFilterChange"
             @refresh="loadAllData"
@@ -35,6 +36,8 @@
             @delete-match="deleteMatch"
             @edit-event="editEvent"
             @delete-event="deleteEvent"
+            @edit-player="editPlayer"
+            @delete-player="deletePlayer"
           />
         </el-tab-pane>
       </el-tabs>
@@ -45,18 +48,22 @@
       :edit-team-dialog="editTeamDialog"
       :edit-match-dialog="editMatchDialog"
       :edit-event-dialog="editEventDialog"
+      :edit-player-dialog="editPlayerDialog"
       :edit-team-form="editTeamForm"
       :edit-match-form="editMatchForm"
       :edit-event-form="editEventForm"
+      :edit-player-form="editPlayerForm"
       :teams="teams"
       :matches="matches"
       :players="players"
       @close-team-dialog="editTeamDialog = false"
       @close-match-dialog="editMatchDialog = false"
       @close-event-dialog="editEventDialog = false"
+      @close-player-dialog="editPlayerDialog = false"
       @update-team="updateTeam"
       @update-match="updateMatch"
       @update-event="updateEvent"
+      @update-player="updatePlayer"
       @add-edit-player="addEditPlayer"
       @remove-edit-player="removeEditPlayer"
     />
@@ -86,6 +93,7 @@ export default {
       editTeamDialog: false,
       editMatchDialog: false,
       editEventDialog: false,
+      editPlayerDialog: false,
       editTeamForm: {
         id: '',
         teamName: '',
@@ -107,6 +115,14 @@ export default {
         eventType: '',
         playerName: '',
         eventTime: '',
+        matchType: ''
+      },
+      editPlayerForm: {
+        id: '',
+        name: '',
+        number: '',
+        studentId: '',
+        teamName: '',
         matchType: ''
       }
     };
@@ -154,6 +170,10 @@ export default {
           const names = ['球队', '比赛', '事件', '球员'];
           if (result.status === 'rejected') {
             console.error(`加载${names[index]}数据失败:`, result.reason);
+            this.$message.warning(`加载${names[index]}数据失败: ${result.reason?.message || '未知错误'}`);
+          } else if (result.value && !result.value.success) {
+            console.error(`加载${names[index]}数据失败:`, result.value.error);
+            this.$message.warning(`加载${names[index]}数据失败: ${result.value.error}`);
           } else {
             console.log(`加载${names[index]}数据成功:`, result.value);
           }
@@ -333,6 +353,55 @@ export default {
           this.$message.success('删除成功');
         } else {
           this.$message.error(result.error || '删除失败');
+        }
+      });
+    },
+    // 编辑球员
+    editPlayer(player) {
+      console.log('编辑球员:', player);
+      this.editPlayerForm = {
+        id: player.id || player.studentId,
+        name: player.name,
+        number: player.number,
+        studentId: player.studentId || player.id,
+        teamName: player.teamName,
+        matchType: player.matchType
+      };
+      this.editPlayerDialog = true;
+    },
+    async updatePlayer() {
+      try {
+        const playerId = this.editPlayerForm.id || this.editPlayerForm.studentId;
+        const result = await this.userStore.updatePlayer(playerId, this.editPlayerForm);
+        if (result.success) {
+          this.$message.success('球员信息更新成功');
+          this.editPlayerDialog = false;
+          // 重新加载球员数据
+          await this.userStore.fetchPlayers();
+        } else {
+          this.$message.error(result.error || '球员信息更新失败');
+        }
+      } catch (error) {
+        console.error('更新球员失败:', error);
+        this.$message.error('球员信息更新失败');
+      }
+    },
+    deletePlayer(playerId) {
+      this.$confirm('此操作将永久删除该球员, 是否继续?', '提示', {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'warning'
+      }).then(async () => {
+        try {
+          const result = await this.userStore.deletePlayer(playerId);
+          if (result.success) {
+            this.$message.success('删除成功');
+          } else {
+            this.$message.error(result.error || '删除失败');
+          }
+        } catch (error) {
+          console.error('删除球员失败:', error);
+          this.$message.error('删除失败');
         }
       });
     },
