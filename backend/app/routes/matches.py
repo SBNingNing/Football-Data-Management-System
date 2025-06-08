@@ -168,8 +168,9 @@ def get_matches():
         for match in matches:
             match_dict = match.to_dict()
             match_dict['matchName'] = match_dict['match_name']
-            match_dict['team1'] = match.home_team.name
-            match_dict['team2'] = match.away_team.name
+            # 允许主队或客队为None
+            match_dict['team1'] = match.home_team.name if match.home_team else ''
+            match_dict['team2'] = match.away_team.name if match.away_team else ''
             # 使用标准格式返回时间
             match_dict['date'] = match.match_time.strftime('%Y-%m-%d %H:%M:%S') if match.match_time else None
             
@@ -278,18 +279,16 @@ def get_match_records():
             if tournament_id:
                 query = query.filter(Match.tournament_id == tournament_id)
 
-        # 搜索关键字
+        # 搜索关键字 - 修改为支持NULL值的查询
         if keyword:
-            query = query.join(Team, Match.home_team_id == Team.id) \
-                .join(Team, Match.away_team_id == Team.id) \
-                .filter(
-                    or_(
-                        Match.match_name.ilike(f'%{keyword}%'),
-                        Match.location.ilike(f'%{keyword}%'),
-                        Match.home_team.has(Team.name.ilike(f'%{keyword}%')),
-                        Match.away_team.has(Team.name.ilike(f'%{keyword}%'))
-                    )
+            query = query.filter(
+                or_(
+                    Match.match_name.ilike(f'%{keyword}%'),
+                    Match.location.ilike(f'%{keyword}%'),
+                    Match.home_team.has(Team.name.ilike(f'%{keyword}%')),
+                    Match.away_team.has(Team.name.ilike(f'%{keyword}%'))
                 )
+            )
 
         total = query.count()
         matches = query.order_by(Match.match_time.desc()).offset((page - 1) * page_size).limit(page_size).all()
@@ -299,8 +298,9 @@ def get_match_records():
             match_dict = match.to_dict()
             match_dict['id'] = match.id  # 确保有id字段
             match_dict['name'] = match.match_name
-            match_dict['team1'] = match.home_team.name
-            match_dict['team2'] = match.away_team.name
+            # 允许主队或客队为None
+            match_dict['team1'] = match.home_team.name if match.home_team else ''
+            match_dict['team2'] = match.away_team.name if match.away_team else ''
             match_dict['date'] = match.match_time.strftime('%Y-%m-%d %H:%M:%S') if match.match_time else None
             match_dict['location'] = match.location
             tournament = Tournament.query.get(match.tournament_id)

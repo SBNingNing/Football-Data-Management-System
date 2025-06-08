@@ -19,8 +19,8 @@ class Match(db.Model):
     knockout_round = db.Column('淘汰赛轮次', db.Integer, comment='淘汰赛轮次(0:常规赛, 1:附加赛, 2:1/4决赛, 3:半决赛, 4:决赛)')
     
     # 外键关系
-    home_team_id = db.Column('主队ID', db.Integer, db.ForeignKey('team.球队ID'), nullable=False, comment='主队ID')
-    away_team_id = db.Column('客队ID', db.Integer, db.ForeignKey('team.球队ID'), nullable=False, comment='客队ID')
+    home_team_id = db.Column('主队ID', db.Integer, db.ForeignKey('team.球队ID'), nullable=True, comment='主队ID')
+    away_team_id = db.Column('客队ID', db.Integer, db.ForeignKey('team.球队ID'), nullable=True, comment='客队ID')
     tournament_id = db.Column('赛事ID', db.Integer, db.ForeignKey('tournament.赛事ID'), nullable=False, comment='赛事ID')
     
     # 关系

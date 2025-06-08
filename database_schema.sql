@@ -2,14 +2,7 @@
 CREATE DATABASE IF NOT EXISTS football_management_system;
 USE football_management_system;
 
--- 删除现有表（按依赖关系逆序删除）
-DROP TABLE IF EXISTS event;
-DROP TABLE IF EXISTS `match`;
-DROP TABLE IF EXISTS player_team_history;
-DROP TABLE IF EXISTS player;
-DROP TABLE IF EXISTS team;
-DROP TABLE IF EXISTS tournament;
-DROP TABLE IF EXISTS user;
+
 
 -- 创建合并后的赛事表(tournament)，不同赛季的同种赛事也具有不同id
 CREATE TABLE tournament (
@@ -34,7 +27,7 @@ CREATE TABLE team (
     赛事黄牌数 INT DEFAULT 0 CHECK (赛事黄牌数 >= 0),
     赛事积分 INT DEFAULT 0 CHECK (赛事积分 >= 0),
     赛事排名 INT CHECK (赛事排名 > 0),
-    FOREIGN KEY (赛事ID) REFERENCES tournament(赛事ID),
+    CONSTRAINT fk_team_tournament FOREIGN KEY (赛事ID) REFERENCES tournament(赛事ID) ON DELETE CASCADE,
     INDEX idx_team_tournament (赛事ID)
 );
 
@@ -52,18 +45,16 @@ CREATE TABLE player_team_history (
     记录ID INT PRIMARY KEY AUTO_INCREMENT,
     球员ID VARCHAR(20) NOT NULL,
     球员号码 INT NOT NULL,
-    球队ID INT NOT NULL,
+    球队ID INT NULL, -- 修改为允许 NULL
     赛事ID INT NOT NULL,
     赛事进球数 INT DEFAULT 0 CHECK (赛事进球数 >= 0),
     赛事红牌数 INT DEFAULT 0 CHECK (赛事红牌数 >= 0),
     赛事黄牌数 INT DEFAULT 0 CHECK (赛事黄牌数 >= 0),
     备注 TEXT,
-    FOREIGN KEY (球员ID) REFERENCES player(球员ID),
-    FOREIGN KEY (球队ID) REFERENCES team(球队ID),
-    FOREIGN KEY (赛事ID) REFERENCES tournament(赛事ID),
-    -- 确保同一球员在同一赛事中的同一球队不能有重复的激活记录
+    CONSTRAINT fk_pth_player FOREIGN KEY (球员ID) REFERENCES player(球员ID) ON DELETE CASCADE,
+    CONSTRAINT fk_pth_team FOREIGN KEY (球队ID) REFERENCES team(球队ID) ON DELETE CASCADE,
+    CONSTRAINT fk_pth_tournament FOREIGN KEY (赛事ID) REFERENCES tournament(赛事ID) ON DELETE CASCADE,
     UNIQUE KEY unique_active_player_team_tournament (球员ID, 球队ID, 赛事ID),
-    -- 添加索引提高查询性能
     INDEX idx_team_tournament (球队ID, 赛事ID),
     INDEX idx_player_tournament (球员ID, 赛事ID)
 );
@@ -72,32 +63,41 @@ CREATE TABLE player_team_history (
 CREATE TABLE `match` (
     MatchID VARCHAR(50) PRIMARY KEY, 
     比赛名称 VARCHAR(50) NOT NULL,
-    赛事ID INT NOT NULL, -- 指明比赛赛事赛季信息
+    赛事ID INT NOT NULL,
     小组ID CHAR(1) NULL,
     比赛时间 DATETIME NOT NULL,
     比赛地点 VARCHAR(50) NOT NULL,
-    主队ID INT NOT NULL,
-    客队ID INT NOT NULL,
+    主队ID INT NULL, -- 修改为允许 NULL
+    客队ID INT NULL, -- 修改为允许 NULL
     主队比分 INT DEFAULT 0,
     客队比分 INT DEFAULT 0,
     比赛状态 CHAR(1) NOT NULL CHECK (比赛状态 IN ('F', 'P')),
     淘汰赛轮次 INT, -- 0:常规赛, 1:附加赛, 2:1/4决赛, 3:半决赛, 4:决赛
-    FOREIGN KEY (主队ID) REFERENCES team(球队ID),
-    FOREIGN KEY (客队ID) REFERENCES team(球队ID),
-    FOREIGN KEY (赛事ID) REFERENCES tournament(赛事ID)
+    CONSTRAINT fk_match_home_team FOREIGN KEY (主队ID) REFERENCES team(球队ID) ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT fk_match_away_team FOREIGN KEY (客队ID) REFERENCES team(球队ID) ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT fk_match_tournament FOREIGN KEY (赛事ID) REFERENCES tournament(赛事ID) ON DELETE CASCADE ON UPDATE CASCADE,
+    INDEX idx_match_home_team (主队ID),
+    INDEX idx_match_away_team (客队ID),
+    INDEX idx_match_tournament (赛事ID),
+    INDEX idx_match_time (比赛时间),
+    INDEX idx_match_status (比赛状态)
 );
 
--- 创建事件表(event) - 修复 MatchID 字段类型
+-- 创建事件表(event) - 确保所有外键都有级联删除
 CREATE TABLE event (
     eventID INT PRIMARY KEY AUTO_INCREMENT,
     MatchID VARCHAR(50) NOT NULL,
     事件类型 VARCHAR(50) NOT NULL,
-    球队ID INT NOT NULL,
+    球队ID INT NULL, -- 修改为允许 NULL
     球员ID VARCHAR(20) NOT NULL,
     事件时间 INT NULL COMMENT '事件发生时间（比赛第几分钟）',
-    FOREIGN KEY (MatchID) REFERENCES `match`(MatchID),
-    FOREIGN KEY (球队ID) REFERENCES team(球队ID),
-    FOREIGN KEY (球员ID) REFERENCES player(球员ID)
+    CONSTRAINT fk_event_match FOREIGN KEY (MatchID) REFERENCES `match`(MatchID) ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT fk_event_team FOREIGN KEY (球队ID) REFERENCES team(球队ID) ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT fk_event_player FOREIGN KEY (球员ID) REFERENCES player(球员ID) ON DELETE CASCADE ON UPDATE CASCADE,
+    INDEX idx_event_match (MatchID),
+    INDEX idx_event_team (球队ID),
+    INDEX idx_event_player (球员ID),
+    INDEX idx_event_type (事件类型)
 );
 
 -- 创建用户表(user)
@@ -113,7 +113,6 @@ CREATE TABLE user (
 );
 
 -- 插入默认数据
--- 插入默认赛事
 INSERT INTO tournament (赛事ID, 赛事名称, 赛季名称, 赛季开始时间, 赛季结束时间) VALUES 
 (1, '冠军杯','2024赛季', '2024-01-01 00:00:00', '2024-12-31 23:59:59'),
 (2, '巾帼杯', '2024赛季', '2024-01-01 00:00:00', '2024-12-31 23:59:59'),
@@ -122,3 +121,10 @@ INSERT INTO tournament (赛事ID, 赛事名称, 赛季名称, 赛季开始时间
 -- 插入默认管理员用户
 INSERT INTO user (用户名, 密码, 邮箱, 身份角色) VALUES 
 ('admin', 'scrypt:32768:8:1$hashed_password', 'admin@example.com', 'admin');
+
+-- 验证级联删除设置（可选）
+SHOW CREATE TABLE team;
+SHOW CREATE TABLE player_team_history;
+SHOW CREATE TABLE `match`;
+SHOW CREATE TABLE event;
+

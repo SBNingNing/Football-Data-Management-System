@@ -10,7 +10,7 @@ class PlayerTeamHistory(db.Model):
     # 外键关系
     player_id = db.Column('球员ID', db.String(20), db.ForeignKey('player.球员ID'), nullable=False, comment='球员ID')
     player_number = db.Column('球员号码', db.Integer, nullable=False, comment='球员号码')
-    team_id = db.Column('球队ID', db.Integer, db.ForeignKey('team.球队ID'), nullable=False, comment='球队ID')
+    team_id = db.Column('球队ID', db.Integer, db.ForeignKey('team.球队ID'), nullable=True, comment='球队ID')
     tournament_id = db.Column('赛事ID', db.Integer, db.ForeignKey('tournament.赛事ID'), nullable=False, comment='赛事ID')
     
     # 赛事统计数据

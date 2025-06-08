@@ -7,7 +7,7 @@ class Event(db.Model):
     id = db.Column('EventID', db.Integer, primary_key=True)
     event_type = db.Column('事件类型', db.String(20), nullable=False)
     match_id = db.Column('MatchID', db.Integer, db.ForeignKey('match.MatchID'), nullable=False)
-    team_id = db.Column('球队ID', db.Integer, db.ForeignKey('team.球队ID'), nullable=False)
+    team_id = db.Column('球队ID', db.Integer, db.ForeignKey('team.球队ID'), nullable=True)
     player_id = db.Column('球员ID', db.Integer, db.ForeignKey('player.球员ID'), nullable=False)
     event_time = db.Column('事件时间', db.Integer, nullable=True)  # 存储比赛第几分钟
     

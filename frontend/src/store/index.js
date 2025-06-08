@@ -19,6 +19,13 @@ export const useUserStore = defineStore('user', {
   },
   
   actions: {
+    // 初始化方法 - 应用启动时调用
+    init() {
+      if (this.token) {
+        axios.defaults.headers.common['Authorization'] = `Bearer ${this.token}`
+      }
+    },
+
     // 统一的数据处理方法
     _handleApiResponse(response, dataType = 'data') {
       console.log(`获取${dataType}响应:`, response.data);
@@ -36,6 +43,16 @@ export const useUserStore = defineStore('user', {
     // 统一的错误处理方法
     _handleApiError(error, operation) {
       console.error(`${operation}失败:`, error);
+      
+      // 如果是401错误，清除token并跳转到登录页
+      if (error.response?.status === 401) {
+        this.logout()
+        // 可以在这里添加跳转到登录页的逻辑
+        const errorMessage = '登录已过期，请重新登录'
+        this.error = errorMessage
+        return { success: false, error: errorMessage }
+      }
+      
       const errorMessage = error.response?.data?.message || `${operation}失败`;
       this.error = errorMessage;
       return { success: false, error: errorMessage };
@@ -256,6 +273,11 @@ export const useUserStore = defineStore('user', {
       this.error = null
       
       try {
+        // 确保请求前token已设置
+        if (this.token && !axios.defaults.headers.common['Authorization']) {
+          axios.defaults.headers.common['Authorization'] = `Bearer ${this.token}`
+        }
+        
         const response = await axios.get('/api/matches')
         const matchesData = this._handleApiResponse(response, '比赛数据')
         
