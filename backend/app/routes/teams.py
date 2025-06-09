@@ -323,12 +323,38 @@ def update_team(team_id):
         if not team:
             return jsonify({'status': 'error', 'message': '球队不存在'}), 404
         
+        # 保存原有的tournament_id
+        old_tournament_id = team.tournament_id
+        
         # 更新球队信息
         if data.get('teamName'):
             team.name = data['teamName']
         
-        # 删除原有的球员-队伍历史记录
-        PlayerTeamHistory.query.filter_by(team_id=team_id, tournament_id=team.tournament_id).delete()
+        # 如果修改了比赛类型，需要更新tournament_id
+        if data.get('matchType'):
+            match_type_to_tournament = {
+                'champions-cup': 1,
+                'womens-cup': 2,
+                'eight-a-side': 3
+            }
+            new_tournament_id = match_type_to_tournament.get(data['matchType'], 1)
+            
+            # 检查新赛事中是否已有同名球队
+            if new_tournament_id != old_tournament_id:
+                existing_team = Team.query.filter_by(
+                    name=team.name, 
+                    tournament_id=new_tournament_id
+                ).filter(Team.id != team_id).first()
+                
+                if existing_team:
+                    return jsonify({'status': 'error', 'message': '目标赛事中已存在同名球队'}), 400
+                
+                team.tournament_id = new_tournament_id
+        
+        # 删除原有的球员-队伍历史记录（使用原tournament_id或新tournament_id）
+        PlayerTeamHistory.query.filter_by(team_id=team_id, tournament_id=old_tournament_id).delete()
+        if team.tournament_id != old_tournament_id:
+            PlayerTeamHistory.query.filter_by(team_id=team_id, tournament_id=team.tournament_id).delete()
         
         # 添加新的球员和历史记录
         players_data = data.get('players', [])
@@ -358,7 +384,46 @@ def update_team(team_id):
                 db.session.add(player_history)
         
         db.session.commit()
-        return jsonify({'status': 'success', 'message': '更新成功'}), 200
+        
+        # 返回更新后的球队信息
+        team_dict = team.to_dict()
+        team_dict['teamName'] = team_dict['name']
+        
+        # 获取更新后的球员信息
+        team_players = []
+        for history in PlayerTeamHistory.query.filter_by(team_id=team_id, tournament_id=team.tournament_id).all():
+            team_players.append({
+                'name': history.player.name,
+                'playerId': history.player_id,
+                'studentId': history.player_id,
+                'id': history.player_id,
+                'number': str(history.player_number),
+                'goals': history.tournament_goals,
+                'redCards': history.tournament_red_cards,
+                'yellowCards': history.tournament_yellow_cards
+            })
+        
+        team_dict['players'] = team_players
+        team_dict['matchType'] = determine_match_type(team.tournament)
+        
+        # 添加详细统计信息
+        team_dict.update({
+            'rank': team.tournament_rank,
+            'goals': team.tournament_goals,
+            'goalsConceded': team.tournament_goals_conceded,
+            'goalDifference': team.tournament_goal_difference,
+            'redCards': team.tournament_red_cards,
+            'yellowCards': team.tournament_yellow_cards,
+            'points': team.tournament_points,
+            'tournamentId': team.tournament_id,
+            'tournamentName': team.tournament.name if team.tournament else None
+        })
+        
+        return jsonify({
+            'status': 'success', 
+            'message': '更新成功',
+            'data': team_dict
+        }), 200
         
     except Exception as e:
         db.session.rollback()

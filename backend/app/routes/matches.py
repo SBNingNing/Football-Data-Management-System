@@ -157,6 +157,36 @@ def create_match():
         db.session.rollback()
         return jsonify({'status': 'error', 'message': f'创建失败: {str(e)}'}), 500
 
+@matches_bp.route('/<string:match_id>/complete', methods=['PUT'])
+@jwt_required()
+def complete_match(match_id):
+    """标记比赛为已完赛"""
+    try:
+        match = Match.query.get(match_id)
+        if not match:
+            return jsonify({'status': 'error', 'message': '比赛不存在'}), 404
+        
+        # 检查比赛是否已经完赛
+        if match.status == 'F':
+            return jsonify({'status': 'error', 'message': '比赛已经完赛'}), 400
+        
+        # 更新比赛状态为已完赛
+        match.status = 'F'
+        db.session.commit()
+        
+        return jsonify({
+            'status': 'success', 
+            'message': '比赛已标记为完赛',
+            'data': {
+                'id': match.id,
+                'status': 'completed'
+            }
+        }), 200
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'status': 'error', 'message': f'操作失败: {str(e)}'}), 500
+
 @matches_bp.route('', methods=['GET'])
 @jwt_required()
 def get_matches():
@@ -174,8 +204,16 @@ def get_matches():
             # 使用标准格式返回时间
             match_dict['date'] = match.match_time.strftime('%Y-%m-%d %H:%M:%S') if match.match_time else None
             
+            # 添加比分信息
+            match_dict['home_score'] = match.home_score if match.home_score is not None else 0
+            match_dict['away_score'] = match.away_score if match.away_score is not None else 0
+            
             tournament = Tournament.query.get(match.tournament_id)
             match_dict['matchType'] = determine_match_type(tournament)
+            
+            # 修正状态映射 - 根据数据库模型注释
+            status_map = {'P': 'pending', 'O': 'ongoing', 'F': 'completed'}
+            match_dict['status'] = status_map.get(match.status, 'pending')
             
             matches_data.append(match_dict)
         
@@ -195,6 +233,16 @@ def update_match(match_id):
         if not match:
             return jsonify({'status': 'error', 'message': '比赛不存在'}), 404
         
+        # 更新比赛类型
+        if data.get('matchType'):
+            match_type_to_tournament = {
+                'champions-cup': 1,
+                'womens-cup': 2,
+                'eight-a-side': 3
+            }
+            new_tournament_id = match_type_to_tournament.get(data['matchType'], 1)
+            match.tournament_id = new_tournament_id
+        
         # 更新比赛信息
         if data.get('matchName'):
             match.match_name = data['matchName']
@@ -208,7 +256,20 @@ def update_match(match_id):
         if data.get('location'):
             match.location = data['location']
         
-        # 更新球队信息
+        # 更新比分信息
+        if 'home_score' in data:
+            try:
+                match.home_score = int(data['home_score']) if data['home_score'] is not None else 0
+            except (ValueError, TypeError):
+                match.home_score = 0
+        
+        if 'away_score' in data:
+            try:
+                match.away_score = int(data['away_score']) if data['away_score'] is not None else 0
+            except (ValueError, TypeError):
+                match.away_score = 0
+        
+        # 更新球队信息（需要在正确的赛事中查找）
         if data.get('team1'):
             team1 = Team.query.filter_by(name=data['team1'], tournament_id=match.tournament_id).first()
             if team1:
@@ -220,7 +281,27 @@ def update_match(match_id):
                 match.away_team_id = team2.id
         
         db.session.commit()
-        return jsonify({'status': 'success', 'message': '更新成功'}), 200
+        
+        # 返回更新后的比赛信息
+        match_dict = match.to_dict()
+        match_dict['matchName'] = match_dict['match_name']
+        match_dict['team1'] = match.home_team.name if match.home_team else ''
+        match_dict['team2'] = match.away_team.name if match.away_team else ''
+        match_dict['date'] = match.match_time.strftime('%Y-%m-%d %H:%M:%S') if match.match_time else None
+        match_dict['home_score'] = match.home_score if match.home_score is not None else 0
+        match_dict['away_score'] = match.away_score if match.away_score is not None else 0
+        
+        tournament = Tournament.query.get(match.tournament_id)
+        match_dict['matchType'] = determine_match_type(tournament)
+        
+        status_map = {'P': 'pending', 'O': 'ongoing', 'F': 'completed'}
+        match_dict['status'] = status_map.get(match.status, 'pending')
+        
+        return jsonify({
+            'status': 'success', 
+            'message': '更新成功',
+            'data': match_dict
+        }), 200
         
     except Exception as e:
         db.session.rollback()
@@ -303,6 +384,21 @@ def get_match_records():
             match_dict['team2'] = match.away_team.name if match.away_team else ''
             match_dict['date'] = match.match_time.strftime('%Y-%m-%d %H:%M:%S') if match.match_time else None
             match_dict['location'] = match.location
+            # 添加比分信息
+            match_dict['home_score'] = match.home_score if match.home_score is not None else 0
+            match_dict['away_score'] = match.away_score if match.away_score is not None else 0
+            # 添加格式化的比分显示
+            match_dict['score'] = f"{match_dict['home_score']} : {match_dict['away_score']}"
+            # 添加比赛状态信息
+            status_map = {
+                'P': {'text': '待进行', 'type': 'info'},
+                'O': {'text': '进行中', 'type': 'warning'}, 
+                'F': {'text': '已完赛', 'type': 'success'}
+            }
+            status_info = status_map.get(match.status, {'text': '待进行', 'type': 'info'})
+            match_dict['status'] = status_info['text']
+            match_dict['status_type'] = status_info['type']  # 用于前端样式
+            
             tournament = Tournament.query.get(match.tournament_id)
             match_dict['type'] = (
                 '冠军杯' if match.tournament_id == 1 else

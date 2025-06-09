@@ -9,17 +9,6 @@
     <!-- 功能标签页 -->
     <el-card class="main-content-card">
       <el-tabs v-model="activeTab" @tab-click="handleTabClick">
-        <!-- 信息录入标签页 -->
-        <el-tab-pane label="信息录入" name="input">
-          <DataInput 
-            :teams="teams"
-            :matches="matches"
-            @team-submit="handleTeamSubmit"
-            @schedule-submit="handleScheduleSubmit"
-            @event-submit="handleEventSubmit"
-          />
-        </el-tab-pane>
-
         <!-- 信息管理标签页 -->
         <el-tab-pane label="信息管理" name="manage">
           <DataManagement 
@@ -38,6 +27,18 @@
             @delete-event="deleteEvent"
             @edit-player="editPlayer"
             @delete-player="deletePlayer"
+            @complete-match="completeMatch"
+          />
+        </el-tab-pane>
+
+        <!-- 信息录入标签页 -->
+        <el-tab-pane label="信息录入" name="input">
+          <DataInput 
+            :teams="teams"
+            :matches="matches"
+            @team-submit="handleTeamSubmit"
+            @schedule-submit="handleScheduleSubmit"
+            @event-submit="handleEventSubmit"
           />
         </el-tab-pane>
       </el-tabs>
@@ -87,7 +88,7 @@ export default {
   },
   data() {
     return {
-      activeTab: 'input',
+      activeTab: 'manage',
       manageMatchType: '',
       // 编辑相关数据
       editTeamDialog: false,
@@ -403,6 +404,30 @@ export default {
           console.error('删除球员失败:', error);
           this.$message.error('删除失败');
         }
+      });
+    },
+    // 完赛处理函数
+    completeMatch(matchId) {
+      this.$confirm('确定要标记该比赛为已完赛吗？', '提示', {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'warning'
+      }).then(async () => {
+        try {
+          const result = await this.userStore.completeMatch(matchId);
+          if (result.success) {
+            this.$message.success('比赛已标记为完赛');
+            // 重新加载比赛数据
+            await this.userStore.fetchMatches();
+          } else {
+            this.$message.error(result.error || '操作失败');
+          }
+        } catch (error) {
+          console.error('完赛操作失败:', error);
+          this.$message.error('操作失败，请重试');
+        }
+      }).catch(() => {
+        // 取消操作
       });
     },
     goToHome() {

@@ -386,6 +386,25 @@ export const useUserStore = defineStore('user', {
         return this._handleApiError(error, '删除比赛')
       }
     },
+
+    async completeMatch(matchId) {
+      this.loading = true
+      this.error = null
+      
+      try {
+        const response = await axios.put(`/api/matches/${matchId}/complete`)
+        this.loading = false
+        
+        if (response.data.status === 'success') {
+          await this.fetchMatches() // 刷新比赛列表
+          return { success: true, data: response.data }
+        }
+        return { success: false, error: response.data.message }
+      } catch (error) {
+        this.loading = false
+        return this._handleApiError(error, '完赛操作')
+      }
+    },
     
     async createEvent(eventData) {
       this.loading = true
@@ -565,6 +584,30 @@ export const useUserStore = defineStore('user', {
       } catch (error) {
         this.loading = false
         return this._handleApiError(error, '获取球员详情')
+      }
+    },
+
+    async fetchTeamByName(teamName) {
+      this.loading = true
+      this.error = null
+      
+      try {
+        console.log('正在获取球队详情:', teamName);
+        const response = await axios.get(`/api/teams/${encodeURIComponent(teamName)}`)
+        console.log('球队详情API响应:', response);
+        
+        this.loading = false
+        
+        if (response.data && response.data.status === 'success') {
+          return { success: true, data: response.data.data }
+        } else {
+          const errorMessage = response.data?.message || '获取球队详情失败'
+          console.error('API返回错误:', errorMessage);
+          return { success: false, error: errorMessage }
+        }
+      } catch (error) {
+        this.loading = false
+        return this._handleApiError(error, '获取球队详情')
       }
     }
   }

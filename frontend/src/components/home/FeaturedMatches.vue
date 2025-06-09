@@ -20,7 +20,6 @@
           </div>
           <div class="featured-match-footer">
             <span class="match-location"><i class="el-icon-location"></i> {{ match.location }}</span>
-            <el-button size="small" type="primary">查看详情</el-button>
           </div>
         </div>
       </el-carousel-item>

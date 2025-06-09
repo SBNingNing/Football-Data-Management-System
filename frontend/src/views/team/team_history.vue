@@ -164,7 +164,20 @@
           </el-row>
           <el-table :data="record.players" style="width: 100%; margin-top: 20px;">
             <el-table-column prop="number" label="球衣号码" width="100"></el-table-column>
-            <el-table-column prop="name" label="球员姓名"></el-table-column>
+            <el-table-column prop="name" label="球员姓名">
+              <template #default="scope">
+                <div class="player-name-cell">
+                  <span 
+                    class="clickable-player" 
+                    @click="navigateToPlayer(scope.row)"
+                    :title="点击查看球员详情"
+                  >
+                    <el-icon class="player-icon"><User /></el-icon>
+                    {{ scope.row.name }}
+                  </span>
+                </div>
+              </template>
+            </el-table-column>
             <el-table-column prop="playerId" label="球员ID"></el-table-column>
             <el-table-column prop="goals" label="进球数"></el-table-column>
             <el-table-column prop="yellowCards" label="黄牌数"></el-table-column>
@@ -177,7 +190,8 @@
 </template>
 
 <script>
-import { Finished, Warning, CircleClose, Top, Trophy, Star, ArrowLeft } from '@element-plus/icons-vue'
+import { useUserStore } from '@/store'
+import { Finished, Warning, CircleClose, Top, Trophy, Star, ArrowLeft, User } from '@element-plus/icons-vue'
 
 export default {
   name: 'TeamInfo',
@@ -188,7 +202,8 @@ export default {
     Top,
     Trophy,
     Star,
-    ArrowLeft
+    ArrowLeft,
+    User
   },
   data() {
     return {
@@ -212,24 +227,79 @@ export default {
   methods: {
     async loadTeamData() {
       try {
-        // 从路由参数获取球队名称
-        const teamName = this.$route.query.teamName || this.$route.params.teamName;
+        // 从路由参数或query参数获取球队名称
+        const teamName = this.$route.params.teamName || 
+                        this.$route.query.teamName || 
+                        this.teamName; // 来自props
+        
+        console.log('获取到的球队名称:', teamName);
+        console.log('当前路由信息:', this.$route);
+        
         if (!teamName) {
           this.$message.error('未指定球队名称');
           return;
         }
         
-        // 使用后端的获取单个球队信息接口（通过球队名称）
-        const response = await this.$http.get(`/api/teams/${encodeURIComponent(teamName)}`);
+        // 添加loading提示
+        const loading = this.$loading({
+          lock: true,
+          text: '正在加载球队数据...',
+          spinner: 'el-icon-loading',
+          background: 'rgba(0, 0, 0, 0.7)'
+        });
         
-        if (response.data.status === 'success') {
-          this.team = response.data.data;
+        // 直接使用 useUserStore 获取 store 实例
+        const store = useUserStore();
+        console.log('Store 实例:', store);
+        console.log('Store 方法列表:', Object.getOwnPropertyNames(store));
+        
+        // 检查方法是否存在
+        if (typeof store.fetchTeamByName !== 'function') {
+          console.error('fetchTeamByName 方法不存在，可用方法:', Object.keys(store));
+          loading.close();
+          this.$message.error('系统错误：缺少获取球队数据的方法');
+          return;
+        }
+        
+        // 使用 store 中的方法获取球队详情
+        const result = await store.fetchTeamByName(teamName);
+        
+        loading.close();
+        
+        if (result.success) {
+          const teamData = result.data;
+          console.log('获取到的球队数据:', teamData);
+          
+          // 直接使用后端返回的数据结构
+          this.team = {
+            teamName: teamData.teamName || '未知球队',
+            totalGoals: teamData.totalGoals || 0,
+            totalGoalsConceded: teamData.totalGoalsConceded || 0,
+            totalGoalDifference: teamData.totalGoalDifference || 0,
+            totalYellowCards: teamData.totalYellowCards || 0,
+            totalRedCards: teamData.totalRedCards || 0,
+            totalPoints: teamData.totalPoints || 0,
+            bestRank: teamData.bestRank,
+            records: teamData.records || []
+          };
+          
+          // 自动展开第一个记录
+          if (this.team.records.length > 0) {
+            this.activeSeason = [this.team.records[0].id];
+          }
+          
+          this.$message.success('球队数据加载成功');
         } else {
-          this.$message.error(response.data.message || '获取球队信息失败');
+          this.$message.error(result.error || '获取球队数据失败');
+          console.error('获取球队数据失败:', result.error);
         }
       } catch (error) {
-        console.error('获取球队信息失败:', error);
-        this.$message.error('获取球队信息失败');
+        console.error('加载球队数据异常:', error);
+        this.$message.error('网络错误，无法获取球队数据');
+        
+        // 关闭可能还在显示的loading
+        const loadingInstance = this.$loading.service({});
+        loadingInstance.close();
       }
     },
     
@@ -243,7 +313,50 @@ export default {
     },
     
     goToHomePage() {
-      this.$router.push('/home')
+      // 使用replace而不是push，并强制刷新主页数据
+      this.$router.replace('/home').then(() => {
+        // 确保路由跳转完成后触发主页数据重载
+        this.$nextTick(() => {
+          window.dispatchEvent(new Event('resize'));
+        });
+      }).catch(error => {
+        console.error('Navigation error:', error);
+        // 如果路由出错，直接跳转
+        window.location.href = '/home';
+      });
+    },
+    
+    goToPlayerHistory(playerId) {
+      if (playerId) {
+        this.$router.push({
+          name: 'PlayerCareer',
+          params: { playerId: playerId },
+          query: { playerId: playerId }
+        });
+      }
+    },
+
+    navigateToPlayer(player) {
+      console.log('点击了球员:', player) // 调试用
+      
+      // 确保有ID数据再跳转
+      const playerId = player.id || player.studentId || player.playerId
+      if (!playerId) {
+        console.error('球员ID不存在:', player)
+        this.$message.error('球员信息不完整，无法查看详情')
+        return
+      }
+      
+      // 跳转到球员历史页面，使用正确的路由名称
+      this.$router.push({
+        name: 'PlayerHistory', // 确保路由名称正确
+        query: {
+          playerId: playerId
+        }
+      }).catch(err => {
+        console.error('路由跳转失败:', err)
+        this.$message.error('页面跳转失败')
+      })
     }
   }
 };
@@ -252,6 +365,8 @@ export default {
 <style scoped>
 .team-info {
   padding: 20px;
+  max-width: 1200px;
+  margin: 0 auto;
 }
 
 .team-name-card {
@@ -346,5 +461,48 @@ export default {
   font-size: 18px;
   font-weight: bold;
   color: #303133;
+}
+
+.player-name-cell {
+  display: flex;
+  align-items: center;
+}
+
+.clickable-player {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #409EFF;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: all 0.3s ease;
+  font-weight: 500;
+}
+
+.clickable-player:hover {
+  color: #ffffff;
+  background-color: #409EFF;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 6px rgba(64, 158, 255, 0.3);
+}
+
+.player-icon {
+  font-size: 14px;
+  transition: transform 0.3s ease;
+}
+
+.clickable-player:hover .player-icon {
+  transform: scale(1.1);
+}
+
+.player-link {
+  color: #409EFF;
+  text-decoration: none;
+}
+
+.player-link:hover {
+  color: #66b1ff;
+  text-decoration: underline;
 }
 </style>

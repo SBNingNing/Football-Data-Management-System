@@ -1,75 +1,83 @@
 <template>
-  <el-card class="recent-matches-card">
+  <el-card class="match-records-card">
     <template #header>
-      <div class="clearfix">
+      <div class="card-header">
         <span>比赛记录</span>
-        <div style="float: right;">
+        <div class="header-actions">
+          <el-select
+            v-model="selectedType"
+            placeholder="选择比赛类型"
+            @change="handleFilterChange"
+            clearable
+            class="type-select"
+          >
+            <el-option label="冠军杯" value="championsCup" />
+            <el-option label="巾帼杯" value="womensCup" />
+            <el-option label="八人制" value="eightASide" />
+          </el-select>
           <el-input
             v-model="searchKeyword"
-            placeholder="搜索比赛名称/球队/地点"
-            size="small"
-            style="width: 200px; margin-right: 10px;"
-            @input="onSearch"
+            placeholder="搜索比赛名称、球队或地点"
+            @input="handleSearch"
             clearable
-          />
-          <el-select
-            v-model="filterType"
-            placeholder="筛选类型"
-            size="small"
-            style="width: 120px; margin-right: 10px;"
-            @change="onFilterChange"
-            clearable
+            class="search-input"
           >
-            <el-option label="全部" value=""></el-option>
-            <el-option label="冠军杯" value="championsCup"></el-option>
-            <el-option label="巾帼杯" value="womensCup"></el-option>
-            <el-option label="八人制" value="eightASide"></el-option>
-          </el-select>
+            <template #prefix>
+              <el-icon><Search /></el-icon>
+            </template>
+          </el-input>
         </div>
       </div>
     </template>
-    <el-table :data="matchRecords" border style="width: 100%" table-layout="fixed">
-      <el-table-column prop="name" label="比赛名称" min-width="180" show-overflow-tooltip></el-table-column>
-      <el-table-column label="比赛类型" min-width="120" show-overflow-tooltip>
-        <template #default="{ row }">
-          <span v-if="row">{{ getMatchTypeLabel(row.type) }}</span>
+
+    <el-table :data="matchRecords" style="width: 100%" stripe>
+      <el-table-column prop="name" label="比赛名称" width="200" />
+      <el-table-column prop="type" label="赛事类型" width="100" />
+      <el-table-column label="对阵球队" width="250">
+        <template #default="scope">
+          <span>{{ scope.row.team1 }} VS {{ scope.row.team2 }}</span>
         </template>
       </el-table-column>
-      <el-table-column prop="match_time" label="比赛时间" min-width="160" show-overflow-tooltip>
-        <template #default="{ row }">
-          <span v-if="row">{{ formatDate(row.match_time) }}</span>
+      <el-table-column prop="score" label="比分" width="100" align="center">
+        <template #default="scope">
+          <span :class="scope.row.status === '已完赛' ? 'final-score' : 'pending-score'">
+            {{ scope.row.score }}
+          </span>
         </template>
       </el-table-column>
-      <el-table-column label="对阵" min-width="200" show-overflow-tooltip>
-        <template #default="{ row }">
-          <span v-if="row">{{ row.team1 }} vs {{ row.team2 }}</span>
+      <el-table-column label="状态" width="100" align="center">
+        <template #default="scope">
+          <el-tag :type="scope.row.status_type" size="small">
+            {{ scope.row.status }}
+          </el-tag>
         </template>
       </el-table-column>
-      <el-table-column prop="location" label="比赛地点" min-width="120" show-overflow-tooltip></el-table-column>
-      <el-table-column label="操作" width="110" align="center" fixed="right">
-        <template #default="{ row }">
-          <el-button size="small" type="primary" @click="viewMatchDetails(row)">查看详情</el-button>
-        </template>
-      </el-table-column>
+      <el-table-column prop="date" label="比赛时间" width="180" />
+      <el-table-column prop="location" label="比赛地点" />
     </el-table>
-    <div style="margin-top: 16px; text-align: right;">
+
+    <div class="pagination-wrapper" v-if="matchRecordsTotal > 0">
       <el-pagination
-        background
-        layout="prev, pager, next, jumper"
-        :total="matchRecordsTotal"
-        :page-size="pageSize"
         v-model:current-page="currentPage"
-        @current-change="onPageChange"
+        v-model:page-size="pageSize"
+        :page-sizes="[10, 20, 50, 100]"
+        :total="matchRecordsTotal"
+        layout="total, sizes, prev, pager, next, jumper"
+        @size-change="handleSizeChange"
+        @current-change="handleCurrentChange"
       />
     </div>
   </el-card>
 </template>
 
 <script>
-import { ElMessage } from 'element-plus';
+import { Search } from '@element-plus/icons-vue';
 
 export default {
   name: 'MatchRecords',
+  components: {
+    Search
+  },
   props: {
     matchRecords: {
       type: Array,
@@ -82,85 +90,55 @@ export default {
   },
   data() {
     return {
+      selectedType: '',
       searchKeyword: '',
-      filterType: '',
       currentPage: 1,
-      pageSize: 10
+      pageSize: 10,
+      searchTimer: null
     };
   },
   methods: {
-    getMatchTypeLabel(type) {
-      const labels = {
-        'championsCup': '冠军杯',
-        'womensCup': '巾帼杯',
-        'eightASide': '八人制',
-        'champions-cup': '冠军杯',
-        'womens-cup': '巾帼杯',
-        'eight-a-side': '八人制'
-      };
-      return labels[type] || type || '';
-    },
-    formatDate(dateInput) {
-      if (!dateInput) return '';
-      
-      try {
-        let date;
-        
-        if (typeof dateInput === 'string') {
-          const cleanDate = dateInput.replace(/[TZ]/g, ' ').replace(/\.\d{3}/, '').trim();
-          date = new Date(cleanDate);
-        } else {
-          date = new Date(dateInput);
-        }
-        
-        if (isNaN(date.getTime())) {
-          console.warn('Invalid date:', dateInput);
-          return '';
-        }
-        
-        return date.toLocaleString('zh-CN', {
-          year: 'numeric',
-          month: '2-digit',
-          day: '2-digit',
-          hour: '2-digit',
-          minute: '2-digit',
-          timeZone: 'Asia/Shanghai'
-        });
-      } catch (error) {
-        console.error('Date formatting error:', error, dateInput);
-        return '';
-      }
-    },
-    viewMatchDetails(match) {
-      if (match.id) {
-        this.$router.push(`/matches/detail/${match.id}`);
-      } else {
-        ElMessage.error('未找到比赛ID');
-      }
-    },
-    onSearch() {
-      this.currentPage = 1;
-      this.$emit('search', {
-        keyword: this.searchKeyword,
-        type: this.filterType,
-        page: this.currentPage,
-        pageSize: this.pageSize
-      });
-    },
-    onFilterChange() {
+    handleFilterChange() {
       this.currentPage = 1;
       this.$emit('filter-change', {
+        type: this.selectedType,
         keyword: this.searchKeyword,
-        type: this.filterType,
         page: this.currentPage,
         pageSize: this.pageSize
       });
     },
-    onPageChange(page) {
-      this.currentPage = page;
+
+    handleSearch() {
+      if (this.searchTimer) {
+        clearTimeout(this.searchTimer);
+      }
+      this.searchTimer = setTimeout(() => {
+        this.currentPage = 1;
+        this.$emit('search', {
+          type: this.selectedType,
+          keyword: this.searchKeyword,
+          page: this.currentPage,
+          pageSize: this.pageSize
+        });
+      }, 500);
+    },
+
+    handleSizeChange(val) {
+      this.pageSize = val;
+      this.currentPage = 1;
       this.$emit('page-change', {
+        type: this.selectedType,
         keyword: this.searchKeyword,
-        type: this.filterType,
+        page: this.currentPage,
+        pageSize: this.pageSize
+      });
+    },
+
+    handleCurrentChange(val) {
+      this.currentPage = val;
+      this.$emit('page-change', {
+        type: this.selectedType,
+        keyword: this.searchKeyword,
         page: this.currentPage,
         pageSize: this.pageSize
       });
@@ -170,13 +148,58 @@ export default {
 </script>
 
 <style scoped>
-.recent-matches-card {
+.match-records-card {
   margin-bottom: 20px;
 }
 
-.clearfix::after {
-  content: "";
-  display: table;
-  clear: both;
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.type-select {
+  width: 150px;
+}
+
+.search-input {
+  width: 250px;
+}
+
+.search-input :deep(.el-input__wrapper) {
+  border: 1px solid #dcdfe6;
+  border-radius: 4px;
+  box-shadow: 0 0 0 1px #dcdfe6 inset;
+  transition: border-color 0.2s cubic-bezier(0.645, 0.045, 0.355, 1);
+}
+
+.search-input :deep(.el-input__wrapper:hover) {
+  border-color: #c0c4cc;
+}
+
+.search-input :deep(.el-input__wrapper.is-focus) {
+  border-color: #409eff;
+  box-shadow: 0 0 0 1px #409eff inset;
+}
+
+.pagination-wrapper {
+  margin-top: 20px;
+  display: flex;
+  justify-content: center;
+}
+
+.final-score {
+  font-weight: bold;
+  color: #409eff;
+}
+
+.pending-score {
+  color: #909399;
 }
 </style>

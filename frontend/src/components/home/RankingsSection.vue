@@ -45,7 +45,20 @@
                   </div>
                 </template>
               </el-table-column>
-              <el-table-column prop="team" label="球队"></el-table-column>
+              <el-table-column label="球队">
+                <template #default="{ row }">
+                  <div class="team-name-cell">
+                    <span 
+                      class="clickable-team" 
+                      @click="navigateToTeamFromPlayer(row)"
+                      :title="点击查看球队详情"
+                    >
+                      <el-icon class="team-icon"><Trophy /></el-icon>
+                      {{ row.team }}
+                    </span>
+                  </div>
+                </template>
+              </el-table-column>
               <el-table-column prop="goals" label="进球数"></el-table-column>
             </el-table>
           </el-col>
@@ -92,7 +105,20 @@
                   </div>
                 </template>
               </el-table-column>
-              <el-table-column prop="team" label="球队"></el-table-column>
+              <el-table-column label="球队">
+                <template #default="{ row }">
+                  <div class="team-name-cell">
+                    <span 
+                      class="clickable-team" 
+                      @click="navigateToTeamFromPlayer(row)"
+                      :title="点击查看球队详情"
+                    >
+                      <el-icon class="team-icon"><Trophy /></el-icon>
+                      {{ row.team }}
+                    </span>
+                  </div>
+                </template>
+              </el-table-column>
               <el-table-column prop="yellowCards" label="黄牌数"></el-table-column>
               <el-table-column prop="redCards" label="红牌数"></el-table-column>
             </el-table>
@@ -133,7 +159,20 @@
             <div v-for="group in sortedGroupRankings" :key="group.name" style="margin-bottom: 30px;">
               <h3>{{ group.name }}</h3>
               <el-table :data="group.teams" style="width: 100%" v-loading="loading">
-                <el-table-column prop="team" label="球队" width="120"></el-table-column>
+                <el-table-column label="球队" width="120">
+                  <template #default="{ row }">
+                    <div class="team-name-cell">
+                      <span 
+                        class="clickable-team" 
+                        @click="navigateToTeam(row)"
+                        :title="点击查看球队详情"
+                      >
+                        <el-icon class="team-icon"><Trophy /></el-icon>
+                        {{ row.team }}
+                      </span>
+                    </div>
+                  </template>
+                </el-table-column>
                 <el-table-column prop="matchesPlayed" label="比赛场次" width="100"></el-table-column>
                 <el-table-column prop="wins" label="胜" width="60"></el-table-column>
                 <el-table-column prop="draws" label="平" width="60"></el-table-column>
@@ -151,7 +190,20 @@
           </div>
           <div v-else>
             <el-table :data="currentRankings.points" style="width: 100%" v-loading="loading">
-              <el-table-column prop="team" label="球队"></el-table-column>
+              <el-table-column label="球队">
+                <template #default="{ row }">
+                  <div class="team-name-cell">
+                    <span 
+                      class="clickable-team" 
+                      @click="navigateToTeam(row)"
+                      :title="点击查看球队详情"
+                    >
+                      <el-icon class="team-icon"><Trophy /></el-icon>
+                      {{ row.team }}
+                    </span>
+                  </div>
+                </template>
+              </el-table-column>
               <el-table-column prop="matchesPlayed" label="比赛场次"></el-table-column>
               <el-table-column prop="points" label="积分"></el-table-column>
             </el-table>
@@ -303,6 +355,26 @@ export default {
       const teamName = team.team || team.name
       if (!teamName) {
         console.error('球队名称不存在:', team)
+        this.$message.error('球队信息不完整，无法查看详情')
+        return
+      }
+      
+      this.$router.push({
+        name: 'TeamHistory',
+        query: {
+          teamName: teamName
+        }
+      }).catch(err => {
+        console.error('路由跳转失败:', err)
+        this.$message.error('页面跳转失败')
+      })
+    },
+    navigateToTeamFromPlayer(player) {
+      console.log('从球员数据点击了球队:', player)
+      
+      const teamName = player.team
+      if (!teamName) {
+        console.error('球队名称不存在:', player)
         this.$message.error('球队信息不完整，无法查看详情')
         return
       }

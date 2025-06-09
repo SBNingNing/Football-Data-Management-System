@@ -9,12 +9,21 @@
           <el-option label="巾帼杯" value="womens-cup"></el-option>
           <el-option label="八人制比赛" value="eight-a-side"></el-option>
         </el-select>
-        <el-button type="primary" @click="$emit('refresh')" icon="el-icon-refresh">刷新</el-button>
+        <el-button type="primary" @click="$emit('refresh')" :icon="RefreshIcon" class="refresh-btn">
+          刷新数据
+        </el-button>
       </div>
       <el-table :data="displayMatches" border style="width: 100%">
         <el-table-column prop="matchName" label="比赛名称" width="200"></el-table-column>
         <el-table-column prop="team1" label="球队1" width="150"></el-table-column>
         <el-table-column prop="team2" label="球队2" width="150"></el-table-column>
+        <el-table-column label="比分" width="120">
+          <template #default="{ row }">
+            <span v-if="row" class="match-score">
+              {{ row.home_score || 0 }} : {{ row.away_score || 0 }}
+            </span>
+          </template>
+        </el-table-column>
         <el-table-column prop="date" label="比赛时间" width="180">
           <template #default="{ row }">
             <span v-if="row">{{ formatDate(row.date) }}</span>
@@ -26,11 +35,26 @@
             <span v-if="row">{{ getMatchTypeLabel(row.matchType) }}</span>
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="200">
+        <el-table-column prop="status" label="比赛状态" width="120">
+          <template #default="{ row }">
+            <el-tag v-if="row" :type="getStatusTagType(row.status)">
+              {{ getStatusLabel(row.status) }}
+            </el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column label="操作" width="280">
           <template #default="{ row }">
             <div v-if="row">
               <el-button size="small" type="primary" @click="$emit('edit-match', row)">编辑</el-button>
               <el-button size="small" type="danger" @click="$emit('delete-match', row.id)">删除</el-button>
+              <el-button 
+                v-if="row.status !== 'completed' && row.status !== '已完赛'" 
+                size="small" 
+                type="success" 
+                @click="$emit('complete-match', row.id)"
+              >
+                完赛
+              </el-button>
             </div>
           </template>
         </el-table-column>
@@ -46,7 +70,9 @@
           <el-option label="巾帼杯" value="womens-cup"></el-option>
           <el-option label="八人制比赛" value="eight-a-side"></el-option>
         </el-select>
-        <el-button type="primary" @click="$emit('refresh')" icon="el-icon-refresh">刷新</el-button>
+        <el-button type="primary" @click="$emit('refresh')" :icon="RefreshIcon" class="refresh-btn">
+          刷新数据
+        </el-button>
       </div>
       <el-table :data="displayEvents" border style="width: 100%">
         <el-table-column prop="matchName" label="比赛名称" width="200"></el-table-column>
@@ -86,7 +112,9 @@
           <el-option label="巾帼杯" value="womens-cup"></el-option>
           <el-option label="八人制比赛" value="eight-a-side"></el-option>
         </el-select>
-        <el-button type="primary" @click="$emit('refresh')" icon="el-icon-refresh">刷新</el-button>
+        <el-button type="primary" @click="$emit('refresh')" :icon="RefreshIcon" class="refresh-btn">
+          刷新数据
+        </el-button>
       </div>
       <el-table :data="displayPlayers" border style="width: 100%">
         <el-table-column prop="name" label="球员姓名" width="150"></el-table-column>
@@ -127,7 +155,9 @@
           <el-option label="巾帼杯" value="womens-cup"></el-option>
           <el-option label="八人制比赛" value="eight-a-side"></el-option>
         </el-select>
-        <el-button type="primary" @click="$emit('refresh')" icon="el-icon-refresh">刷新</el-button>
+        <el-button type="primary" @click="$emit('refresh')" :icon="RefreshIcon" class="refresh-btn">
+          刷新数据
+        </el-button>
       </div>
       <el-table :data="displayTeams" border style="width: 100%">
         <el-table-column prop="teamName" label="球队名称" width="200"></el-table-column>
@@ -141,13 +171,22 @@
             <span v-if="row">{{ row.players ? row.players.length : 0 }}</span>
           </template>
         </el-table-column>
-        <el-table-column label="球员信息" min-width="200">
+        <el-table-column label="球员信息" min-width="300">
           <template #default="{ row }">
-            <div v-if="row && row.players && row.players.length > 0" class="players-preview">
-              <el-tag v-for="player in row.players.slice(0, 3)" :key="player.name" size="small" class="player-tag">
-                {{ player.name }}({{ player.number }})
-              </el-tag>
-              <span v-if="row.players.length > 3" class="more-players">+{{ row.players.length - 3 }}人</span>
+            <div v-if="row && row.players && row.players.length > 0" class="players-info">
+              
+              <!-- 直接显示所有球员 -->
+              <div class="players-list">
+                <el-tag 
+                  v-for="player in row.players" 
+                  :key="player.studentId || player.id" 
+                  size="small" 
+                  class="player-tag"
+                  :title="`学号: ${player.studentId || player.id}`"
+                >
+                  {{ player.name }}({{ player.number }})
+                </el-tag>
+              </div>
             </div>
             <span v-else class="no-players">暂无球员</span>
           </template>
@@ -167,6 +206,9 @@
 
 <script setup>
 import { ref, computed, defineProps, defineEmits } from 'vue'
+import { Refresh } from '@element-plus/icons-vue'
+
+const RefreshIcon = Refresh
 
 // 定义 props
 const props = defineProps({
@@ -193,7 +235,7 @@ const props = defineProps({
 })
 
 // 定义 emits
-const emit = defineEmits(['filter-change', 'refresh', 'edit-team', 'delete-team', 'edit-match', 'delete-match', 'edit-event', 'delete-event', 'edit-player', 'delete-player'])
+const emit = defineEmits(['filter-change', 'refresh', 'edit-team', 'delete-team', 'edit-match', 'delete-match', 'edit-event', 'delete-event', 'edit-player', 'delete-player', 'complete-match'])
 
 // 响应式数据
 const activeTab = ref('matches')
@@ -292,6 +334,32 @@ const getPlayerCards = (playerName, cardType) => {
     return 0
   }
 }
+
+// 获取比赛状态标签
+const getStatusLabel = (status) => {
+  const labels = {
+    'pending': '未开始',
+    'ongoing': '进行中', 
+    'completed': '已完赛',
+    '已完赛': '已完赛',
+    '未开始': '未开始',
+    '进行中': '进行中'
+  }
+  return labels[status] || '未开始'
+}
+
+// 获取状态标签类型
+const getStatusTagType = (status) => {
+  const types = {
+    'pending': 'info',      // 灰色
+    'ongoing': 'warning',   // 橙色
+    'completed': 'success', // 绿色
+    '已完赛': 'success',
+    '未开始': 'info',
+    '进行中': 'warning'
+  }
+  return types[status] || 'info'
+}
 </script>
 
 <style scoped>
@@ -305,7 +373,29 @@ const getPlayerCards = (playerName, cardType) => {
   border-radius: 4px;
 }
 
-.players-preview {
+.refresh-btn {
+  min-width: 100px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+
+.refresh-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(64, 158, 255, 0.3);
+}
+
+.players-info {
+  max-width: 100%;
+}
+
+.players-summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.players-list {
   display: flex;
   flex-wrap: wrap;
   gap: 4px;
@@ -314,12 +404,11 @@ const getPlayerCards = (playerName, cardType) => {
 
 .player-tag {
   margin: 0;
-}
-
-.more-players {
-  color: #909399;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 120px;
   font-size: 12px;
-  margin-left: 4px;
 }
 
 .no-players {
@@ -335,5 +424,11 @@ const getPlayerCards = (playerName, cardType) => {
 
 .player-stats .el-tag {
   margin: 0;
+}
+
+.match-score {
+  font-weight: bold;
+  color: #409eff;
+  font-size: 14px;
 }
 </style>

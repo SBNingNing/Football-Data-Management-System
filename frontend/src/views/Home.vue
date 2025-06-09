@@ -263,6 +263,7 @@ export default {
     },
 
     async fetchRankings() {
+      console.log('开始获取排行数据...');
       try {
         const response = await axios.get('/api/rankings', {
           timeout: 15000,
@@ -270,14 +271,101 @@ export default {
             'Cache-Control': 'no-cache'
           }
         });
+        
+        console.log('Rankings API 原始响应:', response.data);
+        
         if (response.data?.status === 'success') {
-          this.rankings = response.data.data || this.rankings;
+          const apiData = response.data.data;
+          console.log('Rankings API 数据部分:', apiData);
+          
+          // 确保数据结构完整
+          const defaultRankingData = {
+            topScorers: { players: [], teams: [] },
+            cards: { players: [], teams: [] },
+            points: []
+          };
+          
+          // 处理每个赛事类型的数据
+          this.rankings = {
+            championsCup: this.processRankingData(apiData?.championsCup, defaultRankingData, '冠军杯'),
+            womensCup: this.processRankingData(apiData?.womensCup, defaultRankingData, '女子杯'),
+            eightASide: this.processRankingData(apiData?.eightASide, defaultRankingData, '八人制')
+          };
+          
+          console.log('处理后的rankings数据:', this.rankings);
+        } else {
+          console.warn('Rankings API 返回状态异常:', response.data);
+          this.setDefaultRankings();
         }
       } catch (error) {
         console.error('获取排行数据失败:', error);
-        // 不再抛出错误，而是默默处理失败情况
+        this.setDefaultRankings();
         return Promise.resolve();
       }
+    },
+
+    // 新增：处理单个赛事类型的排行数据
+    processRankingData(competitionData, defaultData, competitionName) {
+      console.log(`处理${competitionName}数据:`, competitionData);
+      
+      if (!competitionData) {
+        console.log(`${competitionName}数据为空，使用默认数据`);
+        return { ...defaultData };
+      }
+      
+      const processed = {
+        topScorers: {
+          players: this.processPlayersData(competitionData.topScorers?.players, '射手'),
+          teams: competitionData.topScorers?.teams || []
+        },
+        cards: {
+          players: this.processPlayersData(competitionData.cards?.players, '红黄牌'),
+          teams: competitionData.cards?.teams || []
+        },
+        points: competitionData.points || []
+      };
+      
+      console.log(`${competitionName}处理后数据:`, processed);
+      return processed;
+    },
+
+    // 新增：处理球员数据
+    processPlayersData(playersData, type) {
+      if (!Array.isArray(playersData)) {
+        console.log(`${type}球员数据不是数组:`, playersData);
+        return [];
+      }
+      
+      const processed = playersData.map(player => ({
+        id: player.id || player.player_id || `${type}_${Math.random()}`,
+        name: player.name || player.player_name || '未知球员',
+        teamName: player.teamName || player.team_name || '未知队伍',
+        goals: player.goals || 0,
+        yellowCards: player.yellowCards || player.yellow_cards || 0,
+        redCards: player.redCards || player.red_cards || 0,
+        totalCards: player.totalCards || player.total_cards || 0,
+        ...player
+      }));
+      
+      console.log(`处理后的${type}球员数据:`, processed);
+      return processed;
+    },
+
+    // 新增：设置默认排行数据
+    setDefaultRankings() {
+      const defaultRankingData = {
+        topScorers: { players: [], teams: [] },
+        cards: { players: [], teams: [] },
+        points: []
+      };
+      
+      this.rankings = {
+        championsCup: { ...defaultRankingData },
+        womensCup: { ...defaultRankingData },
+        eightASide: { ...defaultRankingData }
+      };
+      
+      console.log('设置默认rankings数据');
     },
 
     async fetchMatchRecords(params = {}) {
@@ -302,10 +390,21 @@ export default {
         if (response.data?.status === 'success') {
           this.matchRecords = (response.data.data?.records || []).map(item => ({
             ...item,
-            id: item.id || item.match_id || item.matchId
+            id: item.id || item.match_id || item.matchId,
+            // 确保比分和状态字段存在
+            score: item.score || `${item.home_score || 0} : ${item.away_score || 0}`,
+            status: item.status || '待进行',
+            status_type: item.status_type || 'info',
+            // 确保所有必要字段都存在
+            name: item.name || item.match_name || '',
+            team1: item.team1 || '',
+            team2: item.team2 || '',
+            date: item.date || '',
+            location: item.location || '',
+            type: item.type || ''
           }));
           this.matchRecordsTotal = response.data.data?.total || 0;
-          console.log('Match records loaded:', this.matchRecords.length, 'total:', this.matchRecordsTotal);
+          console.log('Match records loaded with score and status:', this.matchRecords);
         } else {
           console.warn('Match records API returned error:', response.data?.message);
           this.matchRecords = [];
@@ -315,7 +414,6 @@ export default {
         console.error('获取比赛记录失败:', error);
         this.matchRecords = [];
         this.matchRecordsTotal = 0;
-        // 不再抛出错误，而是默默处理失败情况
         return Promise.resolve();
       }
     },
