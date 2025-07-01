@@ -208,42 +208,28 @@ export default {
     }
   },
   methods: {
+    // 统一的数据获取方法
+    emitDataRequest(eventType = 'filter-change') {
+      const params = {
+        type: this.selectedType,
+        status: this.selectedStatus,
+        keyword: this.searchKeyword,
+        page: this.currentPage,
+        pageSize: this.pageSize
+      };
+      
+      console.log(`${eventType} triggered:`, params);
+      this.$emit(eventType, params);
+    },
+
     handleFilterChange() {
       this.currentPage = 1;
-      console.log('Filter change triggered:', {
-        type: this.selectedType,
-        status: this.selectedStatus,
-        keyword: this.searchKeyword,
-        page: this.currentPage,
-        pageSize: this.pageSize
-      });
-      
-      this.$emit('filter-change', {
-        type: this.selectedType,
-        status: this.selectedStatus,
-        keyword: this.searchKeyword,
-        page: this.currentPage,
-        pageSize: this.pageSize
-      });
+      this.emitDataRequest('filter-change');
     },
 
     handleStatusFilter() {
       this.currentPage = 1;
-      console.log('Status filter triggered:', {
-        type: this.selectedType,
-        status: this.selectedStatus,
-        keyword: this.searchKeyword,
-        page: this.currentPage,
-        pageSize: this.pageSize
-      });
-      
-      this.$emit('filter-change', {
-        type: this.selectedType,
-        status: this.selectedStatus,
-        keyword: this.searchKeyword,
-        page: this.currentPage,
-        pageSize: this.pageSize
-      });
+      this.emitDataRequest('filter-change');
     },
 
     handleSearch() {
@@ -252,78 +238,31 @@ export default {
       }
       this.searchTimer = setTimeout(() => {
         this.currentPage = 1;
-        console.log('Search triggered:', {
-          type: this.selectedType,
-          status: this.selectedStatus,
-          keyword: this.searchKeyword,
-          page: this.currentPage,
-          pageSize: this.pageSize
-        });
-        
-        this.$emit('search', {
-          type: this.selectedType,
-          status: this.selectedStatus,
-          keyword: this.searchKeyword,
-          page: this.currentPage,
-          pageSize: this.pageSize
-        });
+        this.emitDataRequest('search');
       }, 300);
     },
 
     handleSizeChange(val) {
       this.pageSize = val;
       this.currentPage = 1;
-      console.log('Page size change:', {
-        type: this.selectedType,
-        status: this.selectedStatus,
-        keyword: this.searchKeyword,
-        page: this.currentPage,
-        pageSize: this.pageSize
-      });
-      
-      this.$emit('page-change', {
-        type: this.selectedType,
-        status: this.selectedStatus,
-        keyword: this.searchKeyword,
-        page: this.currentPage,
-        pageSize: this.pageSize
-      });
+      this.emitDataRequest('page-change');
     },
 
     handleCurrentChange(val) {
       this.currentPage = val;
-      console.log('Current page change:', {
-        type: this.selectedType,
-        status: this.selectedStatus,
-        keyword: this.searchKeyword,
-        page: this.currentPage,
-        pageSize: this.pageSize
-      });
-      
-      this.$emit('page-change', {
-        type: this.selectedType,
-        status: this.selectedStatus,
-        keyword: this.searchKeyword,
-        page: this.currentPage,
-        pageSize: this.pageSize
-      });
+      this.emitDataRequest('page-change');
     },
 
     refreshMatches() {
       console.log('手动刷新比赛数据');
       this.loading = true;
-      this.$emit('filter-change', {
-        type: this.selectedType,
-        status: this.selectedStatus,
-        keyword: this.searchKeyword,
-        page: this.currentPage,
-        pageSize: this.pageSize
-      });
+      this.emitDataRequest('filter-change');
       setTimeout(() => {
         this.loading = false;
       }, 1000);
     },
 
+    // 修正比赛类型映射，确保与后端一致
     getMatchTypeLabel(type) {
       const labels = {
         'championsCup': '冠军杯',
@@ -331,7 +270,10 @@ export default {
         'eightASide': '八人制',
         'champions-cup': '冠军杯',
         'womens-cup': '巾帼杯',
-        'eight-a-side': '八人制'
+        'eight-a-side': '八人制',
+        '冠军杯': '冠军杯',
+        '巾帼杯': '巾帼杯',
+        '八人制': '八人制'
       };
       return labels[type] || type || '未知';
     },
@@ -343,7 +285,10 @@ export default {
         'eightASide': 'success',
         'champions-cup': 'warning',
         'womens-cup': 'danger', 
-        'eight-a-side': 'success'
+        'eight-a-side': 'success',
+        '冠军杯': 'warning',
+        '巾帼杯': 'danger',
+        '八人制': 'success'
       };
       return colors[type] || 'info';
     },
@@ -386,9 +331,17 @@ export default {
     viewMatchDetails(match) {
       console.log('查看比赛详情:', match);
       if (match.id) {
-        this.$router.push(`/matches/detail/${match.id}`).catch(err => {
+        // 使用路由名称进行跳转，确保与路由配置一致
+        this.$router.push({
+          name: 'match-detail', // 使用kebab-case命名的路由名称
+          params: { matchId: match.id }
+        }).catch(err => {
           console.error('路由跳转失败:', err);
-          this.$message.error('页面跳转失败');
+          // 如果路由名称不匹配，尝试使用path方式
+          this.$router.push(`/match-detail/${match.id}`).catch(pathErr => {
+            console.error('路径跳转也失败:', pathErr);
+            this.$message.error('页面跳转失败，请检查路由配置');
+          });
         });
       } else {
         this.$message.error('未找到比赛ID');

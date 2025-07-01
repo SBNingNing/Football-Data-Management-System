@@ -201,9 +201,18 @@ export default {
     async fetchStats() {
       console.log('Fetching stats...');
       try {
+        // 获取token确保认证
+        const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+        if (!token) {
+          console.error('No token found for stats request');
+          throw new Error('用户未登录');
+        }
+
         const response = await axios.get('/api/stats', {
-          timeout: 15000, // 增加超时时间
+          timeout: 15000,
           headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
             'Cache-Control': 'no-cache',
             'Pragma': 'no-cache'
           }
@@ -227,6 +236,13 @@ export default {
           upcomingMatches: 0,
           completedMatches: 0
         };
+        
+        // 处理认证错误
+        if (error.response?.status === 401) {
+          this.$router.push('/login');
+          return;
+        }
+        
         throw error;
       }
     },
@@ -270,9 +286,19 @@ export default {
     async fetchRankings() {
       console.log('开始获取排行数据...');
       try {
+        // 获取token确保认证
+        const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+        if (!token) {
+          console.error('No token found for rankings request');
+          this.setDefaultRankings();
+          return Promise.resolve();
+        }
+
         const response = await axios.get('/api/rankings', {
           timeout: 15000,
           headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
             'Cache-Control': 'no-cache'
           }
         });
@@ -304,6 +330,13 @@ export default {
         }
       } catch (error) {
         console.error('获取排行数据失败:', error);
+        
+        // 处理认证错误
+        if (error.response?.status === 401) {
+          console.log('Rankings request: Token expired');
+          // 不立即重定向，让其他组件处理
+        }
+        
         this.setDefaultRankings();
         return Promise.resolve();
       }
@@ -386,10 +419,20 @@ export default {
 
         console.log('Request params for match records:', requestParams);
 
+        // 获取token确保认证
+        const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+        if (!token) {
+          console.error('No token found, redirecting to login');
+          this.$router.push('/login');
+          return;
+        }
+
         const response = await axios.get('/api/matches/match-records', { 
           params: requestParams,
           timeout: 15000,
           headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
             'Cache-Control': 'no-cache'
           }
         });
@@ -426,11 +469,28 @@ export default {
           console.warn('Match records API returned error:', response.data?.message);
           this.matchRecords = [];
           this.matchRecordsTotal = 0;
+          // 显示具体错误信息
+          if (response.data?.message) {
+            ElMessage.warning(`获取比赛记录失败: ${response.data.message}`);
+          }
         }
       } catch (error) {
         console.error('获取比赛记录失败:', error);
         this.matchRecords = [];
         this.matchRecordsTotal = 0;
+        
+        // 处理具体的错误情况
+        if (error.response?.status === 401) {
+          ElMessage.error('登录已过期，请重新登录');
+          this.$router.push('/login');
+        } else if (error.response?.status === 404) {
+          ElMessage.warning('比赛记录接口不存在');
+        } else if (error.code === 'ECONNABORTED') {
+          ElMessage.warning('请求超时，请检查网络连接');
+        } else {
+          ElMessage.error('网络错误，无法获取比赛记录');
+        }
+        
         return Promise.resolve();
       }
     },
@@ -450,20 +510,38 @@ export default {
 
     async fetchRecentMatches() {
       try {
+        // 获取token确保认证
+        const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+        if (!token) {
+          console.error('No token found for recent matches request');
+          return Promise.resolve();
+        }
+
         const response = await axios.get('/api/matches/match-records', {
           params: { page: 1, pageSize: 5 },
           timeout: 15000,
           headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
             'Cache-Control': 'no-cache'
           }
         });
         
         if (response.data?.status === 'success') {
           this.recentMatches = response.data.data?.records || [];
+          console.log('Recent matches loaded:', this.recentMatches.length);
+        } else {
+          console.warn('Recent matches API error:', response.data?.message);
         }
       } catch (error) {
         console.error('获取近期比赛失败:', error);
-        // 不再抛出错误，而是默默处理失败情况
+        
+        // 处理认证错误
+        if (error.response?.status === 401) {
+          console.log('Token expired, redirecting to login');
+          this.$router.push('/login');
+        }
+        
         return Promise.resolve();
       }
     },
