@@ -378,10 +378,13 @@ export default {
       try {
         const requestParams = {
           type: params.type || '',
+          status: params.status || '',
           keyword: params.keyword || '',
           page: params.page || 1,
           pageSize: params.pageSize || 10
         };
+
+        console.log('Request params for match records:', requestParams);
 
         const response = await axios.get('/api/matches/match-records', { 
           params: requestParams,
@@ -393,23 +396,32 @@ export default {
         console.log('Match records response:', response.data);
         
         if (response.data?.status === 'success') {
-          this.matchRecords = (response.data.data?.records || []).map(item => ({
-            ...item,
-            id: item.id || item.match_id || item.matchId,
-            // 确保比分和状态字段存在
-            score: item.score || `${item.home_score || 0} : ${item.away_score || 0}`,
-            status: item.status || '待进行',
-            status_type: item.status_type || 'info',
-            // 确保所有必要字段都存在
-            name: item.name || item.match_name || '',
-            team1: item.team1 || '',
-            team2: item.team2 || '',
-            date: item.date || '',
-            location: item.location || '',
-            type: item.type || ''
-          }));
-          this.matchRecordsTotal = response.data.data?.total || 0;
-          console.log('Match records loaded with score and status:', this.matchRecords);
+          const records = response.data.data?.records || [];
+          console.log('Raw match records from API:', records);
+          
+          this.matchRecords = records.map(item => {
+            const processedItem = {
+              ...item,
+              id: item.id || item.match_id || item.matchId || Math.random().toString(),
+              // 确保比分和状态字段存在
+              score: item.score || `${item.home_score || 0} : ${item.away_score || 0}`,
+              status: item.status || '待进行',
+              status_type: this.getStatusType(item.status),
+              // 确保所有必要字段都存在
+              name: item.name || item.match_name || `${item.team1 || '队伍1'} vs ${item.team2 || '队伍2'}`,
+              team1: item.team1 || item.home_team || '队伍1',
+              team2: item.team2 || item.away_team || '队伍2',
+              date: item.date || item.match_time || '',
+              location: item.location || '待定',
+              type: item.type || 'championsCup'
+            };
+            console.log('Processed match item:', processedItem);
+            return processedItem;
+          });
+          
+          this.matchRecordsTotal = response.data.data?.total || this.matchRecords.length;
+          console.log('Final match records:', this.matchRecords);
+          console.log('Total records:', this.matchRecordsTotal);
         } else {
           console.warn('Match records API returned error:', response.data?.message);
           this.matchRecords = [];
@@ -421,6 +433,19 @@ export default {
         this.matchRecordsTotal = 0;
         return Promise.resolve();
       }
+    },
+
+    // 新增：根据状态获取标签类型
+    getStatusType(status) {
+      const statusMap = {
+        '待进行': 'info',
+        '进行中': 'warning', 
+        '已完赛': 'success',
+        'pending': 'info',
+        'ongoing': 'warning',
+        'completed': 'success'
+      };
+      return statusMap[status] || 'info';
     },
 
     async fetchRecentMatches() {
@@ -483,14 +508,17 @@ export default {
     },
 
     handleMatchSearch(params) {
+      console.log('Home: handleMatchSearch called with:', params);
       this.fetchMatchRecords(params);
     },
 
     handleMatchFilter(params) {
+      console.log('Home: handleMatchFilter called with:', params);
       this.fetchMatchRecords(params);
     },
 
     handleMatchPageChange(params) {
+      console.log('Home: handleMatchPageChange called with:', params);
       this.fetchMatchRecords(params);
     }
   }
