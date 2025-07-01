@@ -38,6 +38,9 @@
       @filter-change="handleMatchFilter"
       @page-change="handleMatchPageChange"
     />
+
+    <!-- 球员搜索模块 -->
+    <PlayerSearch />
   </div>
 </template>
 
@@ -50,6 +53,7 @@ import MatchTypeCards from '@/components/home/MatchTypeCards.vue';
 import FeaturedMatches from '@/components/home/FeaturedMatches.vue';
 import RankingsSection from '@/components/home/RankingsSection.vue';
 import MatchRecords from '@/components/home/MatchRecords.vue';
+import PlayerSearch from '@/components/home/PlayerSearch.vue';
 
 export default {
   name: 'Home',
@@ -58,7 +62,8 @@ export default {
     MatchTypeCards,
     FeaturedMatches,
     RankingsSection,
-    MatchRecords
+    MatchRecords,
+    PlayerSearch
   },
   data() {
     return {
