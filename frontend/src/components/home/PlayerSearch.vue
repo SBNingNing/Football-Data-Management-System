@@ -205,45 +205,53 @@ export default {
   },
   methods: {
     async fetchPlayers() {
-      if (this.loading) return;
-      
-      this.loading = true;
-      console.log('开始获取球员数据...');
-      
       try {
-        const response = await axios.get('/api/players', {
-          timeout: 15000,
-          headers: {
-            'Cache-Control': 'no-cache',
-            'Pragma': 'no-cache'
-          }
-        });
-        
-        console.log('球员API响应:', response.data);
+        this.loading = true;
+        const response = await axios.get('/api/players');
         
         if (response.data?.status === 'success') {
           this.players = response.data.data || [];
-          this.filteredPlayers = [...this.players];
-          this.totalPlayers = this.players.length;
+          console.log('成功获取球员数据:', this.players.length, '名球员');
+          
+          // 处理球员数据，确保字段一致性
+          this.players = this.players.map(player => ({
+            ...player,
+            studentId: player.studentId || player.id, // 确保studentId字段存在
+            career_goals: player.career_goals || 0,
+            career_yellow_cards: player.career_yellow_cards || 0,
+            career_red_cards: player.career_red_cards || 0,
+            teamName: player.teamName || null,
+            number: player.number || null,
+            matchType: player.matchType || 'champions-cup'
+          }));
           
           // 提取队伍选项
           this.extractTeamOptions();
+          // 初始化过滤
+          this.filterPlayers();
           
-          console.log(`成功加载 ${this.players.length} 名球员`);
-          this.$message.success(`成功加载 ${this.players.length} 名球员`);
+        } else if (Array.isArray(response.data)) {
+          this.players = response.data;
+          this.extractTeamOptions();
+          this.filterPlayers();
         } else {
-          console.error('球员API返回错误:', response.data?.message);
-          this.$message.error(response.data?.message || '获取球员数据失败');
+          console.warn('意外的响应格式:', response.data);
           this.players = [];
-          this.filteredPlayers = [];
-          this.totalPlayers = 0;
         }
       } catch (error) {
-        console.error('获取球员数据失败:', error);
-        this.$message.error('网络错误，无法获取球员数据');
+        console.error('获取球员列表失败:', error);
+        
+        let errorMessage = '获取球员列表失败';
+        if (error.response?.status === 404) {
+          errorMessage = '球员接口不存在，请检查后端服务';
+        } else if (error.response?.status === 500) {
+          errorMessage = '服务器内部错误，请稍后重试';
+        } else if (error.request) {
+          errorMessage = '网络连接失败，请检查网络设置';
+        }
+        
+        this.$message.error(errorMessage);
         this.players = [];
-        this.filteredPlayers = [];
-        this.totalPlayers = 0;
       } finally {
         this.loading = false;
       }
@@ -286,8 +294,8 @@ export default {
         const keyword = this.searchKeyword.trim().toLowerCase();
         filtered = filtered.filter(player => 
           (player.name && player.name.toLowerCase().includes(keyword)) ||
-          (player.studentId && player.studentId.toString().includes(keyword)) ||
-          (player.id && player.id.toString().includes(keyword))
+          (player.studentId && player.studentId.toString().toLowerCase().includes(keyword)) ||
+          (player.id && player.id.toString().toLowerCase().includes(keyword))
         );
       }
       
@@ -334,6 +342,9 @@ export default {
 
     async refreshPlayers() {
       console.log('手动刷新球员数据');
+      this.searchKeyword = '';
+      this.selectedTeam = '';
+      this.selectedMatchType = '';
       await this.fetchPlayers();
     },
 

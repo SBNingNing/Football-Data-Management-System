@@ -36,7 +36,6 @@ def create_app(config_class=Config):
     from app.routes.matches import matches_bp
     from app.routes.events import events_bp
     from app.routes.teams import teams_bp
-    from app.routes.players import players_bp
     from app.routes.stats import stats_bp
     from app.routes.tournaments import tournaments_bp
     
@@ -44,7 +43,28 @@ def create_app(config_class=Config):
     app.register_blueprint(matches_bp, url_prefix='/api/matches')
     app.register_blueprint(events_bp, url_prefix='/api/events')
     app.register_blueprint(teams_bp, url_prefix='/api/teams')
-    app.register_blueprint(players_bp, url_prefix='/api/players')
+    
+    # 注册球员路由
+    try:
+        from app.routes.players import players_bp
+        app.register_blueprint(players_bp, url_prefix='/api/players')
+        print("✅ 球员路由注册成功: /api/players")
+        
+        # 验证关键路由
+        with app.app_context():
+            from flask import url_for
+            try:
+                # 测试路由是否正确注册
+                players_url = url_for('players.get_players')
+                print(f"✅ 球员列表路由: {players_url}")
+            except Exception as route_error:
+                print(f"⚠️ 球员路由验证警告: {route_error}")
+                
+    except ImportError as e:
+        print(f"❌ 注册球员路由失败: {e}")
+    except Exception as e:
+        print(f"❌ 球员路由注册过程中出现异常: {e}")
+    
     app.register_blueprint(stats_bp)  # 移除重复的url_prefix，因为stats_bp已经定义了'/api'
     app.register_blueprint(tournaments_bp, url_prefix='/api/tournaments')
     

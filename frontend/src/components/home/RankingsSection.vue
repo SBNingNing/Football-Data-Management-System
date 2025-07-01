@@ -159,16 +159,11 @@
             <div v-for="group in sortedGroupRankings" :key="group.name" style="margin-bottom: 30px;">
               <h3>{{ group.name }}</h3>
               <el-table :data="group.teams" style="width: 100%" v-loading="loading">
-                <el-table-column label="球队" width="120">
-                  <template #default="{ row }">
-                    <div class="team-name-cell">
-                      <span 
-                        class="clickable-team" 
-                        @click="navigateToTeam(row)"
-                        :title="点击查看球队详情"
-                      >
-                        <el-icon class="team-icon"><Trophy /></el-icon>
-                        {{ row.team }}
+                <el-table-column label="球队" prop="teamName" min-width="120">
+                  <template #default="scope">
+                    <div class="team-cell">
+                      <span class="team-name" @click="viewTeamDetails(scope.row)">
+                        {{ scope.row.teamName || '未知队伍' }}
                       </span>
                     </div>
                   </template>
