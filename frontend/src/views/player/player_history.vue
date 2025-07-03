@@ -18,14 +18,46 @@
         <div class="player-meta">
           <span class="meta-item">
             <el-icon><User /></el-icon>
-            当前队伍: {{ player.currentTeam }}
+            学号: {{ player.studentId }}
           </span>
-          <span class="meta-item" v-if="player.currentTournament">
+          <span class="meta-item" v-if="player.teamHistories && player.teamHistories.length > 0">
             <el-icon><Trophy /></el-icon>
-            当前赛事: {{ player.currentTournament }}
+            参与队伍数: {{ player.teamHistories.length }}
           </span>
         </div>
       </div>
+    </el-card>
+
+    <!-- 球员队伍历史 -->
+    <el-card class="player-team-history" v-if="player.teamHistories && player.teamHistories.length > 0">
+      <template #header>
+        <div class="clearfix">
+          <span>球员队伍历史</span>
+        </div>
+      </template>
+      <el-timeline>
+        <el-timeline-item
+          v-for="(teamHistory, index) in player.teamHistories"
+          :key="index"
+          :timestamp="teamHistory.season_name || '未知赛季'"
+          placement="top"
+        >
+          <el-card class="team-history-card">
+            <div class="team-info-row">
+              <div class="team-detail">
+                <h4>{{ teamHistory.team_name || '未知队伍' }}</h4>
+                <p class="team-meta">
+                  <span class="meta-badge tournament">{{ teamHistory.tournament_name || '未知赛事' }}</span>
+                  <span class="meta-badge number" v-if="teamHistory.player_number">
+                    球衣号码: {{ teamHistory.player_number }}
+                  </span>
+                  <span class="meta-badge match-type">{{ getMatchTypeText(teamHistory.matchType) }}</span>
+                </p>
+              </div>
+            </div>
+          </el-card>
+        </el-timeline-item>
+      </el-timeline>
     </el-card>
 
     <!-- 球员职业生涯数据 -->
@@ -164,7 +196,9 @@ export default {
         totalRedCards: 0,
         seasons: [],
         currentTeam: '',
-        currentTournament: ''
+        currentTournament: '',
+        studentId: '',
+        teamHistories: [] // 新增：队伍历史记录
       },
       store: null
     };
@@ -218,7 +252,8 @@ export default {
             totalGoals: playerData.career_goals || 0,
             totalYellowCards: playerData.career_yellow_cards || 0,
             totalRedCards: playerData.career_red_cards || 0,
-            seasons: this.formatSeasonsData(playerData.seasons || [])
+            seasons: this.formatSeasonsData(playerData.seasons || []),
+            teamHistories: playerData.team_histories || [] // 新增：处理队伍历史记录
           };
           
           // 自动展开第一个赛季
@@ -293,7 +328,16 @@ export default {
         // 如果路由出错，直接跳转
         window.location.href = '/home';
       });
-    }
+    },
+
+    getMatchTypeText(matchType) {
+      const matchTypeMap = {
+        'champions-cup': '冠军杯',
+        'womens-cup': '巾帼杯',
+        'eight-a-side': '八人制'
+      };
+      return matchTypeMap[matchType] || '未知赛事类型';
+    },
   }
 };
 </script>
@@ -421,5 +465,64 @@ export default {
   font-size: 18px;
   font-weight: bold;
   color: #303133;
+}
+
+.player-team-history {
+  margin-bottom: 20px;
+}
+
+.team-history-card {
+  margin-bottom: 10px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.team-info-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.team-detail h4 {
+  margin: 0 0 8px 0;
+  color: #303133;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.team-meta {
+  margin: 0;
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.meta-badge {
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.meta-badge.tournament {
+  background-color: #e3f2fd;
+  color: #1976d2;
+}
+
+.meta-badge.number {
+  background-color: #f3e5f5;
+  color: #7b1fa2;
+}
+
+.meta-badge.match-type {
+  background-color: #e8f5e8;
+  color: #388e3c;
+}
+
+.el-timeline {
+  padding-left: 20px;
+}
+
+.el-timeline-item {
+  padding-bottom: 20px;
 }
 </style>

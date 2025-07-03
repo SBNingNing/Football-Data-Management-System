@@ -37,6 +37,3 @@ ENV/
 # SQLite 数据库
 *.db
 *.sqlite
-
-# 配置文件（包含敏感信息）
-backend/app/config.py
