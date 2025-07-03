@@ -98,13 +98,32 @@
                     <el-icon><CreditCard /></el-icon>
                     <span>{{ player.studentId || player.id }}</span>
                   </div>
-                  <div class="meta-item" v-if="player.teamName">
-                    <el-icon><Trophy /></el-icon>
-                    <span>{{ player.teamName }}</span>
-                  </div>
-                  <div class="meta-item" v-if="player.number">
-                    <el-icon><Tickets /></el-icon>
-                    <span>{{ player.number }}号</span>
+                  <!-- 显示所有队伍信息 -->
+                  <div class="all-teams" v-if="player.all_teams && player.all_teams.length > 0">
+                    <div class="teams-header">
+                      <el-icon><Collection /></el-icon>
+                      <span>全部队伍 ({{ player.all_teams.length }})</span>
+                    </div>
+                    <div class="teams-list">
+                      <el-tag
+                        v-for="(team, index) in player.all_teams.slice(0, 3)"
+                        :key="index"
+                        :type="getTagType(team.match_type)"
+                        size="small"
+                        class="team-tag"
+                      >
+                        {{ team.team_name }}
+                        <span v-if="team.player_number">({{ team.player_number }})</span>
+                      </el-tag>
+                      <el-tag
+                        v-if="player.all_teams.length > 3"
+                        type="info"
+                        size="small"
+                        class="more-tag"
+                      >
+                        +{{ player.all_teams.length - 3 }}
+                      </el-tag>
+                    </div>
                   </div>
                 </div>
                 <div class="player-stats">
@@ -159,7 +178,8 @@ import {
   Football, 
   Warning, 
   CircleClose, 
-  View 
+  View,
+  Collection
 } from '@element-plus/icons-vue';
 import axios from 'axios';
 
@@ -176,7 +196,8 @@ export default {
     Football,
     Warning,
     CircleClose,
-    View
+    View,
+    Collection
   },
   data() {
     return {
@@ -216,16 +237,17 @@ export default {
           // 处理球员数据，确保字段一致性
           this.players = this.players.map(player => ({
             ...player,
-            studentId: player.studentId || player.id, // 确保studentId字段存在
+            studentId: player.studentId || player.id,
             career_goals: player.career_goals || 0,
             career_yellow_cards: player.career_yellow_cards || 0,
             career_red_cards: player.career_red_cards || 0,
             teamName: player.teamName || null,
             number: player.number || null,
-            matchType: player.matchType || 'champions-cup'
+            matchType: player.matchType || 'champions-cup',
+            all_teams: player.all_teams || []
           }));
           
-          // 提取队伍选项
+          // 提取队伍选项（包含所有队伍）
           this.extractTeamOptions();
           // 初始化过滤
           this.filterPlayers();
@@ -260,8 +282,13 @@ export default {
     extractTeamOptions() {
       const teams = new Set();
       this.players.forEach(player => {
-        if (player.teamName) {
-          teams.add(player.teamName);
+        // 只添加所有历史队伍
+        if (player.all_teams && Array.isArray(player.all_teams)) {
+          player.all_teams.forEach(team => {
+            if (team.team_name) {
+              teams.add(team.team_name);
+            }
+          });
         }
       });
       this.teamOptions = Array.from(teams).sort();
@@ -299,21 +326,46 @@ export default {
         );
       }
       
-      // 按队伍过滤
+      // 按队伍过滤（只检查所有历史队伍）
       if (this.selectedTeam) {
-        filtered = filtered.filter(player => player.teamName === this.selectedTeam);
+        filtered = filtered.filter(player => {
+          // 检查所有历史队伍
+          if (player.all_teams && Array.isArray(player.all_teams)) {
+            return player.all_teams.some(team => team.team_name === this.selectedTeam);
+          }
+          return false;
+        });
       }
       
-      // 按赛事类型过滤
+      // 按赛事类型过滤（只检查所有历史赛事）
       if (this.selectedMatchType) {
-        filtered = filtered.filter(player => player.matchType === this.selectedMatchType);
+        filtered = filtered.filter(player => {
+          // 检查所有历史赛事类型
+          if (player.all_teams && Array.isArray(player.all_teams)) {
+            return player.all_teams.some(team => team.match_type === this.selectedMatchType);
+          }
+          return false;
+        });
       }
       
       this.filteredPlayers = filtered;
       this.totalPlayers = filtered.length;
-      this.currentPage = 1; // 重置到第一页
+      this.currentPage = 1;
       
       console.log(`过滤后找到 ${this.filteredPlayers.length} 名球员`);
+    },
+
+    getTagType(matchType) {
+      switch (matchType) {
+        case 'champions-cup':
+          return 'primary';
+        case 'womens-cup':
+          return 'success';
+        case 'eight-a-side':
+          return 'warning';
+        default:
+          return 'info';
+      }
     },
 
     navigateToPlayerHistory(player) {
@@ -418,7 +470,7 @@ export default {
   transition: all 0.3s ease;
   position: relative;
   overflow: hidden;
-  height: 140px;
+  min-height: 180px; /* 增加卡片高度以容纳更多信息 */
 }
 
 .player-card:hover {
@@ -544,5 +596,52 @@ export default {
   margin-top: 30px;
   display: flex;
   justify-content: center;
+}
+
+.player-number {
+  margin-left: 4px;
+  color: #909399;
+  font-size: 11px;
+}
+
+.all-teams {
+  margin-top: 4px;
+  /* 移除 border-top 因为不再需要分隔线 */
+}
+
+.teams-header {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  color: #909399;
+  margin-bottom: 6px;
+}
+
+.teams-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.team-tag {
+  font-size: 11px;
+  height: 20px;
+  line-height: 18px;
+  padding: 0 6px;
+  border-radius: 10px;
+}
+
+.more-tag {
+  font-size: 11px;
+  height: 20px;
+  line-height: 18px;
+  padding: 0 6px;
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.more-tag:hover {
+  background-color: #c8c9cc;
 }
 </style>

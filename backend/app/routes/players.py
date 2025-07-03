@@ -30,42 +30,72 @@ def get_players():
                 player_dict.setdefault('number', None)
                 player_dict.setdefault('matchType', 'champions-cup')
                 player_dict.setdefault('studentId', player.id)
+                player_dict.setdefault('all_teams', [])
                 
-                # 获取球员当前队伍信息（最新的一条记录）
+                # 获取球员所有队伍历史记录
                 try:
-                    current_history = PlayerTeamHistory.query.filter_by(
+                    all_histories = PlayerTeamHistory.query.filter_by(
                         player_id=player.id
-                    ).order_by(PlayerTeamHistory.id.desc()).first()
+                    ).order_by(PlayerTeamHistory.id.desc()).all()
                     
-                    if current_history:
-                        # 安全地获取team信息
-                        if hasattr(current_history, 'team') and current_history.team:
-                            player_dict['teamName'] = getattr(current_history.team, 'name', None)
-                            player_dict['team_id'] = getattr(current_history, 'team_id', None)
-                        
-                        player_dict['number'] = getattr(current_history, 'player_number', None)
-                        
-                        # 根据tournament_id确定matchType
-                        tournament_id = getattr(current_history, 'tournament_id', None)
-                        if tournament_id:
-                            try:
-                                tournament = Tournament.query.get(tournament_id)
-                                if tournament and hasattr(tournament, 'name') and tournament.name:
-                                    tournament_name = tournament.name.lower()
-                                    if '冠军杯' in tournament_name or 'champions' in tournament_name:
-                                        match_type = 'champions-cup'
-                                    elif '巾帼杯' in tournament_name or 'womens' in tournament_name:
-                                        match_type = 'womens-cup'
-                                    elif '八人制' in tournament_name or 'eight' in tournament_name:
-                                        match_type = 'eight-a-side'
-                                    else:
-                                        match_type = 'champions-cup'
-                                    player_dict['matchType'] = match_type
-                            except Exception as tournament_error:
-                                print(f"获取tournament信息时出错: {str(tournament_error)}")
-                                
+                    all_teams = []
+                    current_team_set = False
+                    
+                    for history in all_histories:
+                        if history and hasattr(history, 'team') and history.team:
+                            # 获取赛事信息
+                            tournament = None
+                            match_type = 'champions-cup'
+                            tournament_name = None
+                            season_name = None
+                            
+                            if hasattr(history, 'tournament_id') and history.tournament_id:
+                                try:
+                                    tournament = Tournament.query.get(history.tournament_id)
+                                    if tournament:
+                                        tournament_name = tournament.name
+                                        season_name = tournament.season_name
+                                        # 确定matchType
+                                        if tournament.name:
+                                            name_lower = tournament.name.lower()
+                                            if '冠军杯' in name_lower or 'champions' in name_lower:
+                                                match_type = 'champions-cup'
+                                            elif '巾帼杯' in name_lower or 'womens' in name_lower:
+                                                match_type = 'womens-cup'
+                                            elif '八人制' in name_lower or 'eight' in name_lower:
+                                                match_type = 'eight-a-side'
+                                except Exception as tournament_error:
+                                    print(f"获取tournament信息时出错: {str(tournament_error)}")
+                            
+                            team_info = {
+                                'team_name': history.team.name,
+                                'team_id': history.team_id,
+                                'player_number': history.player_number,
+                                'tournament_id': history.tournament_id,
+                                'tournament_name': tournament_name,
+                                'season_name': season_name,
+                                'match_type': match_type,
+                                'tournament_goals': getattr(history, 'tournament_goals', 0),
+                                'tournament_yellow_cards': getattr(history, 'tournament_yellow_cards', 0),
+                                'tournament_red_cards': getattr(history, 'tournament_red_cards', 0)
+                            }
+                            all_teams.append(team_info)
+                            
+                            # 设置当前队伍信息（第一条记录，即最新的）
+                            if not current_team_set:
+                                player_dict['teamName'] = history.team.name
+                                player_dict['team_id'] = history.team_id
+                                player_dict['number'] = history.player_number
+                                player_dict['matchType'] = match_type
+                                player_dict['tournament_name'] = tournament_name
+                                player_dict['season_name'] = season_name
+                                current_team_set = True
+                    
+                    player_dict['all_teams'] = all_teams
+                    
                 except Exception as history_error:
                     print(f"获取球员 {player.id} 历史记录时出错: {str(history_error)}")
+                    player_dict['all_teams'] = []
                 
                 players_data.append(player_dict)
                 

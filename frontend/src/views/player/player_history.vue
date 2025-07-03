@@ -106,63 +106,76 @@
         </div>
       </template>
       <el-collapse v-model="activeSeason">
-        <el-collapse-item v-for="season in player.seasons" :key="season.year" :name="season.year">
-          <template slot="title">
+        <el-collapse-item v-for="season in player.seasons" :key="season.season_name" :name="season.season_name">
+          <template #title>
             <div class="season-title">
-              <span>{{ season.year }}</span>
-              <span class="season-info">总进球: {{ season.totalGoals }} | 黄牌: {{ season.totalYellowCards }} | 红牌: {{ season.totalRedCards }}</span>
+              <span>{{ season.season_name }}</span>
+              <span class="season-info">总进球: {{ season.total_goals }} | 黄牌: {{ season.total_yellow_cards }} | 红牌: {{ season.total_red_cards }}</span>
             </div>
           </template>
           <el-row :gutter="20">
             <el-col :span="6">
               <div class="season-stat">
                 <div class="season-label">总进球数</div>
-                <div class="season-number">{{ season.totalGoals }}</div>
+                <div class="season-number">{{ season.total_goals }}</div>
               </div>
             </el-col>
             <el-col :span="6">
               <div class="season-stat">
                 <div class="season-label">总黄牌数</div>
-                <div class="season-number">{{ season.totalYellowCards }}</div>
+                <div class="season-number">{{ season.total_yellow_cards }}</div>
               </div>
             </el-col>
             <el-col :span="6">
               <div class="season-stat">
                 <div class="season-label">总红牌数</div>
-                <div class="season-number">{{ season.totalRedCards }}</div>
+                <div class="season-number">{{ season.total_red_cards }}</div>
               </div>
             </el-col>
           </el-row>
           <el-row :gutter="20" style="margin-top: 20px;">
             <el-col :span="24">
-              <div v-for="league in season.leagues" :key="league.name" style="margin-bottom: 20px;">
-                <h4>{{ league.name }}</h4>
-                <el-row :gutter="20">
-                  <el-col :span="6">
-                    <div class="season-stat">
-                      <div class="season-label">球队</div>
-                      <div class="season-number">{{ league.team }}</div>
-                    </div>
-                  </el-col>
-                  <el-col :span="6">
-                    <div class="season-stat">
-                      <div class="season-label">进球数</div>
-                      <div class="season-number">{{ league.goals }}</div>
-                    </div>
-                  </el-col>
-                  <el-col :span="6">
-                    <div class="season-stat">
-                      <div class="season-label">黄牌数</div>
-                      <div class="season-number">{{ league.yellowCards }}</div>
-                    </div>
-                  </el-col>
-                  <el-col :span="6">
-                    <div class="season-stat">
-                      <div class="season-label">红牌数</div>
-                      <div class="season-number">{{ league.redCards }}</div>
-                    </div>
-                  </el-col>
-                </el-row>
+              <div v-for="(tournament, tournamentName) in season.tournaments" :key="tournamentName" style="margin-bottom: 20px;">
+                <h4>{{ tournament.tournament_name }}</h4>
+                <div class="tournament-meta">
+                  <span class="meta-badge match-type">{{ getMatchTypeText(tournament.match_type) }}</span>
+                </div>
+                <div v-for="team in tournament.teams" :key="team.team_id" class="team-performance">
+                  <el-row :gutter="20">
+                    <el-col :span="6">
+                      <div class="season-stat">
+                        <div class="season-label">球队</div>
+                        <div class="season-number">{{ team.team_name }}</div>
+                      </div>
+                    </el-col>
+                    <el-col :span="6">
+                      <div class="season-stat">
+                        <div class="season-label">球衣号码</div>
+                        <div class="season-number">{{ team.player_number || '-' }}</div>
+                      </div>
+                    </el-col>
+                    <el-col :span="6">
+                      <div class="season-stat">
+                        <div class="season-label">进球数</div>
+                        <div class="season-number">{{ team.tournament_goals }}</div>
+                      </div>
+                    </el-col>
+                    <el-col :span="6">
+                      <div class="season-stat">
+                        <div class="season-label">黄牌数</div>
+                        <div class="season-number">{{ team.tournament_yellow_cards }}</div>
+                      </div>
+                    </el-col>
+                  </el-row>
+                  <el-row :gutter="20" style="margin-top: 10px;">
+                    <el-col :span="6">
+                      <div class="season-stat">
+                        <div class="season-label">红牌数</div>
+                        <div class="season-number">{{ team.tournament_red_cards }}</div>
+                      </div>
+                    </el-col>
+                  </el-row>
+                </div>
               </div>
             </el-col>
           </el-row>
@@ -252,13 +265,13 @@ export default {
             totalGoals: playerData.career_goals || 0,
             totalYellowCards: playerData.career_yellow_cards || 0,
             totalRedCards: playerData.career_red_cards || 0,
-            seasons: this.formatSeasonsData(playerData.seasons || []),
+            seasons: playerData.seasons || [], // 直接使用后端返回的赛季数据
             teamHistories: playerData.team_histories || [] // 新增：处理队伍历史记录
           };
           
           // 自动展开第一个赛季
           if (this.player.seasons.length > 0) {
-            this.activeSeason = [this.player.seasons[0].year];
+            this.activeSeason = [this.player.seasons[0].season_name];
           }
           
           this.$message.success('球员数据加载成功');
@@ -270,50 +283,6 @@ export default {
         console.error('加载球员数据异常:', error);
         this.$message.error('网络错误，无法获取球员数据');
       }
-    },
-
-    formatSeasonsData(seasonsData) {
-      // 将后端返回的seasons数据格式化为前端需要的格式
-      if (!Array.isArray(seasonsData)) {
-        console.warn('seasonsData is not an array:', seasonsData);
-        return [];
-      }
-
-      return seasonsData.map(season => {
-        const leagues = [];
-        
-        try {
-          // 遍历该赛季的所有赛事
-          const tournaments = season.tournaments || {};
-          if (typeof tournaments === 'object' && tournaments !== null) {
-            Object.values(tournaments).forEach(tournament => {
-              if (tournament && Array.isArray(tournament.teams)) {
-                tournament.teams.forEach(team => {
-                  if (team) {
-                    leagues.push({
-                      name: tournament.tournament_name || '未知赛事',
-                      team: team.team_name || '未知队伍',
-                      goals: Number(team.tournament_goals) || 0,
-                      yellowCards: Number(team.tournament_yellow_cards) || 0,
-                      redCards: Number(team.tournament_red_cards) || 0
-                    });
-                  }
-                });
-              }
-            });
-          }
-        } catch (error) {
-          console.error('Error processing tournaments for season:', season, error);
-        }
-
-        return {
-          year: season.season_name || '未知赛季',
-          totalGoals: Number(season.total_goals) || 0,
-          totalYellowCards: Number(season.total_yellow_cards) || 0,
-          totalRedCards: Number(season.total_red_cards) || 0,
-          leagues: leagues
-        };
-      });
     },
 
     goToHomePage() {
@@ -524,5 +493,21 @@ export default {
 
 .el-timeline-item {
   padding-bottom: 20px;
+}
+
+.tournament-meta {
+  margin-bottom: 10px;
+}
+
+.team-performance {
+  background-color: #f8f9fa;
+  padding: 15px;
+  border-radius: 6px;
+  margin-bottom: 10px;
+  border-left: 4px solid #409eff;
+}
+
+.team-performance:last-child {
+  margin-bottom: 0;
 }
 </style>
