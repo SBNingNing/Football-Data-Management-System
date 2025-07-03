@@ -400,39 +400,26 @@ def get_match_records():
             # 添加比分信息
             match_dict['home_score'] = match.home_score if match.home_score is not None else 0
             match_dict['away_score'] = match.away_score if match.away_score is not None else 0
-            # 添加格式化的比分显示
-            match_dict['score'] = f"{match_dict['home_score']} : {match_dict['away_score']}"
+            # 添加乌龙球信息
+            match_dict['home_own_goals'] = 0
+            match_dict['away_own_goals'] = 0
             
-            # 修正状态映射 - 确保与前端一致
-            status_map = {
-                'P': {'text': '待进行', 'type': 'info'},
-                'O': {'text': '进行中', 'type': 'warning'}, 
-                'F': {'text': '已完赛', 'type': 'success'}
-            }
-            status_info = status_map.get(match.status, {'text': '待进行', 'type': 'info'})
-            match_dict['status'] = status_info['text']
-            match_dict['status_type'] = status_info['type']
+            tournament = Tournament.query.get(match.tournament_id)
+            match_dict['matchType'] = determine_match_type(tournament)
             
-            # 修正比赛类型映射 - 确保与前端select选项一致
-            type_map = {
-                1: 'championsCup',
-                2: 'womensCup',
-                3: 'eightASide'
-            }
-            match_dict['type'] = type_map.get(match.tournament_id, 'championsCup')
+            # 修正状态映射 - 根据数据库模型注释
+            status_map = {'P': 'pending', 'O': 'ongoing', 'F': 'completed'}
+            match_dict['status'] = status_map.get(match.status, 'pending')
             
             records.append(match_dict)
-
-        return jsonify({
-            'status': 'success',
-            'data': {
-                'records': records,
-                'total': total,
-                'page': page,
-                'pageSize': page_size
-            }
-        }), 200
-
+        
+        return jsonify({'status': 'success', 'data': {
+            'records': records,
+            'total': total,
+            'page': page,
+            'pageSize': page_size
+        }}), 200
+        
     except Exception as e:
         return jsonify({'status': 'error', 'message': f'获取比赛记录失败: {str(e)}'}), 500
 
@@ -449,47 +436,117 @@ def get_match_detail(match_id):
         if not match:
             return jsonify({'status': 'error', 'message': f'未找到ID为{match_id}的比赛'}), 404
         
-        # 获取比赛相关的事件数据
+        # 获取比赛相关的事件数据，按时间排序
         from app.models.event import Event
         from app.models.player import Player
         from app.models.player_team_history import PlayerTeamHistory
         
-        events = Event.query.filter_by(match_id=match_id).all()
+        events = Event.query.filter_by(match_id=match_id).order_by(Event.event_time.asc()).all()
         print(f"找到 {len(events)} 个事件记录")
         
-        # 统计比赛数据
-        total_goals = sum(1 for event in events if event.event_type == 'goal')
-        total_yellow_cards = sum(1 for event in events if event.event_type == 'yellow_card')
-        total_red_cards = sum(1 for event in events if event.event_type == 'red_card')
+        # 构建事件数据用于前端展示
+        events_data = []
+        for event in events:
+            # 获取球员和队伍信息
+            player_name = '未知球员'
+            team_name = '未知球队'
+            
+            if event.player_id:
+                player = Player.query.get(event.player_id)
+                if player:
+                    player_name = player.name or '未知球员'
+                    # 优先从球员队伍历史记录获取队伍名称
+                    team_history = PlayerTeamHistory.query.filter_by(
+                        player_id=event.player_id,
+                        tournament_id=match.tournament_id
+                    ).first()
+                    if team_history and team_history.team:
+                        team_name = team_history.team.name
+                    elif player.team:
+                        team_name = player.team.name
+            
+            # 如果事件直接关联了队伍，使用事件的队伍信息
+            if event.team_id:
+                from app.models.team import Team
+                team = Team.query.get(event.team_id)
+                if team:
+                    team_name = team.name
+            
+            event_data = {
+                'id': event.id,
+                'event_type': event.event_type,
+                'event_time': event.event_time or 0,
+                'player_id': event.player_id,
+                'player_name': player_name,
+                'team_id': event.team_id,
+                'team_name': team_name,
+                'event_type_text': event.event_type  # 直接使用中文事件类型
+            }
+            events_data.append(event_data)
         
-        # 统计主队和客队数据
+        # 统计比赛数据 - 乌龙球单独统计，不算在进球里
+        total_goals = sum(1 for event in events if event.event_type == '进球')
+        total_own_goals = sum(1 for event in events if event.event_type == '乌龙球')
+        total_yellow_cards = sum(1 for event in events if event.event_type == '黄牌')
+        total_red_cards = sum(1 for event in events if event.event_type == '红牌')
+        
+        # 统计主队和客队数据 - 修复统计逻辑，处理乌龙球
         home_goals = 0
         away_goals = 0
+        home_own_goals = 0
+        away_own_goals = 0
         home_yellow_cards = 0
         away_yellow_cards = 0
         home_red_cards = 0
         away_red_cards = 0
         
-        if match.home_team_id and match.away_team_id:
-            # 通过球员队伍历史记录来获取正确的队伍归属
-            home_goals = sum(1 for event in events if event.event_type == 'goal' and _is_player_in_team(event.player_id, match.home_team_id, match.tournament_id))
-            away_goals = sum(1 for event in events if event.event_type == 'goal' and _is_player_in_team(event.player_id, match.away_team_id, match.tournament_id))
-            
-            home_yellow_cards = sum(1 for event in events if event.event_type == 'yellow_card' and _is_player_in_team(event.player_id, match.home_team_id, match.tournament_id))
-            away_yellow_cards = sum(1 for event in events if event.event_type == 'yellow_card' and _is_player_in_team(event.player_id, match.away_team_id, match.tournament_id))
-            
-            home_red_cards = sum(1 for event in events if event.event_type == 'red_card' and _is_player_in_team(event.player_id, match.home_team_id, match.tournament_id))
-            away_red_cards = sum(1 for event in events if event.event_type == 'red_card' and _is_player_in_team(event.player_id, match.away_team_id, match.tournament_id))
+        # 计算实际得分（包含乌龙球得分）
+        home_score_from_events = 0
+        away_score_from_events = 0
         
-        # 获取参赛球员信息 - 优化查询逻辑
-        player_ids = list(set(event.player_id for event in events if event.player_id))
+        if match.home_team_id and match.away_team_id:
+            for event in events:
+                if event.event_type == '进球':
+                    # 正常进球，计入对应球队
+                    if event.team_id == match.home_team_id:
+                        home_goals += 1
+                        home_score_from_events += 1
+                    elif event.team_id == match.away_team_id:
+                        away_goals += 1
+                        away_score_from_events += 1
+                elif event.event_type == '乌龙球':
+                    # 乌龙球统计：记录哪队出现乌龙球，但得分计入对方
+                    if event.team_id == match.home_team_id:
+                        home_own_goals += 1
+                        away_score_from_events += 1  # 主队乌龙球，客队得分
+                    elif event.team_id == match.away_team_id:
+                        away_own_goals += 1
+                        home_score_from_events += 1  # 客队乌龙球，主队得分
+                elif event.event_type == '黄牌':
+                    if event.team_id == match.home_team_id:
+                        home_yellow_cards += 1
+                    elif event.team_id == match.away_team_id:
+                        away_yellow_cards += 1
+                elif event.event_type == '红牌':
+                    if event.team_id == match.home_team_id:
+                        home_red_cards += 1
+                    elif event.team_id == match.away_team_id:
+                        away_red_cards += 1
+        
+        # 获取所有参赛球员信息 - 改进统计逻辑
         players_data = []
         
-        print(f"找到 {len(player_ids)} 个不重复的球员ID: {player_ids}")
+        # 首先获取主队和客队的所有球员
+        all_players = set()
         
-        # 如果没有事件数据，尝试从球队阵容中获取球员
-        if not player_ids and match.home_team_id and match.away_team_id:
-            print("没有事件数据，尝试从球队阵容获取球员...")
+        # 从事件中获取参与的球员
+        for event in events:
+            if event.player_id:
+                all_players.add(event.player_id)
+        
+        # 无论是否有事件数据，都要获取两支队伍的所有球员作为参赛球员
+        total_team_players = 0
+        if match.home_team_id and match.away_team_id:
             # 获取主队球员
             home_team_histories = PlayerTeamHistory.query.filter_by(
                 team_id=match.home_team_id,
@@ -502,78 +559,99 @@ def get_match_detail(match_id):
                 tournament_id=match.tournament_id
             ).all()
             
-            all_team_histories = home_team_histories + away_team_histories
-            print(f"从队伍历史中找到 {len(all_team_histories)} 个球员记录")
+            # 统计两支队伍的总球员数
+            total_team_players = len(home_team_histories) + len(away_team_histories)
             
-            for team_history in all_team_histories:
-                if team_history.player_id and team_history.player:
-                    players_data.append({
-                        'player_id': team_history.player_id,
-                        'player_name': team_history.player.name or '未知球员',
-                        'team_name': team_history.team.name if team_history.team else '未知球队',
-                        'player_number': team_history.player_number or 0,
-                        'goals': 0,
-                        'yellow_cards': 0,
-                        'red_cards': 0
-                    })
-        else:
-            # 从事件中获取球员信息
-            for player_id in player_ids:
-                try:
-                    player = Player.query.get(player_id)
-                    if player:
-                        # 获取球员在此赛事中的队伍归属
-                        team_history = PlayerTeamHistory.query.filter_by(
-                            player_id=player_id,
-                            tournament_id=match.tournament_id
-                        ).first()
-                        
-                        player_events = [e for e in events if e.player_id == player_id]
-                        player_goals = sum(1 for e in player_events if e.event_type == 'goal')
-                        player_yellow_cards = sum(1 for e in player_events if e.event_type == 'yellow_card')
-                        player_red_cards = sum(1 for e in player_events if e.event_type == 'red_card')
-                        
-                        # 获取球员号码和队伍名称
-                        player_number = team_history.player_number if team_history else (player.number or 0)
-                        team_name = team_history.team.name if team_history and team_history.team else (player.team.name if player.team else '未知球队')
-                        
-                        players_data.append({
-                            'player_id': player.id,
-                            'player_name': player.name or '未知球员',
-                            'team_name': team_name,
-                            'player_number': player_number,
-                            'goals': player_goals,
-                            'yellow_cards': player_yellow_cards,
-                            'red_cards': player_red_cards
-                        })
-                except Exception as player_error:
-                    print(f"处理球员{player_id}数据时出错: {player_error}")
+            # 将所有队伍球员加入到all_players集合中
+            for history in home_team_histories + away_team_histories:
+                if history.player_id:
+                    all_players.add(history.player_id)
+        
+        print(f"找到 {len(all_players)} 个参赛球员")
+        print(f"主队球员数: {len(home_team_histories) if 'home_team_histories' in locals() else 0}")
+        print(f"客队球员数: {len(away_team_histories) if 'away_team_histories' in locals() else 0}")
+        print(f"总参赛球员数: {total_team_players}")
+        
+        # 为每个球员统计数据
+        for player_id in all_players:
+            try:
+                player = Player.query.get(player_id)
+                if not player:
                     continue
+                
+                # 获取球员在此赛事中的队伍归属
+                team_history = PlayerTeamHistory.query.filter_by(
+                    player_id=player_id,
+                    tournament_id=match.tournament_id
+                ).first()
+                
+                # 统计该球员在本场比赛的各类事件
+                player_events = [e for e in events if e.player_id == player_id]
+                # 球员进球数只包括正常进球
+                player_goals = sum(1 for e in player_events if e.event_type == '进球')
+                # 球员乌龙球单独统计
+                player_own_goals = sum(1 for e in player_events if e.event_type == '乌龙球')
+                player_yellow_cards = sum(1 for e in player_events if e.event_type == '黄牌')
+                player_red_cards = sum(1 for e in player_events if e.event_type == '红牌')
+                
+                # 获取球员号码和队伍名称
+                player_number = 0
+                team_name = '未知球队'
+                
+                if team_history:
+                    player_number = team_history.player_number or 0
+                    team_name = team_history.team.name if team_history.team else '未知球队'
+                elif player.team:
+                    team_name = player.team.name
+                    player_number = player.number or 0
+                
+                players_data.append({
+                    'player_id': player.id,
+                    'player_name': player.name or '未知球员',
+                    'team_name': team_name,
+                    'player_number': player_number,
+                    'goals': player_goals,
+                    'own_goals': player_own_goals,
+                    'yellow_cards': player_yellow_cards,
+                    'red_cards': player_red_cards
+                })
+                
+                print(f"球员 {player.name}: 进球{player_goals}, 乌龙球{player_own_goals}, 黄牌{player_yellow_cards}, 红牌{player_red_cards}")
+                
+            except Exception as player_error:
+                print(f"处理球员{player_id}数据时出错: {player_error}")
+                continue
         
-        print(f"最终获取到 {len(players_data)} 个球员数据")
+        print(f"最终统计到 {len(players_data)} 个球员数据")
+        print(f"比赛得分统计: 主队{home_score_from_events}球, 客队{away_score_from_events}球")
+        print(f"进球统计: 总进球{total_goals}, 总乌龙球{total_own_goals}")
         
-        # 构建返回数据
+        # 构建返回数据 - 使用总队伍球员数作为参赛球员数
         match_data = {
             'id': match.id,
             'home_team_name': match.home_team.name if match.home_team else '主队',
             'away_team_name': match.away_team.name if match.away_team else '客队',
-            'home_score': match.home_score if match.home_score is not None else 0,
-            'away_score': match.away_score if match.away_score is not None else 0,
+            'home_score': match.home_score if match.home_score is not None else home_score_from_events,
+            'away_score': match.away_score if match.away_score is not None else away_score_from_events,
             'match_date': match.match_time.isoformat() if match.match_time else '',
             'tournament_name': match.tournament.name if match.tournament else '友谊赛',
             'season_name': f"{match.match_time.year}赛季" if match.match_time else '2024赛季',
             'status': match.status or 'P',
             'total_goals': total_goals,
+            'total_own_goals': total_own_goals,
             'total_yellow_cards': total_yellow_cards,
             'total_red_cards': total_red_cards,
-            'total_players': len(players_data),
+            'total_players': total_team_players,  # 使用两支队伍的总球员数
             'home_goals': home_goals,
             'away_goals': away_goals,
+            'home_own_goals': home_own_goals,
+            'away_own_goals': away_own_goals,
             'home_yellow_cards': home_yellow_cards,
             'away_yellow_cards': away_yellow_cards,
             'home_red_cards': home_red_cards,
             'away_red_cards': away_red_cards,
-            'players': players_data
+            'players': players_data,
+            'events': events_data
         }
         
         return jsonify({
@@ -584,25 +662,4 @@ def get_match_detail(match_id):
     except Exception as e:
         print(f"获取比赛详情异常: {str(e)}")
         return jsonify({'status': 'error', 'message': f'获取比赛详情失败: {str(e)}'}), 500
-
-def _is_player_in_team(player_id, team_id, tournament_id):
-    """检查球员是否属于指定队伍（基于赛事历史记录）"""
-    if not player_id or not team_id:
-        return False
-    
-    from app.models.player_team_history import PlayerTeamHistory
-    
-    # 首先检查球员队伍历史记录
-    team_history = PlayerTeamHistory.query.filter_by(
-        player_id=player_id,
-        team_id=team_id,
-        tournament_id=tournament_id
-    ).first()
-    
-    if team_history:
-        return True
-    
-    # 如果没有历史记录，回退到球员当前队伍
-    from app.models.player import Player
-    player = Player.query.get(player_id)
     return player and player.team_id == team_id

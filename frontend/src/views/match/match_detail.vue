@@ -46,7 +46,7 @@
         </div>
       </template>
       <el-row :gutter="20">
-        <el-col :span="6">
+        <el-col :span="5">
           <div class="stat-item" style="background-color: #1e88e5; color: white;">
             <el-icon style="color: #ffffff; font-size: 40px;"><Finished /></el-icon>
             <div class="stat-info">
@@ -55,7 +55,16 @@
             </div>
           </div>
         </el-col>
-        <el-col :span="6">
+        <el-col :span="5">
+          <div class="stat-item" style="background-color: #ff9800; color: white;">
+            <el-icon style="color: #ffffff; font-size: 40px;"><Football /></el-icon>
+            <div class="stat-info">
+              <div class="stat-number">{{ match.totalOwnGoals }}</div>
+              <div class="stat-label">乌龙球数</div>
+            </div>
+          </div>
+        </el-col>
+        <el-col :span="5">
           <div class="stat-item" style="background-color: #f39c12; color: white;">
             <el-icon style="color: #ffffff; font-size: 40px;"><Warning /></el-icon>
             <div class="stat-info">
@@ -64,7 +73,7 @@
             </div>
           </div>
         </el-col>
-        <el-col :span="6">
+        <el-col :span="5">
           <div class="stat-item" style="background-color: #e74c3c; color: white;">
             <el-icon style="color: #ffffff; font-size: 40px;"><CircleClose /></el-icon>
             <div class="stat-info">
@@ -73,7 +82,7 @@
             </div>
           </div>
         </el-col>
-        <el-col :span="6">
+        <el-col :span="4">
           <div class="stat-item" style="background-color: #27ae60; color: white;">
             <el-icon style="color: #ffffff; font-size: 40px;"><User /></el-icon>
             <div class="stat-info">
@@ -97,19 +106,25 @@
           <div class="team-stats">
             <h3>{{ match.homeTeam }}</h3>
             <el-row :gutter="10">
-              <el-col :span="8">
+              <el-col :span="6">
                 <div class="team-stat-item">
                   <div class="team-stat-number">{{ match.homeTeamStats.goals }}</div>
                   <div class="team-stat-label">进球</div>
                 </div>
               </el-col>
-              <el-col :span="8">
+              <el-col :span="6">
+                <div class="team-stat-item">
+                  <div class="team-stat-number">{{ match.homeTeamStats.ownGoals }}</div>
+                  <div class="team-stat-label">乌龙球</div>
+                </div>
+              </el-col>
+              <el-col :span="6">
                 <div class="team-stat-item">
                   <div class="team-stat-number">{{ match.homeTeamStats.yellowCards }}</div>
                   <div class="team-stat-label">黄牌</div>
                 </div>
               </el-col>
-              <el-col :span="8">
+              <el-col :span="6">
                 <div class="team-stat-item">
                   <div class="team-stat-number">{{ match.homeTeamStats.redCards }}</div>
                   <div class="team-stat-label">红牌</div>
@@ -122,19 +137,25 @@
           <div class="team-stats">
             <h3>{{ match.awayTeam }}</h3>
             <el-row :gutter="10">
-              <el-col :span="8">
+              <el-col :span="6">
                 <div class="team-stat-item">
                   <div class="team-stat-number">{{ match.awayTeamStats.goals }}</div>
                   <div class="team-stat-label">进球</div>
                 </div>
               </el-col>
-              <el-col :span="8">
+              <el-col :span="6">
+                <div class="team-stat-item">
+                  <div class="team-stat-number">{{ match.awayTeamStats.ownGoals }}</div>
+                  <div class="team-stat-label">乌龙球</div>
+                </div>
+              </el-col>
+              <el-col :span="6">
                 <div class="team-stat-item">
                   <div class="team-stat-number">{{ match.awayTeamStats.yellowCards }}</div>
                   <div class="team-stat-label">黄牌</div>
                 </div>
               </el-col>
-              <el-col :span="8">
+              <el-col :span="6">
                 <div class="team-stat-item">
                   <div class="team-stat-number">{{ match.awayTeamStats.redCards }}</div>
                   <div class="team-stat-label">红牌</div>
@@ -204,6 +225,10 @@
                       <el-icon><Football /></el-icon>
                       {{ player.goals || 0 }}球
                     </span>
+                    <span class="stat-badge own-goals">
+                      <el-icon><Football /></el-icon>
+                      {{ player.ownGoals || 0 }}乌龙
+                    </span>
                     <span class="stat-badge yellow-cards">
                       <el-icon><Warning /></el-icon>
                       {{ player.yellowCards || 0 }}黄
@@ -237,6 +262,56 @@
         />
       </div>
     </el-card>
+
+    <!-- 比赛事件时间轴 -->
+    <el-card class="match-events">
+      <template #header>
+        <div class="clearfix">
+          <span>比赛事件时间轴</span>
+          <div class="events-stats">
+            共 {{ events.length }} 个事件
+          </div>
+        </div>
+      </template>
+      
+      <div class="events-timeline" v-loading="playersLoading" element-loading-text="正在加载事件数据...">
+        <div v-if="events.length === 0 && !playersLoading" class="no-events">
+          <el-icon class="no-data-icon"><Clock /></el-icon>
+          <p>暂无比赛事件记录</p>
+        </div>
+        
+        <div v-else class="timeline-container">
+          <div 
+            v-for="event in events" 
+            :key="event.id"
+            class="timeline-item"
+            :class="getEventTypeClass(event.event_type)"
+          >
+            <div class="timeline-marker">
+              <el-icon class="event-icon">
+                <component :is="getEventIcon(event.event_type)" />
+              </el-icon>
+            </div>
+            <div class="timeline-content">
+              <div class="event-header">
+                <span class="event-time">{{ event.event_time }}'</span>
+                <span class="event-type">{{ event.event_type_text }}</span>
+              </div>
+              <div class="event-details">
+                <div class="player-info">
+                  <el-icon><User /></el-icon>
+                  <span class="player-name">{{ event.player_name }}</span>
+                </div>
+                <div class="team-info">
+                  <el-icon><Trophy /></el-icon>
+                  <span class="team-name">{{ event.team_name }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </el-card>
   </div>
 </template>
 
@@ -254,7 +329,8 @@ import {
   Location, 
   Tickets, 
   Football, 
-  View 
+  View,
+  Clock
 } from '@element-plus/icons-vue'
 
 export default {
@@ -271,7 +347,8 @@ export default {
     Location,
     Tickets,
     Football,
-    View
+    View,
+    Clock
   },
   data() {
     return {
@@ -279,6 +356,7 @@ export default {
       playersLoading: false,
       currentPage: 1,
       pageSize: 12,
+      events: [],
       match: {
         id: '',
         homeTeam: '',
@@ -290,16 +368,19 @@ export default {
         season: '',
         status: '',
         totalGoals: 0,
+        totalOwnGoals: 0, // 添加乌龙球统计
         totalYellowCards: 0,
         totalRedCards: 0,
         totalPlayers: 0,
         homeTeamStats: {
           goals: 0,
+          ownGoals: 0, // 添加乌龙球统计
           yellowCards: 0,
           redCards: 0
         },
         awayTeamStats: {
           goals: 0,
+          ownGoals: 0, // 添加乌龙球统计
           yellowCards: 0,
           redCards: 0
         }
@@ -406,8 +487,174 @@ export default {
       }
     },
 
+    // 简化获取所有参与球员的方法
+    async loadAllParticipatingPlayers() {
+      try {
+        const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+        if (!token) return;
+
+        console.log('尝试从事件API获取球员数据...');
+        
+        // 尝试从事件API获取球员信息
+        const eventsResponse = await fetch(`/api/events/match/${this.match.id}`, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+
+        if (eventsResponse.ok) {
+          const eventsResult = await eventsResponse.json();
+          if (eventsResult.status === 'success' && eventsResult.data && eventsResult.data.length > 0) {
+            console.log('从事件API获取到事件数据:', eventsResult.data);
+            
+            // 统计每个球员的数据
+            const playerStats = new Map();
+            
+            eventsResult.data.forEach(event => {
+              if (event.player_id) {
+                if (!playerStats.has(event.player_id)) {
+                  playerStats.set(event.player_id, {
+                    playerId: event.player_id,
+                    playerName: event.player_name || '未知球员',
+                    teamName: event.team_name || '未知球队',
+                    playerNumber: event.player_number || 0,
+                    goals: 0,
+                    ownGoals: 0, // 添加乌龙球统计
+                    yellowCards: 0,
+                    redCards: 0
+                  });
+                }
+                
+                const playerData = playerStats.get(event.player_id);
+                
+                // 统计各类事件 - 进球和乌龙球分开统计
+                switch (event.event_type) {
+                  case '进球':
+                    playerData.goals++;
+                    break;
+                  case '乌龙球':
+                    playerData.ownGoals++;
+                    break;
+                  case '黄牌':
+                    playerData.yellowCards++;
+                    break;
+                  case '红牌':
+                    playerData.redCards++;
+                    break;
+                }
+              }
+            });
+
+            // 更新球员数据
+            this.players = Array.from(playerStats.values());
+            
+            // 同时更新比赛统计数据
+            this.updateMatchStats(eventsResult.data);
+            
+            console.log('统计后的球员数据:', this.players);
+          }
+        } else {
+          console.log('无法从事件API获取数据，使用比赛详情API的数据');
+        }
+      } catch (error) {
+        console.error('获取球员数据失败:', error);
+      }
+    },
+
+    // 更新比赛统计数据方法 - 处理乌龙球逻辑和参赛球员数量
+    updateMatchStats(events) {
+      if (!events || events.length === 0) return;
+      
+      let totalGoals = 0;
+      let totalOwnGoals = 0;
+      let totalYellowCards = 0;
+      let totalRedCards = 0;
+      let homeGoals = 0;
+      let awayGoals = 0;
+      let homeOwnGoals = 0;
+      let awayOwnGoals = 0;
+      let homeYellowCards = 0;
+      let awayYellowCards = 0;
+      let homeRedCards = 0;
+      let awayRedCards = 0;
+      
+      // 统计参与事件的球员数量
+      const uniquePlayers = new Set();
+      
+      events.forEach(event => {
+        // 统计参与的球员
+        if (event.player_id) {
+          uniquePlayers.add(event.player_id);
+        }
+        
+        // 使用中文事件类型进行统计
+        switch (event.event_type) {
+          case '进球':
+            totalGoals++;
+            // 正常进球，计入对应球队
+            if (event.team_name === this.match.homeTeam) {
+              homeGoals++;
+            } else if (event.team_name === this.match.awayTeam) {
+              awayGoals++;
+            }
+            break;
+          case '乌龙球':
+            totalOwnGoals++; // 乌龙球单独统计
+            // 乌龙球记录在对应球队，但不影响进球数
+            if (event.team_name === this.match.homeTeam) {
+              homeOwnGoals++; // 主队乌龙球
+            } else if (event.team_name === this.match.awayTeam) {
+              awayOwnGoals++; // 客队乌龙球
+            }
+            break;
+          case '黄牌':
+            totalYellowCards++;
+            if (event.team_name === this.match.homeTeam) {
+              homeYellowCards++;
+            } else if (event.team_name === this.match.awayTeam) {
+              awayYellowCards++;
+            }
+            break;
+          case '红牌':
+            totalRedCards++;
+            if (event.team_name === this.match.homeTeam) {
+              homeRedCards++;
+            } else if (event.team_name === this.match.awayTeam) {
+              awayRedCards++;
+            }
+            break;
+        }
+      });
+      
+      // 更新比赛统计数据
+      this.match.totalGoals = totalGoals;
+      this.match.totalOwnGoals = totalOwnGoals;
+      this.match.totalYellowCards = totalYellowCards;
+      this.match.totalRedCards = totalRedCards;
+      this.match.homeTeamStats.goals = homeGoals;
+      this.match.homeTeamStats.ownGoals = homeOwnGoals;
+      this.match.homeTeamStats.yellowCards = homeYellowCards;
+      this.match.homeTeamStats.redCards = homeRedCards;
+      this.match.awayTeamStats.goals = awayGoals;
+      this.match.awayTeamStats.ownGoals = awayOwnGoals;
+      this.match.awayTeamStats.yellowCards = awayYellowCards;
+      this.match.awayTeamStats.redCards = awayRedCards;
+      
+      console.log('更新后的比赛统计数据:', {
+        totalGoals,
+        totalOwnGoals,
+        totalYellowCards,
+        totalRedCards,
+        totalPlayers: this.match.totalPlayers,
+        homeStats: this.match.homeTeamStats,
+        awayStats: this.match.awayTeamStats
+      });
+    },
+
     formatMatchData(data) {
-      // 格式化比赛数据 - 使用后端返回的实际字段
+      // 格式化比赛数据
       this.match = {
         id: data.id,
         homeTeam: data.home_team_name || '主队',
@@ -419,104 +666,98 @@ export default {
         season: data.season_name || '',
         status: this.mapStatusFromBackend(data.status),
         totalGoals: data.total_goals || 0,
+        totalOwnGoals: data.total_own_goals || 0, // 添加乌龙球统计
         totalYellowCards: data.total_yellow_cards || 0,
         totalRedCards: data.total_red_cards || 0,
         totalPlayers: data.total_players || 0,
         homeTeamStats: {
           goals: data.home_goals || 0,
+          ownGoals: data.home_own_goals || 0, // 添加乌龙球统计
           yellowCards: data.home_yellow_cards || 0,
           redCards: data.home_red_cards || 0
         },
         awayTeamStats: {
           goals: data.away_goals || 0,
+          ownGoals: data.away_own_goals || 0, // 添加乌龙球统计
           yellowCards: data.away_yellow_cards || 0,
           redCards: data.away_red_cards || 0
         }
       };
 
-      // 格式化球员数据 - 移除performance字段
+      // 格式化球员数据 - 确保正确映射字段
       this.players = (data.players || []).map(player => ({
         playerId: player.player_id,
         playerName: player.player_name || '未知球员',
         teamName: player.team_name || '未知球队',
         playerNumber: player.player_number || 0,
         goals: player.goals || 0,
+        ownGoals: player.own_goals || 0, // 添加乌龙球统计
         yellowCards: player.yellow_cards || 0,
         redCards: player.red_cards || 0
       }));
 
+      // 格式化事件数据
+      this.events = (data.events || []).map(event => ({
+        id: event.id,
+        event_type: event.event_type,
+        event_time: event.event_time || 0,
+        player_id: event.player_id,
+        player_name: event.player_name || '未知球员',
+        team_id: event.team_id,
+        team_name: event.team_name || '未知球队',
+        event_type_text: event.event_type_text || event.event_type  // 直接使用中文
+      }));
+
       console.log('格式化后的比赛数据:', this.match);
       console.log('格式化后的球员数据:', this.players);
+      console.log('格式化后的事件数据:', this.events);
+      console.log('参赛球员总数:', this.match.totalPlayers);
       
-      // 如果没有球员数据，尝试获取球员信息
+      // 验证数据完整性
       if (this.players.length === 0) {
-        console.log('没有球员数据，尝试获取所有参与球员...');
+        console.log('没有球员数据，尝试重新获取...');
         this.loadAllParticipatingPlayers();
       }
     },
 
-    // 新增方法：获取所有参与的球员
-    async loadAllParticipatingPlayers() {
-      try {
-        const token = localStorage.getItem('token') || sessionStorage.getItem('token');
-        if (!token) return;
+    // 获取事件类型对应的图标 - 支持中文事件类型
+    getEventIcon(eventType) {
+      const iconMap = {
+        '进球': 'Football',
+        '黄牌': 'Warning',
+        '红牌': 'CircleClose',
+        '换人': 'User',
+        '点球': 'Trophy',
+        '乌龙球': 'Football',
+        // 英文兼容
+        'goal': 'Football',
+        'yellow_card': 'Warning',
+        'red_card': 'CircleClose',
+        'substitution': 'User',
+        'penalty': 'Trophy',
+        'own_goal': 'Football'
+      };
+      return iconMap[eventType] || 'Clock';
+    },
 
-        // 获取比赛的所有事件，从中提取球员信息
-        const response = await fetch(`/api/events/match/${this.match.id}`, {
-          method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
-        });
-
-        if (response.ok) {
-          const result = await response.json();
-          if (result.status === 'success' && result.data && result.data.length > 0) {
-            // 从事件数据中提取球员信息
-            const playerMap = new Map();
-            
-            result.data.forEach(event => {
-              if (event.player_id && !playerMap.has(event.player_id)) {
-                playerMap.set(event.player_id, {
-                  playerId: event.player_id,
-                  playerName: event.player_name || '未知球员',
-                  teamName: event.team_name || '未知球队',
-                  playerNumber: event.player_number || 0,
-                  goals: 0,
-                  yellowCards: 0,
-                  redCards: 0
-                });
-              }
-            });
-
-            // 统计每个球员的事件
-            result.data.forEach(event => {
-              if (event.player_id && playerMap.has(event.player_id)) {
-                const player = playerMap.get(event.player_id);
-                switch (event.event_type) {
-                  case 'goal':
-                    player.goals++;
-                    break;
-                  case 'yellow_card':
-                    player.yellowCards++;
-                    break;
-                  case 'red_card':
-                    player.redCards++;
-                    break;
-                }
-              }
-            });
-
-            // 更新球员数据 - 移除performance计算
-            this.players = Array.from(playerMap.values());
-
-            console.log('从事件数据中获取的球员:', this.players);
-          }
-        }
-      } catch (error) {
-        console.error('获取球员数据失败:', error);
-      }
+    // 获取事件类型的样式类 - 支持中文事件类型
+    getEventTypeClass(eventType) {
+      const classMap = {
+        '进球': 'event-goal',
+        '黄牌': 'event-yellow-card',
+        '红牌': 'event-red-card',
+        '换人': 'event-substitution',
+        '点球': 'event-penalty',
+        '乌龙球': 'event-own-goal',
+        // 英文兼容
+        'goal': 'event-goal',
+        'yellow_card': 'event-yellow-card',
+        'red_card': 'event-red-card',
+        'substitution': 'event-substitution',
+        'penalty': 'event-penalty',
+        'own_goal': 'event-own-goal'
+      };
+      return classMap[eventType] || 'event-default';
     },
 
     // 添加日期格式化方法
@@ -731,6 +972,18 @@ export default {
   background-color: #3498db;
 }
 
+.match-stats {
+  margin-bottom: 20px;
+}
+
+.match-stats .el-row {
+  margin: 0 -10px;
+}
+
+.match-stats .el-col {
+  padding: 0 10px;
+}
+
 .stat-item {
   display: flex;
   align-items: center;
@@ -739,6 +992,7 @@ export default {
   border-radius: 8px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   transition: transform 0.2s ease;
+  width: 100%;
 }
 
 .stat-item:hover {
@@ -749,6 +1003,7 @@ export default {
   display: flex;
   flex-direction: column;
   margin-left: 15px;
+  flex: 1;
 }
 
 .stat-number {
@@ -942,6 +1197,11 @@ export default {
   color: #67c23a;
 }
 
+.stat-badge.own-goals {
+  background-color: #fff3e0;
+  color: #ff9800;
+}
+
 .stat-badge.yellow-cards {
   background-color: #fdf6ec;
   color: #e6a23c;
@@ -980,21 +1240,217 @@ export default {
   justify-content: center;
 }
 
-/* 响应式设计 - 小屏幕时调整布局 */
+.match-events {
+  margin-bottom: 20px;
+}
+
+.match-events .clearfix {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.events-stats {
+  color: #909399;
+  font-size: 14px;
+}
+
+.events-timeline {
+  min-height: 200px;
+  margin-top: 20px;
+}
+
+.no-events {
+  text-align: center;
+  padding: 60px 20px;
+  color: #909399;
+}
+
+.timeline-container {
+  position: relative;
+}
+
+.timeline-container::before {
+  content: '';
+  position: absolute;
+  left: 30px;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background-color: #e4e7ed;
+}
+
+.timeline-item {
+  position: relative;
+  padding: 15px 0 15px 70px;
+  margin-bottom: 10px;
+}
+
+.timeline-item:last-child {
+  margin-bottom: 0;
+}
+
+.timeline-marker {
+  position: absolute;
+  left: 20px;
+  top: 15px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #fff;
+  border: 2px solid #e4e7ed;
+  z-index: 1;
+}
+
+.event-icon {
+  font-size: 12px;
+  color: #606266;
+}
+
+.timeline-content {
+  background-color: #f8f9fa;
+  padding: 15px;
+  border-radius: 8px;
+  border-left: 4px solid #e4e7ed;
+}
+
+.event-header {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  margin-bottom: 10px;
+}
+
+.event-time {
+  background-color: #409eff;
+  color: white;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: bold;
+  min-width: 35px;
+  text-align: center;
+}
+
+.event-type {
+  font-size: 16px;
+  font-weight: bold;
+  color: #303133;
+}
+
+.event-details {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.player-info,
+.team-info {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: #606266;
+  font-size: 14px;
+}
+
+.player-name,
+.team-name {
+  font-weight: 500;
+}
+
+/* 不同事件类型的样式 */
+.event-goal .timeline-marker {
+  border-color: #67c23a;
+}
+
+.event-goal .event-icon {
+  color: #67c23a;
+}
+
+.event-goal .timeline-content {
+  border-left-color: #67c23a;
+}
+
+.event-yellow-card .timeline-marker {
+  border-color: #e6a23c;
+}
+
+.event-yellow-card .event-icon {
+  color: #e6a23c;
+}
+
+.event-yellow-card .timeline-content {
+  border-left-color: #e6a23c;
+}
+
+.event-red-card .timeline-marker {
+  border-color: #f56c6c;
+}
+
+.event-red-card .event-icon {
+  color: #f56c6c;
+}
+
+.event-red-card .timeline-content {
+  border-left-color: #f56c6c;
+}
+
+.event-substitution .timeline-marker {
+  border-color: #409eff;
+}
+
+.event-substitution .event-icon {
+  color: #409eff;
+}
+
+.event-substitution .timeline-content {
+  border-left-color: #409eff;
+}
+
+.event-penalty .timeline-marker {
+  border-color: #9c27b0;
+}
+
+.event-penalty .event-icon {
+  color: #9c27b0;
+}
+
+.event-penalty .timeline-content {
+  border-left-color: #9c27b0;
+}
+
+.event-own-goal .timeline-marker {
+  border-color: #ff9800;
+}
+
+.event-own-goal .event-icon {
+  color: #ff9800;
+}
+
+.event-own-goal .timeline-content {
+  border-left-color: #ff9800;
+}
+
+/* 响应式设计 */
 @media (max-width: 768px) {
-  .match-meta {
+  .timeline-container::before {
+    left: 15px;
+  }
+  
+  .timeline-item {
+    padding-left: 50px;
+  }
+  
+  .timeline-marker {
+    left: 5px;
+  }
+  
+  .event-details {
     flex-direction: column;
-    gap: 15px;
-    align-items: center;
-  }
-  
-  .meta-item {
-    font-size: 16px;
-    padding: 6px 12px;
-  }
-  
-  .meta-item .el-icon {
-    font-size: 18px;
+    gap: 10px;
   }
 }
 </style>

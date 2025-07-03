@@ -39,8 +39,14 @@
       @page-change="handleMatchPageChange"
     />
 
+    <!-- 球队搜索模块 -->
+    <TeamSearch />
+
     <!-- 球员搜索模块 -->
     <PlayerSearch />
+
+    <!-- 快速导航组件 -->
+    <QuickNavigator />
   </div>
 </template>
 
@@ -53,7 +59,9 @@ import MatchTypeCards from '@/components/home/MatchTypeCards.vue';
 import FeaturedMatches from '@/components/home/FeaturedMatches.vue';
 import RankingsSection from '@/components/home/RankingsSection.vue';
 import MatchRecords from '@/components/home/MatchRecords.vue';
+import TeamSearch from '@/components/home/TeamSearch.vue';
 import PlayerSearch from '@/components/home/PlayerSearch.vue';
+import QuickNavigator from '@/components/home/QuickNavigator.vue';
 
 export default {
   name: 'Home',
@@ -63,7 +71,9 @@ export default {
     FeaturedMatches,
     RankingsSection,
     MatchRecords,
-    PlayerSearch
+    TeamSearch,
+    PlayerSearch,
+    QuickNavigator
   },
   data() {
     return {
@@ -607,6 +617,7 @@ export default {
 .home {
   max-width: 1200px;
   margin: 0 auto;
+  position: relative;
 }
 
 .welcome-card {

@@ -148,22 +148,21 @@ def get_teams():
                 
                 # 添加赛事信息
                 teams_grouped[team_name]['tournaments'].append({
-                    'tournament_id': team.tournament_id,
+                    'tournamentId': team.tournament_id,
                     'matchType': determine_match_type(team.tournament),
-                    'tournament_name': team.tournament.name if team.tournament else None
+                    'tournamentName': team.tournament.name if team.tournament else None
                 })
             
             return jsonify({'status': 'success', 'data': list(teams_grouped.values())}), 200
         else:
-            # 原有逻辑：返回所有球队记录
+            # 返回所有球队记录，确保字段名称一致
             teams = Team.query.all()
             teams_data = []
             
             for team in teams:
                 team_dict = team.to_dict()
-                team_dict['teamName'] = team_dict['name']
                 
-                # 获取球队在当前赛事中的球员信息（从PlayerTeamHistory中获取）
+                # 获取球队在当前赛事中的球员信息
                 team_players = []
                 player_histories = PlayerTeamHistory.query.filter_by(
                     team_id=team.id, 
@@ -182,13 +181,15 @@ def get_teams():
                         'yellowCards': history.tournament_yellow_cards
                     })
                 
-                team_dict['players'] = team_players
-                
-                # 根据赛事名称确定matchType
-                team_dict['matchType'] = determine_match_type(team.tournament)
-                
-                # 添加详细统计信息
-                team_dict.update({
+                # 构建标准化的返回数据
+                standardized_team = {
+                    'id': team.id,
+                    'teamName': team.name,
+                    'name': team.name,  # 保持兼容性
+                    'matchType': determine_match_type(team.tournament),
+                    'tournamentId': team.tournament_id,
+                    'tournamentName': team.tournament.name if team.tournament else None,
+                    'groupId': team.group_id,
                     'rank': team.tournament_rank,
                     'goals': team.tournament_goals,
                     'goalsConceded': team.tournament_goals_conceded,
@@ -196,11 +197,11 @@ def get_teams():
                     'redCards': team.tournament_red_cards,
                     'yellowCards': team.tournament_yellow_cards,
                     'points': team.tournament_points,
-                    'tournamentId': team.tournament_id,
-                    'tournamentName': team.tournament.name if team.tournament else None
-                })
+                    'players': team_players,
+                    'createdAt': team.created_at.isoformat() if hasattr(team, 'created_at') and team.created_at else None
+                }
                 
-                teams_data.append(team_dict)
+                teams_data.append(standardized_team)
             
             return jsonify({'status': 'success', 'data': teams_data}), 200
         

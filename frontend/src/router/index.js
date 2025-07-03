@@ -53,6 +53,15 @@ const routes = [
     component: TeamHistory
   },
   {
+    path: '/team/:teamName',
+    name: 'TeamInfo',
+    component: TeamHistory,
+    props: route => ({
+      teamName: route.params.teamName,
+      ...route.query
+    })
+  },
+  {
     path: '/tournament',
     redirect: '/home'
   },

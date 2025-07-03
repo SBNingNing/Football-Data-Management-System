@@ -23,6 +23,16 @@
       <template #header>
         <div class="clearfix">
           <span>球队关键统计数据</span>
+          <el-button 
+            type="primary" 
+            size="small" 
+            @click="refreshTeamData"
+            :loading="refreshing"
+            style="float: right;"
+          >
+            <el-icon><Refresh /></el-icon>
+            刷新数据
+          </el-button>
         </div>
       </template>
       <el-row :gutter="20">
@@ -105,7 +115,7 @@
       </template>
       <el-collapse v-model="activeSeason">
         <el-collapse-item v-for="record in team.records" :key="record.id" :name="record.id">
-          <template slot="title">
+          <template #title>
             <div class="season-title">
               <span>{{ record.tournamentName }} ({{ getMatchTypeText(record.matchType) }})</span>
             </div>
@@ -170,7 +180,7 @@
                   <span 
                     class="clickable-player" 
                     @click="navigateToPlayer(scope.row)"
-                    :title="点击查看球员详情"
+                    title="点击查看球员详情"
                   >
                     <el-icon class="player-icon"><User /></el-icon>
                     {{ scope.row.name }}
@@ -191,7 +201,7 @@
 
 <script>
 import { useUserStore } from '@/store'
-import { Finished, Warning, CircleClose, Top, Trophy, Star, ArrowLeft, User } from '@element-plus/icons-vue'
+import { Finished, Warning, CircleClose, Top, Trophy, Star, ArrowLeft, User, Refresh } from '@element-plus/icons-vue'
 
 export default {
   name: 'TeamInfo',
@@ -203,11 +213,13 @@ export default {
     Trophy,
     Star,
     ArrowLeft,
-    User
+    User,
+    Refresh
   },
   data() {
     return {
       activeSeason: null,
+      refreshing: false,
       team: {
         teamName: '',
         totalGoals: 0,
@@ -227,36 +239,77 @@ export default {
   methods: {
     async loadTeamData() {
       try {
-        // 从路由参数或query参数获取球队名称
-        const teamName = this.$route.params.teamName || 
-                        this.$route.query.teamName || 
-                        this.teamName; // 来自props
-        
-        console.log('获取到的球队名称:', teamName);
-        console.log('当前路由信息:', this.$route);
-        
-        if (!teamName) {
-          this.$message.error('未指定球队名称');
-          return;
+        // 首先尝试从query参数中获取传递的数据
+        const queryTeamData = this.$route.query.teamData;
+        if (queryTeamData) {
+          try {
+            const parsedData = JSON.parse(queryTeamData);
+            console.log('从query参数获取的球队数据:', parsedData);
+            
+            // 使用传递的数据更新组件状态
+            this.team = {
+              teamName: parsedData.name || parsedData.teamName || '未知球队',
+              totalGoals: parsedData.totalGoals || 0,
+              totalGoalsConceded: parsedData.totalGoalsConceded || 0,
+              totalGoalDifference: (parsedData.totalGoals || 0) - (parsedData.totalGoalsConceded || 0),
+              totalYellowCards: parsedData.totalYellowCards || 0,
+              totalRedCards: parsedData.totalRedCards || 0,
+              totalPoints: parsedData.totalPoints || 0,
+              bestRank: parsedData.bestRank || null,
+              records: parsedData.records || []
+            };
+            
+            // 如果传递的数据不完整，再从后端获取
+            if (!this.team.records || this.team.records.length === 0) {
+              console.log('传递的数据不完整，从后端获取完整数据...');
+              await this.fetchFromBackend();
+            }
+            
+            return;
+          } catch (error) {
+            console.error('解析query参数中的球队数据失败:', error);
+          }
         }
         
-        // 添加loading提示
-        const loading = this.$loading({
-          lock: true,
-          text: '正在加载球队数据...',
-          spinner: 'el-icon-loading',
-          background: 'rgba(0, 0, 0, 0.7)'
-        });
+        // 如果没有传递数据或解析失败，从后端获取
+        await this.fetchFromBackend();
         
+      } catch (error) {
+        console.error('加载球队数据异常:', error);
+        this.$message.error('加载球队数据失败');
+      }
+    },
+    
+    async fetchFromBackend() {
+      // 从路由参数或query参数获取球队名称
+      const teamName = this.$route.params.teamName || 
+                      this.$route.query.teamName || 
+                      this.$route.query.name;
+      
+      console.log('获取到的球队名称:', teamName);
+      console.log('当前路由信息:', this.$route);
+      
+      if (!teamName) {
+        this.$message.error('未指定球队名称');
+        return;
+      }
+      
+      // 添加loading提示
+      const loading = this.$loading({
+        lock: true,
+        text: '正在加载球队数据...',
+        spinner: 'el-icon-loading',
+        background: 'rgba(0, 0, 0, 0.7)'
+      });
+      
+      try {
         // 直接使用 useUserStore 获取 store 实例
         const store = useUserStore();
         console.log('Store 实例:', store);
-        console.log('Store 方法列表:', Object.getOwnPropertyNames(store));
         
         // 检查方法是否存在
         if (typeof store.fetchTeamByName !== 'function') {
           console.error('fetchTeamByName 方法不存在，可用方法:', Object.keys(store));
-          loading.close();
           this.$message.error('系统错误：缺少获取球队数据的方法');
           return;
         }
@@ -264,15 +317,13 @@ export default {
         // 使用 store 中的方法获取球队详情
         const result = await store.fetchTeamByName(teamName);
         
-        loading.close();
-        
         if (result.success) {
           const teamData = result.data;
           console.log('获取到的球队数据:', teamData);
           
           // 直接使用后端返回的数据结构
           this.team = {
-            teamName: teamData.teamName || '未知球队',
+            teamName: teamData.teamName || teamName,
             totalGoals: teamData.totalGoals || 0,
             totalGoalsConceded: teamData.totalGoalsConceded || 0,
             totalGoalDifference: teamData.totalGoalDifference || 0,
@@ -294,12 +345,19 @@ export default {
           console.error('获取球队数据失败:', result.error);
         }
       } catch (error) {
-        console.error('加载球队数据异常:', error);
+        console.error('获取球队数据异常:', error);
         this.$message.error('网络错误，无法获取球队数据');
-        
-        // 关闭可能还在显示的loading
-        const loadingInstance = this.$loading.service({});
-        loadingInstance.close();
+      } finally {
+        loading.close();
+      }
+    },
+    
+    async refreshTeamData() {
+      this.refreshing = true;
+      try {
+        await this.fetchFromBackend();
+      } finally {
+        this.refreshing = false;
       }
     },
     
@@ -337,14 +395,14 @@ export default {
     },
 
     navigateToPlayer(player) {
-      console.log('点击了球员:', player) // 调试用
+      console.log('点击了球员:', player);
       
       // 确保有ID数据再跳转
-      const playerId = player.id || player.studentId || player.playerId
+      const playerId = player.id || player.studentId || player.playerId;
       if (!playerId) {
-        console.error('球员ID不存在:', player)
-        this.$message.error('球员信息不完整，无法查看详情')
-        return
+        console.error('球员ID不存在:', player);
+        this.$message.error('球员信息不完整，无法查看详情');
+        return;
       }
       
       // 跳转到球员历史页面，使用正确的路由名称
@@ -354,9 +412,9 @@ export default {
           playerId: playerId
         }
       }).catch(err => {
-        console.error('路由跳转失败:', err)
-        this.$message.error('页面跳转失败')
-      })
+        console.error('路由跳转失败:', err);
+        this.$message.error('页面跳转失败');
+      });
     }
   }
 };

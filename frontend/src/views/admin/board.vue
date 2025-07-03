@@ -18,6 +18,21 @@
             </span>
           </template>
           <div class="tab-content">
+            <!-- 内嵌的头部区域 -->
+            <div class="content-header">
+              <div class="header-left">
+                <h2 class="header-title">数据管理中心</h2>
+                <p class="header-subtitle">管理球队、比赛、球员和事件信息</p>
+              </div>
+              <div class="header-right">
+                <el-button type="primary" @click="loadAllData" :loading="loading" class="refresh-btn">
+                  <el-icon><Refresh /></el-icon>
+                  刷新数据
+                </el-button>
+              </div>
+            </div>
+            
+            <!-- 数据管理组件 -->
             <DataManagement 
               :teams="teams"
               :matches="matches"
@@ -48,6 +63,15 @@
             </span>
           </template>
           <div class="tab-content">
+            <!-- 内嵌的头部区域 -->
+            <div class="content-header">
+              <div class="header-left">
+                <h2 class="header-title">数据录入中心</h2>
+                <p class="header-subtitle">录入新的球队、比赛和事件信息</p>
+              </div>
+            </div>
+            
+            <!-- 数据录入组件 -->
             <DataInput 
               ref="dataInputRef"
               :teams="teams"
@@ -104,7 +128,7 @@ import WelcomeCard from '@/components/admin/WelcomeCard.vue';
 import DataInput from '@/components/admin/DataInput.vue';
 import DataManagement from '@/components/admin/DataManagement.vue';
 import EditDialogs from '@/components/admin/EditDialogs.vue';
-import { Setting, EditPen, Loading } from '@element-plus/icons-vue';
+import { Setting, EditPen, Loading, Refresh } from '@element-plus/icons-vue';
 
 export default {
   name: 'Admin',
@@ -115,7 +139,8 @@ export default {
     EditDialogs,
     Setting,
     EditPen,
-    Loading
+    Loading,
+    Refresh
   },
   data() {
     return {
@@ -579,10 +604,64 @@ export default {
   transition: all 0.3s ease;
 }
 
+/* 标签页内容区域 - 统一样式 */
 .tab-content {
-  padding: 0;
-  background: linear-gradient(135deg, #fafbfc 0%, #f8fafc 100%);
+  padding: 32px;
+  background: white;
   min-height: 600px;
+}
+
+/* 内容头部样式 */
+.content-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 32px;
+  padding-bottom: 24px;
+  border-bottom: 1px solid #f0f2f5;
+}
+
+.header-left {
+  flex: 1;
+}
+
+.header-title {
+  margin: 0 0 8px 0;
+  font-size: 28px;
+  font-weight: 700;
+  color: #1f2937;
+  line-height: 1.2;
+}
+
+.header-subtitle {
+  margin: 0;
+  font-size: 16px;
+  color: #6b7280;
+  font-weight: 400;
+  line-height: 1.5;
+}
+
+.header-right {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.refresh-btn {
+  padding: 12px 24px;
+  font-size: 14px;
+  font-weight: 600;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+  border: none;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+  transition: all 0.3s ease;
+}
+
+.refresh-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4);
+  background: linear-gradient(135deg, #2563eb, #1e40af);
 }
 
 /* 标签页头部样式 */
@@ -590,7 +669,7 @@ export default {
   margin: 0;
   background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
   border-bottom: 1px solid #e5e7eb;
-  padding: 8px 0;
+  padding: 12px 0;
 }
 
 :deep(.el-tabs__nav-wrap) {
@@ -598,16 +677,17 @@ export default {
 }
 
 :deep(.el-tabs__item) {
-  height: 64px;
-  line-height: 64px;
-  padding: 0 28px;
-  font-size: 15px;
+  height: 60px;
+  line-height: 60px;
+  padding: 0 32px;
+  font-size: 16px;
   color: #6b7280;
   border: none;
   position: relative;
   transition: all 0.3s ease;
   border-radius: 12px;
-  margin: 0 4px;
+  margin: 0 6px;
+  font-weight: 500;
 }
 
 :deep(.el-tabs__item:hover) {
@@ -619,7 +699,7 @@ export default {
 :deep(.el-tabs__item.is-active) {
   color: #3b82f6;
   font-weight: 600;
-  background: linear-gradient(135deg, rgba(59, 130, 246, 0.12), rgba(59, 130, 246, 0.08));
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.15), rgba(59, 130, 246, 0.1));
   box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2);
   transform: translateY(-1px);
 }
@@ -636,18 +716,133 @@ export default {
 }
 
 :deep(.el-tab-pane) {
-  padding: 32px;
-}
-
-/* 移除信息录入标签页下方间隔 */
-:deep(.el-tab-pane[aria-labelledby="tab-input"]) {
-  padding: 32px 32px 0 32px;
-}
-
-/* DataInput 组件底部无间距 */
-:deep(.el-tab-pane[aria-labelledby="tab-input"] > .tab-content) {
   padding: 0;
-  margin: 0;
+}
+
+/* 优化子组件样式 */
+:deep(.el-card) {
+  border-radius: 16px;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
+  transition: all 0.3s ease;
+  margin-bottom: 24px;
+  overflow: hidden;
+}
+
+:deep(.el-card:hover) {
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+  transform: translateY(-2px);
+}
+
+:deep(.el-card__header) {
+  border-bottom: 1px solid #f0f2f5;
+  background: linear-gradient(135deg, #fafbfc 0%, #f8fafc 100%);
+  padding: 20px 24px;
+  border-radius: 16px 16px 0 0;
+}
+
+:deep(.el-card__body) {
+  padding: 24px;
+  background: white;
+}
+
+/* 表格样式优化 */
+:deep(.el-table) {
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid #f0f2f5;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02);
+}
+
+:deep(.el-table__header) {
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+}
+
+:deep(.el-table th) {
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  color: #374151;
+  font-weight: 600;
+  border-bottom: 2px solid #e5e7eb;
+  padding: 16px 12px;
+}
+
+:deep(.el-table td) {
+  border-bottom: 1px solid #f0f2f5;
+  padding: 16px 12px;
+}
+
+:deep(.el-table tbody tr:hover) {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.04), rgba(59, 130, 246, 0.02));
+}
+
+/* 按钮样式优化 */
+:deep(.el-button) {
+  border-radius: 10px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  padding: 8px 16px;
+}
+
+:deep(.el-button:hover) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+:deep(.el-button--primary) {
+  background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+  border: none;
+}
+
+:deep(.el-button--primary:hover) {
+  background: linear-gradient(135deg, #2563eb, #1e40af);
+}
+
+:deep(.el-button--danger) {
+  background: linear-gradient(135deg, #ef4444, #dc2626);
+  border: none;
+}
+
+:deep(.el-button--danger:hover) {
+  background: linear-gradient(135deg, #dc2626, #b91c1c);
+}
+
+:deep(.el-button--success) {
+  background: linear-gradient(135deg, #10b981, #059669);
+  border: none;
+}
+
+:deep(.el-button--success:hover) {
+  background: linear-gradient(135deg, #059669, #047857);
+}
+
+/* 表单样式优化 */
+:deep(.el-form-item) {
+  margin-bottom: 24px;
+}
+
+:deep(.el-form-item__label) {
+  font-weight: 600;
+  color: #374151;
+  line-height: 1.5;
+}
+
+:deep(.el-input__wrapper) {
+  border-radius: 10px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  transition: all 0.3s ease;
+}
+
+:deep(.el-input__wrapper:hover) {
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+:deep(.el-input__wrapper.is-focus) {
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+}
+
+:deep(.el-select .el-input__wrapper) {
+  border-radius: 10px;
 }
 
 /* 加载遮罩 */
@@ -693,11 +888,53 @@ export default {
     max-width: 100%;
     padding: 0 16px 16px;
   }
+  
+  .tab-content {
+    padding: 24px;
+  }
+  
+  .content-header {
+    margin-bottom: 24px;
+    padding-bottom: 20px;
+  }
+  
+  .header-title {
+    font-size: 24px;
+  }
+  
+  .header-subtitle {
+    font-size: 14px;
+  }
 }
 
 @media (max-width: 768px) {
   .main-content {
     padding: 0 12px 12px;
+  }
+  
+  .tab-content {
+    padding: 20px;
+  }
+  
+  .content-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+    margin-bottom: 20px;
+    padding-bottom: 16px;
+  }
+  
+  .header-title {
+    font-size: 22px;
+  }
+  
+  .header-subtitle {
+    font-size: 14px;
+  }
+  
+  .refresh-btn {
+    padding: 10px 20px;
+    font-size: 14px;
   }
   
   :deep(.el-tabs__nav-wrap) {
@@ -709,10 +946,6 @@ export default {
     font-size: 14px;
     height: 56px;
     line-height: 56px;
-  }
-  
-  :deep(.el-tab-pane) {
-    padding: 20px;
   }
   
   .tab-label {
@@ -732,46 +965,18 @@ export default {
   .loading-text {
     font-size: 14px;
   }
-}
-
-/* 全局样式优化 */
-:deep(.el-card) {
-  border-radius: 16px;
-  border: 1px solid #e5e7eb;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
-  transition: all 0.3s ease;
-}
-
-:deep(.el-card:hover) {
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
-  transform: translateY(-2px);
-}
-
-:deep(.el-card__header) {
-  border-bottom: 1px solid #f0f2f5;
-  background: linear-gradient(135deg, #fafbfc 0%, #f8fafc 100%);
-  border-radius: 16px 16px 0 0;
-}
-
-:deep(.el-button) {
-  border-radius: 10px;
-  font-weight: 500;
-  transition: all 0.3s ease;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-}
-
-:deep(.el-button:hover) {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-}
-
-:deep(.el-button--primary) {
-  background: linear-gradient(135deg, #3b82f6, #1d4ed8);
-  border: none;
-}
-
-:deep(.el-button--primary:hover) {
-  background: linear-gradient(135deg, #2563eb, #1e40af);
+  
+  :deep(.el-card) {
+    margin-bottom: 16px;
+  }
+  
+  :deep(.el-card__header) {
+    padding: 16px;
+  }
+  
+  :deep(.el-card__body) {
+    padding: 16px;
+  }
 }
 
 /* 滚动条样式 */
@@ -793,5 +998,45 @@ export default {
 
 :deep(::-webkit-scrollbar-thumb:hover) {
   background: linear-gradient(135deg, #94a3b8, #64748b);
+}
+
+/* 统计卡片样式 */
+:deep(.stats-card) {
+  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+  padding: 24px;
+  text-align: center;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
+}
+
+:deep(.stats-card:hover) {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+}
+
+:deep(.stats-number) {
+  font-size: 32px;
+  font-weight: 700;
+  color: #3b82f6;
+  margin-bottom: 8px;
+  display: block;
+}
+
+:deep(.stats-label) {
+  font-size: 14px;
+  color: #6b7280;
+  font-weight: 500;
+}
+
+/* 分割线样式 */
+:deep(.el-divider) {
+  border-color: #f0f2f5;
+  margin: 24px 0;
+}
+
+:deep(.el-divider--horizontal) {
+  border-top: 1px solid #f0f2f5;
 }
 </style>

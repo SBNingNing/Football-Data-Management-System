@@ -34,92 +34,75 @@ logger = logging.getLogger(__name__)
 @jwt_required()
 def create_event():
     """创建事件"""
-    data = request.get_json()
-    
-    # 详细的请求数据验证
-    if not data:
-        return jsonify({'status': 'error', 'message': '请求数据为空'}), 401
-    
-    required_fields = ['matchName', 'eventType', 'playerName', 'eventTime']
-    missing_fields = [field for field in required_fields if field not in data or not data[field]]
-    
-    if missing_fields:
-        return jsonify({'status': 'error', 'message': f'缺少必要信息: {missing_fields}'}), 402
-    
     try:
+        data = request.get_json()
+        logger.info(f"创建事件请求数据: {data}")
+        
+        # 详细的请求数据验证
+        if not data:
+            logger.error("请求数据为空")
+            return jsonify({'status': 'error', 'message': '请求数据为空'}), 400
+        
+        required_fields = ['matchName', 'eventType', 'playerName', 'eventTime']
+        missing_fields = [field for field in required_fields if field not in data or not data[field]]
+        
+        if missing_fields:
+            logger.error(f"缺少必要信息: {missing_fields}")
+            return jsonify({'status': 'error', 'message': f'缺少必要信息: {missing_fields}'}), 400
+        
         # 验证事件类型
         valid_event_types = ['进球', '乌龙球', '红牌', '黄牌']
         if data['eventType'] not in valid_event_types:
-            return jsonify({'status': 'error', 'message': f'事件类型无效，支持的类型：{valid_event_types}'}), 403
+            logger.error(f"事件类型无效: {data['eventType']}")
+            return jsonify({'status': 'error', 'message': f'事件类型无效，支持的类型：{valid_event_types}'}), 400
         
         # 验证事件时间
         try:
             event_time_int = int(data['eventTime'])
             if event_time_int < 0 or event_time_int > 120:  # 允许加时赛
-                return jsonify({'status': 'error', 'message': '事件时间无效(0-120分钟)'}), 404
-        except (ValueError, TypeError):
-            return jsonify({'status': 'error', 'message': '事件时间格式错误'}), 405
+                logger.error(f"事件时间无效: {event_time_int}")
+                return jsonify({'status': 'error', 'message': '事件时间无效(0-120分钟)'}), 400
+        except (ValueError, TypeError) as e:
+            logger.error(f"事件时间格式错误: {data['eventTime']}, 错误: {str(e)}")
+            return jsonify({'status': 'error', 'message': '事件时间格式错误'}), 400
         
-        # 根据比赛名称查找比赛
-        match = None
-        
-        # 首先尝试根据比赛名称查找
-        match = Match.query.filter_by(match_name=data['matchName']).first()
-        
-        # 如果没找到，尝试直接匹配比赛ID（如果传入的是ID格式）
+        # 查找比赛
+        match = find_match(data['matchName'])
         if not match:
-            try:
-                match = Match.query.filter_by(id=data['matchName']).first()
-            except:
-                pass
+            logger.error(f"比赛不存在: {data['matchName']}")
+            return jsonify({'status': 'error', 'message': f'比赛不存在: {data["matchName"]}'}), 404
         
-        # 如果还没找到，尝试根据主队vs客队格式查找
-        if not match and 'vs' in data['matchName']:
-            try:
-                team_names = data['matchName'].split(' vs ')
-                if len(team_names) == 2:
-                    team1_name, team2_name = team_names[0].strip(), team_names[1].strip()
-                    matches = Match.query.join(Team, Match.home_team_id == Team.id)\
-                                       .join(Team, Match.away_team_id == Team.id, aliased=True)\
-                                       .all()
-                    for m in matches:
-                        if ((m.home_team.name == team1_name and m.away_team.name == team2_name) or
-                            (m.home_team.name == team2_name and m.away_team.name == team1_name)):
-                            match = m
-                            break
-            except:
-                pass
-        
-        if not match:
-            return jsonify({'status': 'error', 'message': f'比赛不存在: {data["matchName"]}'}), 406
+        logger.info(f"找到比赛: {match.id}, 名称: {match.match_name}")
         
         # 查找球员
         player = Player.query.filter_by(name=data['playerName']).first()
         if not player:
-            return jsonify({'status': 'error', 'message': f'球员不存在: {data["playerName"]}'}), 407
+            logger.error(f"球员不存在: {data['playerName']}")
+            return jsonify({'status': 'error', 'message': f'球员不存在: {data["playerName"]}'}), 404
+        
+        logger.info(f"找到球员: {player.id}, 名称: {player.name}")
         
         # 获取主队和客队信息
         home_team = Team.query.get(match.home_team_id)
         away_team = Team.query.get(match.away_team_id)
         
+        if not home_team or not away_team:
+            logger.error(f"比赛队伍信息不完整，主队: {home_team}, 客队: {away_team}")
+            return jsonify({'status': 'error', 'message': '比赛队伍信息不完整'}), 400
+        
         # 确定球员所属球队
-        player_history = PlayerTeamHistory.query.filter_by(
-            player_id=player.id,
-            tournament_id=match.tournament_id
-        ).first()
+        player_team_id = find_player_team(player.id, match.tournament_id, [home_team.id, away_team.id])
+        if not player_team_id:
+            logger.error(f"球员 {data['playerName']} 不属于该赛事的参赛队伍")
+            return jsonify({'status': 'error', 'message': f'球员 {data["playerName"]} 不属于该赛事的参赛队伍'}), 400
         
-        if not player_history:
-            return jsonify({'status': 'error', 'message': f'球员 {data["playerName"]} 不属于该赛事'}), 408
+        logger.info(f"球员所属队伍: {player_team_id}")
         
-        # 验证球员是否属于参赛队伍
-        if player_history.team_id not in [home_team.id, away_team.id]:
-            return jsonify({'status': 'error', 'message': f'球员 {data["playerName"]} 不属于参赛队伍'}), 409
-        
-        # 创建事件（触发器会自动更新统计数据）
+        # 创建事件
         new_event = Event(
             event_type=data['eventType'],
             match_id=match.id,
-            team_id=player_history.team_id,
+            team_id=player_team_id,
             player_id=player.id,
             event_time=event_time_int
         )
@@ -127,7 +110,7 @@ def create_event():
         db.session.add(new_event)
         db.session.commit()
         
-        logger.info(f"成功创建事件: 类型={data['eventType']}, 球员={data['playerName']}, 时间={event_time_int}")
+        logger.info(f"成功创建事件: ID={new_event.id}, 类型={data['eventType']}, 球员={data['playerName']}, 时间={event_time_int}")
         
         # 返回事件信息
         event_dict = new_event.to_dict()
@@ -144,8 +127,89 @@ def create_event():
         
     except Exception as e:
         db.session.rollback()
-        logger.error(f"创建事件失败: {str(e)}")
+        logger.error(f"创建事件失败: {str(e)}", exc_info=True)
         return jsonify({'status': 'error', 'message': f'创建失败: {str(e)}'}), 500
+
+def find_match(match_name):
+    """查找比赛的辅助函数"""
+    try:
+        logger.info(f"查找比赛: {match_name}")
+        
+        # 首先尝试根据比赛名称查找
+        match = Match.query.filter_by(match_name=match_name).first()
+        if match:
+            logger.info(f"通过比赛名称找到比赛: {match.id}")
+            return match
+        
+        # 如果没找到，尝试直接匹配比赛ID（如果传入的是ID格式）
+        try:
+            match_id = int(match_name)
+            match = Match.query.filter_by(id=match_id).first()
+            if match:
+                logger.info(f"通过ID找到比赛: {match.id}")
+                return match
+        except (ValueError, TypeError):
+            pass
+        
+        # 如果还没找到，尝试根据主队vs客队格式查找
+        if 'vs' in match_name:
+            try:
+                team_names = match_name.split(' vs ')
+                if len(team_names) == 2:
+                    team1_name, team2_name = team_names[0].strip(), team_names[1].strip()
+                    logger.info(f"尝试通过队伍名称查找: {team1_name} vs {team2_name}")
+                    
+                    # 查找所有比赛并检查队伍名称
+                    matches = Match.query.all()
+                    for m in matches:
+                        try:
+                            home_team = Team.query.get(m.home_team_id)
+                            away_team = Team.query.get(m.away_team_id)
+                            
+                            if home_team and away_team:
+                                if ((home_team.name == team1_name and away_team.name == team2_name) or
+                                    (home_team.name == team2_name and away_team.name == team1_name)):
+                                    logger.info(f"通过队伍名称找到比赛: {m.id}")
+                                    return m
+                        except Exception as e:
+                            logger.error(f"处理比赛 {m.id} 时出错: {str(e)}")
+                            continue
+            except Exception as e:
+                logger.error(f"解析队伍名称时出错: {str(e)}")
+        
+        logger.warning(f"未找到比赛: {match_name}")
+        return None
+        
+    except Exception as e:
+        logger.error(f"查找比赛时出错: {str(e)}")
+        return None
+
+def find_player_team(player_id, tournament_id, valid_team_ids):
+    """查找球员在指定赛事中的队伍"""
+    try:
+        logger.info(f"查找球员队伍: player_id={player_id}, tournament_id={tournament_id}, valid_teams={valid_team_ids}")
+        
+        # 查找球员在该赛事中的队伍历史
+        player_history = PlayerTeamHistory.query.filter_by(
+            player_id=player_id,
+            tournament_id=tournament_id
+        ).first()
+        
+        if player_history:
+            logger.info(f"找到球员队伍历史: team_id={player_history.team_id}")
+            # 验证球员是否属于参赛队伍
+            if player_history.team_id in valid_team_ids:
+                return player_history.team_id
+            else:
+                logger.warning(f"球员队伍 {player_history.team_id} 不在参赛队伍中 {valid_team_ids}")
+        else:
+            logger.warning(f"未找到球员在该赛事中的队伍历史")
+            
+        return None
+        
+    except Exception as e:
+        logger.error(f"查找球员队伍时出错: {str(e)}")
+        return None
 
 @events_bp.route('', methods=['GET'])
 @jwt_required()
