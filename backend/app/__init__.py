@@ -11,6 +11,11 @@ def create_app(config_class=Config):
     app = Flask(__name__)
     app.config.from_object(config_class)
     
+    # 添加URL构建相关配置
+    app.config['SERVER_NAME'] = 'localhost:5000'  # 或者您的实际服务器地址
+    app.config['APPLICATION_ROOT'] = '/'
+    app.config['PREFERRED_URL_SCHEME'] = 'http'  # 生产环境中使用 'https'
+    
     db.init_app(app)
     jwt.init_app(app)
     CORS(app, resources={
