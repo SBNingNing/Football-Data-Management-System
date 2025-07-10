@@ -108,6 +108,7 @@
             filterable
             loading-text="加载中..."
             :loading="matchesLoading"
+            disabled
           >
             <el-option 
               v-for="match in availableMatches" 
@@ -147,7 +148,7 @@
           <el-input v-model="editEventForm.eventTime" placeholder="请输入事件时间（分钟）" type="number"></el-input>
         </el-form-item>
         <el-form-item label="比赛类型" required>
-          <el-select v-model="editEventForm.matchType" placeholder="请选择比赛类型" style="width: 100%;">
+          <el-select v-model="editEventForm.matchType" placeholder="请选择比赛类型" style="width: 100%;" disabled>
             <el-option label="冠军杯" value="champions-cup"></el-option>
             <el-option label="巾帼杯" value="womens-cup"></el-option>
             <el-option label="八人制比赛" value="eight-a-side"></el-option>
