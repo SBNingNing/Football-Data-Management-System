@@ -75,7 +75,7 @@
       <el-row :gutter="20" v-else>
         <el-col 
           :span="12" 
-          v-for="match in matchRecords" 
+          v-for="match in displayMatchRecords" 
           :key="match.id"
           class="match-col"
         >
@@ -141,7 +141,7 @@
       <el-pagination
         v-model:current-page="currentPage"
         v-model:page-size="pageSize"
-        :page-sizes="[10, 20, 50, 100]"
+        :page-sizes="[4, 8, 12, 16]"
         :total="matchRecordsTotal"
         layout="total, sizes, prev, pager, next, jumper"
         @size-change="handleSizeChange"
@@ -187,10 +187,20 @@ export default {
       selectedStatus: '',
       searchKeyword: '',
       currentPage: 1,
-      pageSize: 10,
+      pageSize: 4,
       searchTimer: null,
       loading: false
     };
+  },
+  computed: {
+    // 计算属性：确保只显示当前页应该显示的比赛数量
+    displayMatchRecords() {
+      // 如果matchRecords数组长度超过pageSize，只取前pageSize个
+      if (this.matchRecords.length > this.pageSize) {
+        return this.matchRecords.slice(0, this.pageSize);
+      }
+      return this.matchRecords;
+    }
   },
   watch: {
     // 监听props变化，确保数据更新
@@ -206,6 +216,12 @@ export default {
       },
       immediate: true
     }
+  },
+  mounted() {
+    // 组件挂载后立即发送请求，确保使用正确的分页参数
+    this.$nextTick(() => {
+      this.emitDataRequest('filter-change');
+    });
   },
   methods: {
     // 统一的数据获取方法
