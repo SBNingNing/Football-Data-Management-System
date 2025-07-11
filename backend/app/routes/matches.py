@@ -179,7 +179,7 @@ def complete_match(match_id):
             'message': '比赛已标记为完赛',
             'data': {
                 'id': match.id,
-                'status': 'completed'
+                'status': '已完赛'
             }
         }), 200
         
@@ -211,9 +211,9 @@ def get_matches():
             tournament = Tournament.query.get(match.tournament_id)
             match_dict['matchType'] = determine_match_type(tournament)
             
-            # 修正状态映射 - 根据数据库模型注释
-            status_map = {'P': 'pending', 'O': 'ongoing', 'F': 'completed'}
-            match_dict['status'] = status_map.get(match.status, 'pending')
+            # 修改状态映射为中文
+            status_map = {'P': '待开始', 'O': '进行中', 'F': '已完赛'}
+            match_dict['status'] = status_map.get(match.status, '待开始')
             
             matches_data.append(match_dict)
         
@@ -294,8 +294,8 @@ def update_match(match_id):
         tournament = Tournament.query.get(match.tournament_id)
         match_dict['matchType'] = determine_match_type(tournament)
         
-        status_map = {'P': 'pending', 'O': 'ongoing', 'F': 'completed'}
-        match_dict['status'] = status_map.get(match.status, 'pending')
+        status_map = {'P': '待开始', 'O': '进行中', 'F': '已完赛'}
+        match_dict['status'] = status_map.get(match.status, '待开始')
         
         return jsonify({
             'status': 'success', 
@@ -337,7 +337,7 @@ def get_match_records():
     获取比赛记录，支持筛选类型、搜索关键字、状态筛选和分页
     参数:
       - type: 比赛类型 (championsCup, womensCup, eightASide)
-      - status: 比赛状态 (pending, ongoing, completed)
+      - status: 比赛状态 (待开始, 进行中, 已完赛)
       - keyword: 搜索关键字（比赛名称/球队/地点）
       - page: 页码（从1开始）
       - pageSize: 每页数量
@@ -362,12 +362,12 @@ def get_match_records():
             if tournament_id:
                 query = query.filter(Match.tournament_id == tournament_id)
 
-        # 状态筛选 - 添加状态过滤
+        # 状态筛选 - 修改为中文状态映射
         if status_filter:
             status_map = {
-                'pending': 'P',
-                'ongoing': 'O', 
-                'completed': 'F'
+                '待开始': 'P',
+                '进行中': 'O', 
+                '已完赛': 'F'
             }
             db_status = status_map.get(status_filter)
             if db_status:
@@ -407,9 +407,9 @@ def get_match_records():
             tournament = Tournament.query.get(match.tournament_id)
             match_dict['matchType'] = determine_match_type(tournament)
             
-            # 修正状态映射 - 根据数据库模型注释
-            status_map = {'P': 'pending', 'O': 'ongoing', 'F': 'completed'}
-            match_dict['status'] = status_map.get(match.status, 'pending')
+            # 修改状态映射为中文
+            status_map = {'P': '待开始', 'O': '进行中', 'F': '已完赛'}
+            match_dict['status'] = status_map.get(match.status, '待开始')
             
             records.append(match_dict)
         
