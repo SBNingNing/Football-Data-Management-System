@@ -463,6 +463,7 @@ export default {
   overflow: hidden;
   display: -webkit-box;
   -webkit-line-clamp: 2;
+  line-clamp: 2;
   -webkit-box-orient: vertical;
 }
 
@@ -501,11 +502,12 @@ export default {
   line-height: 1.3;
   word-wrap: break-word;
   overflow-wrap: break-word;
-  max-height: 40px;
   overflow: hidden;
   display: -webkit-box;
   -webkit-line-clamp: 2;
+  line-clamp: 2;
   -webkit-box-orient: vertical;
+  width: 100%;
   width: 100%;
 }
 
