@@ -2,6 +2,8 @@ from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from app import db
 from app.models.team import Team
+from app.models.team_base import TeamBase
+from app.models.team_tournament_participation import TeamTournamentParticipation
 from app.models.player import Player
 from app.models.player_team_history import PlayerTeamHistory
 
@@ -22,6 +24,101 @@ def determine_match_type(tournament):
     else:
         return 'champions-cup'
 
+@teams_bp.route('/<team_name>/new-api', methods=['GET'])
+def get_team_new_api(team_name):
+    """使用新架构根据球队名称获取球队统计信息和历史记录"""
+    try:
+        # 查询基础球队信息
+        team_base = TeamBase.query.filter_by(name=team_name).first()
+        if not team_base:
+            return jsonify({'status': 'error', 'message': '球队不存在'}), 404
+        
+        # 获取所有参赛记录
+        participations = TeamTournamentParticipation.query.filter_by(
+            team_base_id=team_base.id
+        ).all()
+        
+        if not participations:
+            return jsonify({'status': 'error', 'message': '未找到球队参赛记录'}), 404
+        
+        # 构建返回数据，使用 team_base 的统计方法
+        historical_stats = team_base.get_historical_stats()
+        
+        team_info = {
+            'teamName': team_name,
+            'totalGoals': historical_stats['total_goals'],
+            'totalGoalsConceded': historical_stats['total_goals_conceded'],
+            'totalGoalDifference': historical_stats['total_goal_difference'],
+            'totalRedCards': historical_stats['total_red_cards'],
+            'totalYellowCards': historical_stats['total_yellow_cards'],
+            'totalPoints': historical_stats['total_points'],
+            'totalMatchesPlayed': historical_stats['total_matches_played'],
+            'totalWins': historical_stats['total_wins'],
+            'totalDraws': historical_stats['total_draws'],
+            'totalLosses': historical_stats['total_losses'],
+            'bestRank': historical_stats['best_rank'],
+            'winRate': historical_stats['win_rate'],
+            'records': []
+        }
+        
+        # 添加每条参赛记录的详细信息
+        for participation in participations:
+            # 查找对应的 Team 记录（兼容性视图）
+            team_record = Team.query.filter_by(
+                tournament_id=participation.tournament_id,
+                team_base_id=team_base.id
+            ).first()
+            
+            record_dict = {
+                'id': participation.id,
+                'teamName': team_name,
+                'tournament_id': participation.tournament_id,
+                'tournament_name': participation.tournament.name if participation.tournament else None,
+                'season_name': participation.tournament.season.name if participation.tournament and participation.tournament.season else None,
+                'competition_name': participation.tournament.competition.name if participation.tournament and participation.tournament.competition else None,
+                'matchType': determine_match_type(participation.tournament),
+                'rank': participation.rank,
+                'goals': participation.goals,
+                'goalsConceded': participation.goals_conceded,
+                'goalDifference': participation.goal_difference,
+                'redCards': participation.red_cards,
+                'yellowCards': participation.yellow_cards,
+                'points': participation.points,
+                'matchesPlayed': participation.matches_played,
+                'wins': participation.wins,
+                'draws': participation.draws,
+                'losses': participation.losses
+            }
+            
+            # 获取该记录对应的球员信息
+            team_players = []
+            if team_record:
+                player_histories = PlayerTeamHistory.query.filter_by(
+                    team_id=team_record.id, 
+                    tournament_id=participation.tournament_id
+                ).all()
+                
+                for history in player_histories:
+                    if history.player:
+                        team_players.append({
+                            'name': history.player.name,
+                            'playerId': history.player_id,
+                            'studentId': history.player_id,
+                            'id': history.player_id,
+                            'number': str(history.player_number),
+                            'goals': history.tournament_goals,
+                            'redCards': history.tournament_red_cards,
+                            'yellowCards': history.tournament_yellow_cards
+                        })
+            
+            record_dict['players'] = team_players
+            team_info['records'].append(record_dict)
+        
+        return jsonify({'status': 'success', 'data': team_info}), 200
+        
+    except Exception as e:
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+
 @teams_bp.route('/<team_name>', methods=['GET'])
 def get_team(team_name):
     """根据球队名称获取球队统计信息和历史记录"""
@@ -38,6 +135,10 @@ def get_team(team_name):
         total_red_cards = sum(record.tournament_red_cards for record in team_records)
         total_yellow_cards = sum(record.tournament_yellow_cards for record in team_records)
         total_points = sum(record.tournament_points for record in team_records)
+        total_matches_played = sum(record.matches_played for record in team_records)
+        total_wins = sum(record.wins for record in team_records)
+        total_draws = sum(record.draws for record in team_records)
+        total_losses = sum(record.losses for record in team_records)
         
         # 计算历史最好排名（最小的非零排名）
         valid_ranks = [record.tournament_rank for record in team_records if record.tournament_rank and record.tournament_rank > 0]
@@ -52,6 +153,10 @@ def get_team(team_name):
             'totalRedCards': total_red_cards,
             'totalYellowCards': total_yellow_cards,
             'totalPoints': total_points,
+            'totalMatchesPlayed': total_matches_played,
+            'totalWins': total_wins,
+            'totalDraws': total_draws,
+            'totalLosses': total_losses,
             'bestRank': best_rank,
             'records': []
         }

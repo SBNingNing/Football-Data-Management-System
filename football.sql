@@ -636,15 +636,50 @@ UNLOCK TABLES;
 DROP TABLE IF EXISTS `tournament`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
+-- =============================
+-- 赛事表 (competition)
+-- =============================
+DROP TABLE IF EXISTS `competition`;
+CREATE TABLE `competition` (
+`competition_id` INT NOT NULL AUTO_INCREMENT,
+`赛事名称` VARCHAR(100) NOT NULL,
+PRIMARY KEY (`competition_id`),
+UNIQUE KEY (`赛事名称`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+
+
+-- =============================
+-- 赛季表 (season)
+-- =============================
+DROP TABLE IF EXISTS `season`;
+CREATE TABLE `season` (
+`season_id` INT NOT NULL AUTO_INCREMENT,
+`赛季名称` VARCHAR(50) NOT NULL,
+`开始时间` DATETIME NOT NULL,
+`结束时间` DATETIME NOT NULL,
+PRIMARY KEY (`season_id`),
+UNIQUE KEY (`赛季名称`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+
+
+-- =============================
+-- 赛事-赛季实例表 (tournament)
+-- =============================
+DROP TABLE IF EXISTS `tournament`;
 CREATE TABLE `tournament` (
-  `赛事ID` int NOT NULL AUTO_INCREMENT,
-  `赛事名称` varchar(100) NOT NULL,
-  `赛季名称` varchar(50) NOT NULL,
-  `常规赛是否分组` tinyint(1) DEFAULT '0' COMMENT '常规赛是否需要分组进行',
-  `赛季开始时间` datetime NOT NULL,
-  `赛季结束时间` datetime NOT NULL,
-  PRIMARY KEY (`赛事ID`)
-) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb3;
+`赛事ID` INT NOT NULL AUTO_INCREMENT,
+`competition_id` INT NOT NULL,
+`season_id` INT NOT NULL,
+`常规赛是否分组` TINYINT(1) DEFAULT '0',
+PRIMARY KEY (`赛事ID`),
+KEY `idx_tournament_competition` (`competition_id`),
+KEY `idx_tournament_season` (`season_id`),
+CONSTRAINT `fk_tournament_competition` FOREIGN KEY (`competition_id`) REFERENCES `competition` (`competition_id`) ON DELETE CASCADE,
+CONSTRAINT `fk_tournament_season` FOREIGN KEY (`season_id`) REFERENCES `season` (`season_id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+
+
+-- =============================
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --

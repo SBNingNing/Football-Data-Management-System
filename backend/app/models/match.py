@@ -28,7 +28,7 @@ class Match(db.Model):
                                backref=db.backref('home_matches', lazy=True))
     away_team = db.relationship('Team', foreign_keys=[away_team_id], 
                                backref=db.backref('away_matches', lazy=True))
-    tournament = db.relationship('Tournament', backref=db.backref('matches', lazy=True))
+    tournament = db.relationship('Tournament', back_populates='matches')
     events = db.relationship('Event', back_populates='match', lazy=True)
     
     def __repr__(self):

@@ -22,7 +22,7 @@ class PlayerTeamHistory(db.Model):
     # 关系
     player = db.relationship('Player', back_populates='team_histories')
     team = db.relationship('Team', back_populates='player_histories')
-    tournament = db.relationship('Tournament', backref=db.backref('player_histories', lazy=True))
+    tournament = db.relationship('Tournament', back_populates='player_histories')
     
     # 唯一约束
     __table_args__ = (
@@ -30,6 +30,22 @@ class PlayerTeamHistory(db.Model):
         db.Index('idx_team_tournament', '球队ID', '赛事ID'),
         db.Index('idx_player_tournament', '球员ID', '赛事ID'),
     )
+    
+    @property
+    def team_participation(self):
+        """获取对应的队伍参赛记录"""
+        from .team_tournament_participation import TeamTournamentParticipation
+        return TeamTournamentParticipation.query.filter_by(
+            team_id=self.team_id,
+            tournament_id=self.tournament_id
+        ).first()
+    
+    @property 
+    def team_base(self):
+        """获取队伍基础信息"""
+        if self.team:
+            return self.team.team_base
+        return None
     
     def __repr__(self):
         return f'<PlayerTeamHistory {self.player_id} in Team {self.team_id}>'

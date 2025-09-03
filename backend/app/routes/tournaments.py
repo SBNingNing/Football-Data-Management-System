@@ -2,6 +2,8 @@ from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from app import db
 from app.models.tournament import Tournament
+from app.models.competition import Competition
+from app.models.season import Season
 from app.models.team import Team
 from app.models.player_team_history import PlayerTeamHistory
 from datetime import datetime
@@ -423,3 +425,103 @@ def delete_tournament(tournament_id):
 def test_route():
     """测试路由是否工作"""
     return jsonify({'status': 'success', 'message': '赛事路由工作正常'}), 200
+
+@tournaments_bp.route('/instances', methods=['POST'])
+@jwt_required()
+def create_tournament_instance():
+    """创建新的赛事-赛季实例"""
+    try:
+        data = request.get_json()
+        
+        required_fields = ['competition_id', 'season_id']
+        for field in required_fields:
+            if not data or not data.get(field):
+                return jsonify({'status': 'error', 'message': f'{field}不能为空'}), 400
+        
+        # 验证competition和season是否存在
+        competition = Competition.query.get(data['competition_id'])
+        if not competition:
+            return jsonify({'status': 'error', 'message': '赛事不存在'}), 404
+        
+        season = Season.query.get(data['season_id'])
+        if not season:
+            return jsonify({'status': 'error', 'message': '赛季不存在'}), 404
+        
+        # 检查是否已经存在相同的组合
+        existing_tournament = Tournament.query.filter_by(
+            competition_id=data['competition_id'],
+            season_id=data['season_id']
+        ).first()
+        
+        if existing_tournament:
+            return jsonify({
+                'status': 'error', 
+                'message': '该赛事和赛季的组合已存在'
+            }), 400
+        
+        tournament = Tournament(
+            competition_id=data['competition_id'],
+            season_id=data['season_id'],
+            is_grouped=data.get('is_grouped', False),
+            group_count=data.get('group_count'),
+            playoff_spots=data.get('playoff_spots')
+        )
+        
+        db.session.add(tournament)
+        db.session.commit()
+        
+        return jsonify({
+            'status': 'success',
+            'message': '赛事实例创建成功',
+            'data': tournament.to_dict()
+        }), 201
+        
+    except Exception as e:
+        db.session.rollback()
+        print(f"[ERROR] 创建赛事实例失败: {str(e)}")
+        return jsonify({'status': 'error', 'message': f'创建失败: {str(e)}'}), 500
+
+@tournaments_bp.route('/instances/<int:tournament_id>', methods=['PUT'])
+@jwt_required()
+def update_tournament_instance(tournament_id):
+    """更新赛事实例"""
+    try:
+        tournament = Tournament.query.get_or_404(tournament_id)
+        data = request.get_json()
+        
+        if not data:
+            return jsonify({'status': 'error', 'message': '请提供要更新的数据'}), 400
+        
+        if 'competition_id' in data:
+            competition = Competition.query.get(data['competition_id'])
+            if not competition:
+                return jsonify({'status': 'error', 'message': '赛事不存在'}), 404
+            tournament.competition_id = data['competition_id']
+        
+        if 'season_id' in data:
+            season = Season.query.get(data['season_id'])
+            if not season:
+                return jsonify({'status': 'error', 'message': '赛季不存在'}), 404
+            tournament.season_id = data['season_id']
+        
+        if 'is_grouped' in data:
+            tournament.is_grouped = data['is_grouped']
+        
+        if 'group_count' in data:
+            tournament.group_count = data['group_count']
+        
+        if 'playoff_spots' in data:
+            tournament.playoff_spots = data['playoff_spots']
+        
+        db.session.commit()
+        
+        return jsonify({
+            'status': 'success',
+            'message': '赛事实例更新成功',
+            'data': tournament.to_dict()
+        }), 200
+        
+    except Exception as e:
+        db.session.rollback()
+        print(f"[ERROR] 更新赛事实例失败: {str(e)}")
+        return jsonify({'status': 'error', 'message': f'更新失败: {str(e)}'}), 500
