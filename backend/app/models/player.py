@@ -19,6 +19,13 @@ class Player(db.Model):
     team_histories = db.relationship('PlayerTeamHistory', back_populates='player')
     events = db.relationship('Event', back_populates='player', lazy='dynamic')
     
+    # 约束 - 匹配SQL定义
+    __table_args__ = (
+        db.CheckConstraint('职业生涯总进球数 >= 0', name='player_chk_1'),
+        db.CheckConstraint('职业生涯总红牌数 >= 0', name='player_chk_2'),
+        db.CheckConstraint('职业生涯总黄牌数 >= 0', name='player_chk_3'),
+    )
+    
     def __repr__(self):
         return f'<Player {self.id}: {self.name}>'
     

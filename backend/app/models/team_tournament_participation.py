@@ -8,7 +8,7 @@ class TeamTournamentParticipation(db.Model):
     # 主键
     id = db.Column('参与ID', db.Integer, primary_key=True, comment='参与ID')
     
-    # 外键关系
+    # 外键关系 - 修正引用字段名
     team_base_id = db.Column('球队基础ID', db.Integer, 
                             db.ForeignKey('team_base.球队基础ID', ondelete='CASCADE'), 
                             nullable=False, comment='球队基础ID')
@@ -39,11 +39,13 @@ class TeamTournamentParticipation(db.Model):
     status = db.Column('状态', db.Enum('active', 'withdrawn', 'completed', name='participation_status'), 
                        default='active', comment='参与状态')
     
-    # 关系
+    # 关系 - 修正关系映射
     team_base = db.relationship('TeamBase', back_populates='participations')
     tournament = db.relationship('Tournament', back_populates='team_participations')
     player_histories = db.relationship('PlayerTeamHistory', back_populates='team_participation')
     events = db.relationship('Event', back_populates='team_participation', lazy=True)
+    home_matches = db.relationship('Match', foreign_keys='Match.home_team_id', back_populates='home_team')
+    away_matches = db.relationship('Match', foreign_keys='Match.away_team_id', back_populates='away_team')
     
     # 索引和约束
     __table_args__ = (
@@ -58,9 +60,9 @@ class TeamTournamentParticipation(db.Model):
         tournament_name = self.tournament.name if self.tournament else 'Unknown'
         return f'<TeamTournamentParticipation {team_name} in {tournament_name}>'
     
-    def to_dict(self):
+    def to_dict(self, include_calculated_stats=False):
         """将对象转换为字典，便于API返回JSON"""
-        return {
+        base_data = {
             'id': self.id,
             'team_base_id': self.team_base_id,
             'tournament_id': self.tournament_id,
@@ -78,43 +80,19 @@ class TeamTournamentParticipation(db.Model):
             'wins': self.wins,
             'draws': self.draws,
             'losses': self.losses,
-            'win_rate': self.win_rate,
             'registration_time': self.registration_time.isoformat() if self.registration_time else None,
             'status': self.status
         }
+        
+        # 如果需要计算统计数据，使用 Service 层
+        if include_calculated_stats:
+            from app.services.football_statistics_service import FootballStatisticsService
+            calculated_stats = FootballStatisticsService.calculate_team_participation_stats(self)
+            base_data['calculated_stats'] = calculated_stats['calculated_stats']
+        
+        return base_data
     
-    @property
-    def win_rate(self):
-        """胜率计算"""
-        if self.matches_played == 0:
-            return 0.0
-        return round((self.wins / self.matches_played) * 100, 2)
-    
-    @property
-    def avg_goals_per_match(self):
-        """场均进球"""
-        if self.matches_played == 0:
-            return 0.0
-        return round(self.tournament_goals / self.matches_played, 2)
-    
-    @property
-    def avg_goals_conceded_per_match(self):
-        """场均失球"""
-        if self.matches_played == 0:
-            return 0.0
-        return round(self.tournament_goals_conceded / self.matches_played, 2)
-    
-    def calculate_goal_difference(self):
-        """计算净胜球并更新"""
+    def update_goal_difference(self):
+        """更新净胜球 - 数据库触发器会自动维护，这里提供手动更新选项"""
         self.tournament_goal_difference = self.tournament_goals - self.tournament_goals_conceded
         return self.tournament_goal_difference
-    
-    def update_match_result(self, is_win=False, is_draw=False):
-        """更新比赛结果统计"""
-        self.matches_played += 1
-        if is_win:
-            self.wins += 1
-        elif is_draw:
-            self.draws += 1
-        else:
-            self.losses += 1

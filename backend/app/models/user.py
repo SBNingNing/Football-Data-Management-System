@@ -18,6 +18,11 @@ class User(db.Model):
     最后登录时间 = db.Column('最后登录时间', db.DateTime, comment='最后登录时间')
     状态 = db.Column('状态', db.String(1), default='A', comment='账户状态(A: 启用, D: 禁用)')
     
+    # 约束 - 匹配SQL定义
+    __table_args__ = (
+        db.CheckConstraint("状态 in ('A','D')", name='user_chk_1'),
+    )
+    
     def __repr__(self):
         return f'<User {self.用户名}>'
     

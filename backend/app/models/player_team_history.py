@@ -7,11 +7,17 @@ class PlayerTeamHistory(db.Model):
     # 主键
     id = db.Column('记录ID', db.Integer, primary_key=True, comment='记录ID')
     
-    # 外键关系
-    player_id = db.Column('球员ID', db.String(20), db.ForeignKey('player.球员ID'), nullable=False, comment='球员ID')
+    # 外键关系 - 修正为正确的引用
+    player_id = db.Column('球员ID', db.String(20), 
+                          db.ForeignKey('player.球员ID', ondelete='CASCADE'), 
+                          nullable=False, comment='球员ID')
     player_number = db.Column('球员号码', db.Integer, nullable=False, comment='球员号码')
-    team_id = db.Column('球队ID', db.Integer, db.ForeignKey('team.球队ID'), nullable=True, comment='球队ID')
-    tournament_id = db.Column('赛事ID', db.Integer, db.ForeignKey('tournament.赛事ID'), nullable=False, comment='赛事ID')
+    team_id = db.Column('球队ID', db.Integer, 
+                        db.ForeignKey('team_tournament_participation.参与ID', ondelete='CASCADE'), 
+                        nullable=True, comment='球队ID（引用team_tournament_participation表的参与ID）')
+    tournament_id = db.Column('赛事ID', db.Integer, 
+                             db.ForeignKey('tournament.赛事ID', ondelete='CASCADE'), 
+                             nullable=False, comment='赛事ID')
     
     # 赛事统计数据
     tournament_goals = db.Column('赛事进球数', db.Integer, default=0, comment='赛事进球数')
@@ -19,16 +25,19 @@ class PlayerTeamHistory(db.Model):
     tournament_yellow_cards = db.Column('赛事黄牌数', db.Integer, default=0, comment='赛事黄牌数')
     remarks = db.Column('备注', db.Text, comment='备注信息')
     
-    # 关系
+    # 关系 - 修正关系映射
     player = db.relationship('Player', back_populates='team_histories')
-    team = db.relationship('Team', back_populates='player_histories')
+    team_participation = db.relationship('TeamTournamentParticipation', back_populates='player_histories')
     tournament = db.relationship('Tournament', back_populates='player_histories')
     
-    # 唯一约束
+    # 约束和索引 - 匹配SQL定义
     __table_args__ = (
-        db.UniqueConstraint('球员ID', '球队ID', '赛事ID', name='unique_player_team_tournament'),
+        db.UniqueConstraint('球员ID', '球队ID', '赛事ID', name='unique_active_player_team_tournament'),
         db.Index('idx_team_tournament', '球队ID', '赛事ID'),
         db.Index('idx_player_tournament', '球员ID', '赛事ID'),
+        db.CheckConstraint('赛事进球数 >= 0', name='player_team_history_chk_1'),
+        db.CheckConstraint('赛事红牌数 >= 0', name='player_team_history_chk_2'),
+        db.CheckConstraint('赛事黄牌数 >= 0', name='player_team_history_chk_3'),
     )
     
     @property
