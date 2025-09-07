@@ -1,53 +1,53 @@
-from flask import Blueprint, request, jsonify
-from app.services import PlayerHistoryService
+"""
+球员历史模块路由层
+处理HTTP请求和响应
+"""
 
+from flask import Blueprint, request, jsonify
+from app.services.player_history_service import PlayerHistoryService
+from app.middleware.player_history_middleware import (
+    validate_player_history, validate_season_performance,
+    validate_player_comparison, validate_team_changes
+)
+
+# 创建蓝图
 player_history_bp = Blueprint('player_history', __name__)
 
+# 初始化服务
+player_history_service = PlayerHistoryService()
+
+
 @player_history_bp.route('/api/player-history/<player_id>/complete', methods=['GET'])
-def get_player_complete_history(player_id):
+@validate_player_history
+def get_player_complete_history(player_id: str):
     """获取球员完整的跨赛季历史记录"""
-    try:
-        result = PlayerHistoryService.get_player_complete_history(player_id)
-        return jsonify(result), 200
-    except ValueError as e:
-        return jsonify({'error': str(e)}), 404
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
+    result = player_history_service.get_player_complete_history(player_id)
+    return result, 200
+
 
 @player_history_bp.route('/api/player-history/<player_id>/season/<int:season_id>', methods=['GET'])
-def get_player_season_performance(player_id, season_id):
+@validate_season_performance
+def get_player_season_performance(player_id: str, season_id: int):
     """获取球员在指定赛季的表现"""
-    try:
-        result = PlayerHistoryService.get_player_season_performance(player_id, season_id)
-        return jsonify(result), 200
-    except ValueError as e:
-        return jsonify({'error': str(e)}), 404
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
+    result = player_history_service.get_player_season_performance(player_id, season_id)
+    return result, 200
+
 
 @player_history_bp.route('/api/player-history/compare', methods=['POST'])
+@validate_player_comparison
 def compare_players_across_seasons():
     """跨赛季球员对比"""
-    try:
-        data = request.get_json()
-        player_ids = data.get('player_ids', [])
-        season_ids = data.get('season_ids', [])  # 可选：指定赛季范围
-        
-        if not player_ids:
-            return jsonify({'error': '请提供要比较的球员ID'}), 400
-        
-        result = PlayerHistoryService.compare_players_across_seasons(player_ids, season_ids)
-        return jsonify(result), 200
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
+    data = request.get_json()
+    player_ids = data.get('player_ids', [])
+    season_ids = data.get('season_ids', [])  # 可选：指定赛季范围
+    
+    result = player_history_service.compare_players_across_seasons(player_ids, season_ids)
+    return result, 200
+
 
 @player_history_bp.route('/api/player-history/team-changes/<player_id>', methods=['GET'])
-def get_player_team_changes(player_id):
+@validate_team_changes
+def get_player_team_changes(player_id: str):
     """获取球员转队历史"""
-    try:
-        result = PlayerHistoryService.get_player_team_changes(player_id)
-        return jsonify(result), 200
-    except ValueError as e:
-        return jsonify({'error': str(e)}), 404
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
+    result = player_history_service.get_player_team_changes(player_id)
+    return result, 200

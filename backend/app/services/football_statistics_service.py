@@ -1,89 +1,36 @@
 """
 足球统计服务类
-处理球队参赛记录的统计计算和分析
+处理球队参赛记录的数据查询和业务编排
 """
 
 from typing import Dict, Any, List
 from app.models.team_tournament_participation import TeamTournamentParticipation
 from app.models.tournament import Tournament
 from app.models.team_base import TeamBase
-from app import db
+from app.utils.stats_utils import StatsUtils
+from app.database import db
 
 
 class FootballStatisticsService:
-    """足球统计服务类 - 处理各种足球相关的统计计算"""
+    """足球统计服务类 - 处理数据查询和业务编排"""
     
     @staticmethod
     def calculate_team_participation_stats(participation: TeamTournamentParticipation) -> Dict[str, Any]:
         """计算球队参赛记录的统计数据"""
-        
-        # 基础统计
-        matches_played = participation.matches_played or 0
-        wins = participation.wins or 0
-        draws = participation.draws or 0
-        losses = participation.losses or 0
-        
-        # 进球统计
-        goals_for = participation.tournament_goals or 0
-        goals_against = participation.tournament_goals_conceded or 0
-        goal_difference = participation.tournament_goal_difference or 0
-        
-        # 纪律统计
-        red_cards = participation.tournament_red_cards or 0
-        yellow_cards = participation.tournament_yellow_cards or 0
-        
-        # 积分和排名
-        points = participation.tournament_points or 0
-        rank = participation.tournament_rank
-        
-        return {
-            'basic_stats': {
-                'matches_played': matches_played,
-                'wins': wins,
-                'draws': draws,
-                'losses': losses,
-                'points': points,
-                'rank': rank
-            },
-            'goal_stats': {
-                'goals_for': goals_for,
-                'goals_against': goals_against,
-                'goal_difference': goal_difference
-            },
-            'discipline_stats': {
-                'red_cards': red_cards,
-                'yellow_cards': yellow_cards
-            },
-            'calculated_stats': FootballStatisticsService._calculate_performance_metrics(
-                matches_played, wins, draws, losses, goals_for, goals_against, goal_difference, points
-            )
+        participation_data = {
+            'matches_played': participation.matches_played or 0,
+            'wins': participation.wins or 0,
+            'draws': participation.draws or 0,
+            'losses': participation.losses or 0,
+            'goals_for': participation.tournament_goals or 0,
+            'goals_against': participation.tournament_goals_conceded or 0,
+            'points': participation.tournament_points or 0,
+            'rank': participation.tournament_rank,
+            'red_cards': participation.tournament_red_cards or 0,
+            'yellow_cards': participation.tournament_yellow_cards or 0
         }
-    
-    @staticmethod
-    def _calculate_performance_metrics(matches_played: int, wins: int, draws: int, losses: int,
-                                     goals_for: int, goals_against: int, goal_difference: int,
-                                     points: int) -> Dict[str, float]:
-        """计算性能指标"""
-        if matches_played == 0:
-            return {
-                'win_rate': 0.0,
-                'draw_rate': 0.0,
-                'loss_rate': 0.0,
-                'avg_goals_per_match': 0.0,
-                'avg_goals_conceded_per_match': 0.0,
-                'avg_goal_difference_per_match': 0.0,
-                'points_per_match': 0.0
-            }
         
-        return {
-            'win_rate': round((wins / matches_played) * 100, 2),
-            'draw_rate': round((draws / matches_played) * 100, 2),
-            'loss_rate': round((losses / matches_played) * 100, 2),
-            'avg_goals_per_match': round(goals_for / matches_played, 2),
-            'avg_goals_conceded_per_match': round(goals_against / matches_played, 2),
-            'avg_goal_difference_per_match': round(goal_difference / matches_played, 2),
-            'points_per_match': round(points / matches_played, 2)
-        }
+        return StatsUtils.calculate_team_participation_metrics(participation_data)
     
     @staticmethod
     def get_team_tournament_ranking(tournament_id: int) -> List[Dict[str, Any]]:
@@ -130,36 +77,5 @@ class FootballStatisticsService:
         return {
             'team_base_id': team_base_id,
             'comparisons': comparisons,
-            'summary': FootballStatisticsService._calculate_overall_summary(comparisons)
-        }
-    
-    @staticmethod
-    def _calculate_overall_summary(comparisons: List[Dict[str, Any]]) -> Dict[str, Any]:
-        """计算总体统计摘要"""
-        if not comparisons:
-            return {}
-        
-        total_matches = sum(comp['stats']['basic_stats']['matches_played'] for comp in comparisons)
-        total_wins = sum(comp['stats']['basic_stats']['wins'] for comp in comparisons)
-        total_draws = sum(comp['stats']['basic_stats']['draws'] for comp in comparisons)
-        total_losses = sum(comp['stats']['basic_stats']['losses'] for comp in comparisons)
-        total_goals_for = sum(comp['stats']['goal_stats']['goals_for'] for comp in comparisons)
-        total_goals_against = sum(comp['stats']['goal_stats']['goals_against'] for comp in comparisons)
-        total_points = sum(comp['stats']['basic_stats']['points'] for comp in comparisons)
-        
-        return {
-            'total_tournaments': len(comparisons),
-            'total_matches': total_matches,
-            'total_wins': total_wins,
-            'total_draws': total_draws,
-            'total_losses': total_losses,
-            'total_goals_for': total_goals_for,
-            'total_goals_against': total_goals_against,
-            'total_goal_difference': total_goals_for - total_goals_against,
-            'total_points': total_points,
-            'overall_performance': FootballStatisticsService._calculate_performance_metrics(
-                total_matches, total_wins, total_draws, total_losses,
-                total_goals_for, total_goals_against, total_goals_for - total_goals_against,
-                total_points
-            )
+            'summary': StatsUtils.calculate_overall_tournament_summary([comp['stats'] for comp in comparisons])
         }

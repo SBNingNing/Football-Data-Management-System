@@ -1,4 +1,4 @@
-from app import db
+from app.database import db
 
 class Player(db.Model):
     """球员表 - 存储球员基本信息"""

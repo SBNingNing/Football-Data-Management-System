@@ -1,4 +1,4 @@
-from app import db
+from app.database import db
 
 class Competition(db.Model):
     """赛事表 - 存储赛事信息"""

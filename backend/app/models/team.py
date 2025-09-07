@@ -1,4 +1,4 @@
-from app import db
+from app.database import db
 
 class Team(db.Model):
     """球队表 - 存储球队信息（保持向后兼容的视图）"""

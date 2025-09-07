@@ -1,4 +1,4 @@
-from app import db
+from app.database import db
 
 class PlayerTeamHistory(db.Model):
     """球员-队伍记录表 - 存储球员在特定赛事中的队伍归属和统计信息"""

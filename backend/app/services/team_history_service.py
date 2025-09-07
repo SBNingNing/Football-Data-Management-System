@@ -4,7 +4,8 @@
 """
 
 from app.models import TeamBase, TeamTournamentParticipation, Tournament, Season, PlayerTeamHistory
-from app import db
+from app.utils.team_history_utils import TeamHistoryUtils
+from app.database import db
 from sqlalchemy import desc, func
 from collections import defaultdict
 
@@ -34,7 +35,7 @@ class TeamHistoryService:
                     'founded_year': team_base.founded_year
                 },
                 'seasons': [],
-                'career_summary': TeamHistoryService._get_empty_career_summary()
+                'career_summary': TeamHistoryUtils.get_empty_career_summary()
             }
         
         # 按赛季分组数据
@@ -113,7 +114,7 @@ class TeamHistoryService:
             })
         
         # 计算职业生涯汇总
-        career_summary = TeamHistoryService._calculate_career_summary(participations)
+        career_summary = TeamHistoryUtils.calculate_career_summary(participations)
         
         return {
             'team_info': {
@@ -154,7 +155,7 @@ class TeamHistoryService:
                 'team_info': {'id': team_base.id, 'name': team_base.name},
                 'season_info': {'id': season.id, 'name': season.name},
                 'performance': [],
-                'season_totals': TeamHistoryService._get_empty_season_totals()
+                'season_totals': TeamHistoryUtils.get_empty_season_totals()
             }
         
         # 组织数据
@@ -248,7 +249,7 @@ class TeamHistoryService:
             participations = query.all()
             
             # 计算球队统计
-            team_stats = TeamHistoryService._calculate_career_summary(participations)
+            team_stats = TeamHistoryUtils.calculate_career_summary(participations)
             team_stats['team_info'] = {
                 'id': team_base.id,
                 'name': team_base.name,
@@ -320,85 +321,4 @@ class TeamHistoryService:
                 'total_seasons': len(seasons_participated),
                 'best_ranking': best_ranking
             }
-        }
-    
-    @staticmethod
-    def _calculate_career_summary(participations):
-        """计算职业生涯汇总统计"""
-        if not participations:
-            return TeamHistoryService._get_empty_career_summary()
-        
-        # 统计参与的赛季和赛事
-        seasons = set()
-        tournaments = set()
-        rankings = []
-        total_players = 0
-        total_goals = 0
-        total_yellow_cards = 0
-        total_red_cards = 0
-        
-        for participation in participations:
-            if participation.tournament and participation.tournament.season:
-                seasons.add(participation.tournament.season.name)
-                tournaments.add(participation.tournament.name)
-            
-            if participation.final_ranking:
-                rankings.append(participation.final_ranking)
-            
-            # 获取该赛事的球员统计
-            players_stats = PlayerTeamHistory.query.filter_by(
-                team_id=participation.team_id,
-                tournament_id=participation.tournament_id
-            ).all()
-            
-            total_players += len(players_stats)
-            total_goals += sum(p.tournament_goals for p in players_stats)
-            total_yellow_cards += sum(p.tournament_yellow_cards for p in players_stats)
-            total_red_cards += sum(p.tournament_red_cards for p in players_stats)
-        
-        return {
-            'total_tournaments': len(tournaments),
-            'total_seasons': len(seasons),
-            'total_players_used': total_players,
-            'total_goals_scored': total_goals,
-            'total_yellow_cards': total_yellow_cards,
-            'total_red_cards': total_red_cards,
-            'best_ranking': min(rankings) if rankings else None,
-            'average_ranking': round(sum(rankings) / len(rankings), 2) if rankings else None,
-            'average_goals_per_tournament': round(total_goals / len(tournaments), 2) if tournaments else 0,
-            'disciplinary_record': {
-                'yellow_card_rate': round(total_yellow_cards / len(tournaments), 2) if tournaments else 0,
-                'red_card_rate': round(total_red_cards / len(tournaments), 2) if tournaments else 0
-            }
-        }
-    
-    @staticmethod
-    def _get_empty_career_summary():
-        """返回空的职业生涯汇总"""
-        return {
-            'total_tournaments': 0,
-            'total_seasons': 0,
-            'total_players_used': 0,
-            'total_goals_scored': 0,
-            'total_yellow_cards': 0,
-            'total_red_cards': 0,
-            'best_ranking': None,
-            'average_ranking': None,
-            'average_goals_per_tournament': 0,
-            'disciplinary_record': {
-                'yellow_card_rate': 0,
-                'red_card_rate': 0
-            }
-        }
-    
-    @staticmethod
-    def _get_empty_season_totals():
-        """返回空的赛季统计"""
-        return {
-            'tournaments_participated': 0,
-            'total_players': 0,
-            'total_goals': 0,
-            'total_yellow_cards': 0,
-            'total_red_cards': 0,
-            'average_ranking': 0
         }
