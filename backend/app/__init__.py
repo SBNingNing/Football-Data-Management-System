@@ -3,12 +3,16 @@ from flask_cors import CORS
 from app.config import Config
 from app.database import db, jwt
 from app.utils.logger import get_logger
+from app.utils.logging_config import setup_logging
 
 logger = get_logger(__name__)
 
 def create_app(config_class=Config):
     app = Flask(__name__)
     app.config.from_object(config_class)
+    
+    # 设置日志配置（在应用配置之后立即设置）
+    setup_logging(app)
     
     # 添加应用基本信息
     app.config['APP_NAME'] = 'Football Management System'

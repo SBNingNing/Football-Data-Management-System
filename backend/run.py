@@ -7,23 +7,24 @@ import os
 from app import create_app, db
 from app.main import get_app_info, validate_app_configuration
 from app.config import get_config
-from app.utils.logger import get_logger
-
-logger = get_logger(__name__)
 
 
 def main():
     """主启动函数"""
+    # 获取运行环境
+    env = os.environ.get('FLASK_ENV', 'development')
+    
+    # 获取配置类
+    config_class = get_config(env)
+    
+    # 创建应用
+    app = create_app(config_class)
+    
+    # 现在使用应用的logger，确保日志记录到文件
+    logger = app.logger
+    
     try:
-        # 获取运行环境
-        env = os.environ.get('FLASK_ENV', 'development')
         logger.info(f"启动环境: {env}")
-        
-        # 获取配置类
-        config_class = get_config(env)
-        
-        # 创建应用
-        app = create_app(config_class)
         
         # 验证应用配置
         is_valid, errors = validate_app_configuration(app)
@@ -36,6 +37,7 @@ def main():
         logger.info(f"应用信息: {app_info['app_name']} v{app_info['app_version']}")
         logger.info(f"注册的蓝图: {app_info['registered_blueprints']}")
         
+        # 创建数据库表
         # 创建数据库表
         with app.app_context():
             try:

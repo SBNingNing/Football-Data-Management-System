@@ -38,7 +38,9 @@ class Config:
     
     # 日志配置
     LOG_LEVEL = os.environ.get('LOG_LEVEL', 'INFO')
-    LOG_FILE = os.environ.get('LOG_FILE', 'logs/app.log')
+    # 使用backend目录下的logs文件夹记录后端运行状况
+    BACKEND_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    LOG_FILE = os.environ.get('LOG_FILE', os.path.join(BACKEND_ROOT, 'logs', 'app.log'))
     LOG_MAX_BYTES = int(os.environ.get('LOG_MAX_BYTES', 10485760))  # 10MB
     LOG_BACKUP_COUNT = int(os.environ.get('LOG_BACKUP_COUNT', 5))
     

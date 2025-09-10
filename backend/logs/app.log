@@ -1,0 +1,82 @@
+[2025-09-08 23:45:27,410] INFO in logging_config: Application startup - Logging configured successfully
+[2025-09-08 23:45:27,410] WARNING in __init__: 配置验证警告: SECRET_KEY should be set to a secure value, JWT_SECRET_KEY should be set to a secure value
+[2025-09-08 23:45:27,611] INFO in run: 启动环境: development
+[2025-09-08 23:45:27,621] INFO in run: 应用信息: Football Management System v1.0.0
+[2025-09-08 23:45:27,621] INFO in run: 注册的蓝图: ['auth', 'matches', 'events', 'teams', 'tournaments', 'competitions', 'seasons', 'player_history', 'team_history', 'stats', 'players']
+[2025-09-08 23:45:27,636] INFO in base: SELECT DATABASE()
+[2025-09-08 23:45:27,638] INFO in base: [raw sql] {}
+[2025-09-08 23:45:27,638] INFO in base: SELECT @@sql_mode
+[2025-09-08 23:45:27,640] INFO in base: [raw sql] {}
+[2025-09-08 23:45:27,640] INFO in base: SELECT @@lower_case_table_names
+[2025-09-08 23:45:27,640] INFO in base: [raw sql] {}
+[2025-09-08 23:45:27,642] INFO in base: BEGIN (implicit)
+[2025-09-08 23:45:27,642] INFO in base: DESCRIBE `football_management_system`.`user`
+[2025-09-08 23:45:27,642] INFO in base: [raw sql] {}
+[2025-09-08 23:45:27,646] INFO in base: DESCRIBE `football_management_system`.`player`
+[2025-09-08 23:45:27,646] INFO in base: [raw sql] {}
+[2025-09-08 23:45:27,648] INFO in base: DESCRIBE `football_management_system`.`team`
+[2025-09-08 23:45:27,651] INFO in base: [raw sql] {}
+[2025-09-08 23:45:27,656] INFO in base: DESCRIBE `football_management_system`.`team_base`
+[2025-09-08 23:45:27,658] INFO in base: [raw sql] {}
+[2025-09-08 23:45:27,661] INFO in base: DESCRIBE `football_management_system`.`team_tournament_participation`
+[2025-09-08 23:45:27,661] INFO in base: [raw sql] {}
+[2025-09-08 23:45:27,663] INFO in base: DESCRIBE `football_management_system`.`match`
+[2025-09-08 23:45:27,663] INFO in base: [raw sql] {}
+[2025-09-08 23:45:27,668] INFO in base: DESCRIBE `football_management_system`.`event`
+[2025-09-08 23:45:27,672] INFO in base: [raw sql] {}
+[2025-09-08 23:45:27,674] INFO in base: DESCRIBE `football_management_system`.`tournament`
+[2025-09-08 23:45:27,676] INFO in base: [raw sql] {}
+[2025-09-08 23:45:27,678] INFO in base: DESCRIBE `football_management_system`.`competition`
+[2025-09-08 23:45:27,678] INFO in base: [raw sql] {}
+[2025-09-08 23:45:27,682] INFO in base: DESCRIBE `football_management_system`.`season`
+[2025-09-08 23:45:27,682] INFO in base: [raw sql] {}
+[2025-09-08 23:45:27,684] INFO in base: DESCRIBE `football_management_system`.`player_team_history`
+[2025-09-08 23:45:27,687] INFO in base: [raw sql] {}
+[2025-09-08 23:45:27,689] INFO in base: COMMIT
+[2025-09-08 23:45:27,692] INFO in run: 数据库表创建成功
+[2025-09-08 23:45:27,692] INFO in run: 启动服务器: http://0.0.0.0:5000
+[2025-09-08 23:45:27,756] INFO in _internal: [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://100.64.168.149:5000
+[2025-09-08 23:45:27,756] INFO in _internal: [33mPress CTRL+C to quit[0m
+[2025-09-08 23:45:27,760] INFO in _internal:  * Restarting with stat
+[2025-09-08 23:45:29,522] INFO in logging_config: Application startup - Logging configured successfully
+[2025-09-08 23:45:29,522] WARNING in __init__: 配置验证警告: SECRET_KEY should be set to a secure value, JWT_SECRET_KEY should be set to a secure value
+[2025-09-08 23:45:29,649] INFO in run: 启动环境: development
+[2025-09-08 23:45:29,649] INFO in run: 应用信息: Football Management System v1.0.0
+[2025-09-08 23:45:29,651] INFO in run: 注册的蓝图: ['auth', 'matches', 'events', 'teams', 'tournaments', 'competitions', 'seasons', 'player_history', 'team_history', 'stats', 'players']
+[2025-09-08 23:45:29,662] INFO in base: SELECT DATABASE()
+[2025-09-08 23:45:29,662] INFO in base: [raw sql] {}
+[2025-09-08 23:45:29,665] INFO in base: SELECT @@sql_mode
+[2025-09-08 23:45:29,665] INFO in base: [raw sql] {}
+[2025-09-08 23:45:29,666] INFO in base: SELECT @@lower_case_table_names
+[2025-09-08 23:45:29,666] INFO in base: [raw sql] {}
+[2025-09-08 23:45:29,666] INFO in base: BEGIN (implicit)
+[2025-09-08 23:45:29,666] INFO in base: DESCRIBE `football_management_system`.`user`
+[2025-09-08 23:45:29,670] INFO in base: [raw sql] {}
+[2025-09-08 23:45:29,673] INFO in base: DESCRIBE `football_management_system`.`player`
+[2025-09-08 23:45:29,673] INFO in base: [raw sql] {}
+[2025-09-08 23:45:29,676] INFO in base: DESCRIBE `football_management_system`.`team`
+[2025-09-08 23:45:29,678] INFO in base: [raw sql] {}
+[2025-09-08 23:45:29,681] INFO in base: DESCRIBE `football_management_system`.`team_base`
+[2025-09-08 23:45:29,681] INFO in base: [raw sql] {}
+[2025-09-08 23:45:29,684] INFO in base: DESCRIBE `football_management_system`.`team_tournament_participation`
+[2025-09-08 23:45:29,684] INFO in base: [raw sql] {}
+[2025-09-08 23:45:29,690] INFO in base: DESCRIBE `football_management_system`.`match`
+[2025-09-08 23:45:29,690] INFO in base: [raw sql] {}
+[2025-09-08 23:45:29,692] INFO in base: DESCRIBE `football_management_system`.`event`
+[2025-09-08 23:45:29,692] INFO in base: [raw sql] {}
+[2025-09-08 23:45:29,696] INFO in base: DESCRIBE `football_management_system`.`tournament`
+[2025-09-08 23:45:29,696] INFO in base: [raw sql] {}
+[2025-09-08 23:45:29,700] INFO in base: DESCRIBE `football_management_system`.`competition`
+[2025-09-08 23:45:29,700] INFO in base: [raw sql] {}
+[2025-09-08 23:45:29,703] INFO in base: DESCRIBE `football_management_system`.`season`
+[2025-09-08 23:45:29,705] INFO in base: [raw sql] {}
+[2025-09-08 23:45:29,706] INFO in base: DESCRIBE `football_management_system`.`player_team_history`
+[2025-09-08 23:45:29,706] INFO in base: [raw sql] {}
+[2025-09-08 23:45:29,710] INFO in base: COMMIT
+[2025-09-08 23:45:29,714] INFO in run: 数据库表创建成功
+[2025-09-08 23:45:29,714] INFO in run: 启动服务器: http://0.0.0.0:5000
+[2025-09-08 23:45:29,736] WARNING in _internal:  * Debugger is active!
+[2025-09-08 23:45:29,748] INFO in _internal:  * Debugger PIN: 138-121-766
