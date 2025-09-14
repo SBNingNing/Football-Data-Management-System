@@ -66,3 +66,15 @@ class Event(db.Model):
     
     def __repr__(self):
         return f'<Event {self.id}: {self.event_type} by Player {self.player_id} at {self.event_time}min>'
+
+    # 兼容旧结构：提供 team 属性（可能返回 None）
+    @property
+    def team(self):
+        try:
+            if not self.team_participation:
+                return None
+            from .team import Team
+            return Team.query.filter_by(team_base_id=self.team_participation.team_base_id,
+                                        tournament_id=self.team_participation.tournament_id).first()
+        except Exception:
+            return None

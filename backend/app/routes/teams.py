@@ -8,6 +8,7 @@ from flask_jwt_extended import jwt_required
 from app.services.team_service import TeamService
 from app.middleware.team_middleware import (
     validate_team_data,
+    validate_team_update_data,
     validate_team_id, 
     validate_team_name,
     validate_query_params,
@@ -137,11 +138,11 @@ def create_team():
 @teams_bp.route('/<int:team_id>', methods=['PUT'])
 @jwt_required()
 @validate_team_id
-@validate_team_data
+@validate_team_update_data
 @handle_team_errors
 @log_team_operation('更新')
 def update_team(team_id):
-    """更新球队信息"""
+    """更新球队信息 (部分字段可选)。"""
     try:
         data = request.get_json()
         
@@ -176,6 +177,66 @@ def update_team(team_id):
             '更新成功'
         )), 200
         
+    except Exception as e:
+        return jsonify(TeamMiddleware.format_error_response(f'更新失败: {str(e)}')), 500
+
+
+# 按名称更新（最新参赛实例或指定 tournamentId / matchType 选择）
+@teams_bp.route('/by-name/<team_name>', methods=['PUT'])
+@jwt_required()
+@validate_team_name
+@validate_team_update_data
+@handle_team_errors
+@log_team_operation('按名称更新')
+def update_team_by_name(team_name):
+    """按名称更新球队最近参赛实例: 优先 tournamentId -> matchType -> 最新 participation。"""
+    try:
+        data = request.get_json() or {}
+        from app.models.team_base import TeamBase
+        from app.models.team_tournament_participation import TeamTournamentParticipation
+        from app.models.tournament import Tournament
+
+        base = TeamBase.query.filter_by(name=team_name).first()
+        if not base:
+            return jsonify(TeamMiddleware.format_error_response('球队不存在')), 404
+
+        q = TeamTournamentParticipation.query.filter_by(team_base_id=base.id)
+        target_participation = None
+
+        # 指定 tournamentId
+        if data.get('tournamentId'):
+            target_participation = q.filter_by(tournament_id=data['tournamentId']).first()
+            if not target_participation:
+                return jsonify(TeamMiddleware.format_error_response('指定赛事参赛记录不存在')), 404
+        else:
+            # matchType 过滤
+            if data.get('matchType'):
+                canonical, _ = TeamUtils.normalize_match_type(data['matchType'])
+                match_map = {
+                    'champions-cup': 1,
+                    'womens-cup': 2,
+                    'eight-a-side': 3
+                }
+                tid = match_map.get(canonical)
+                if tid:
+                    target_participation = q.filter_by(tournament_id=tid).order_by(TeamTournamentParticipation.id.desc()).first()
+            # 若仍未找到，取最新
+            if not target_participation:
+                target_participation = q.order_by(TeamTournamentParticipation.id.desc()).first()
+
+        if not target_participation:
+            return jsonify(TeamMiddleware.format_error_response('未找到参赛记录')), 404
+
+        # 直接复用 update_team 逻辑: 构造部分更新数据
+        team_dict, error = TeamService.update_team(target_participation.id, data)
+        if error:
+            status_code = 404 if '不存在' in error else 400
+            return jsonify(TeamMiddleware.format_error_response(error)), status_code
+
+        if not team_dict.get('matchType'):
+            team_dict['matchType'] = TeamUtils.determine_match_type(None)
+
+        return jsonify(TeamMiddleware.format_team_response(team_dict, '按名称更新成功')), 200
     except Exception as e:
         return jsonify(TeamMiddleware.format_error_response(f'更新失败: {str(e)}')), 500
 

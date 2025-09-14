@@ -32,10 +32,8 @@ class Match(db.Model):
                              nullable=False, comment='赛事ID')
     
     # 关系 - 修正关系映射
-    home_team = db.relationship('TeamTournamentParticipation', foreign_keys=[home_team_id], 
-                               backref=db.backref('home_matches', lazy=True))
-    away_team = db.relationship('TeamTournamentParticipation', foreign_keys=[away_team_id], 
-                               backref=db.backref('away_matches', lazy=True))
+    home_team = db.relationship('TeamTournamentParticipation', foreign_keys=[home_team_id], back_populates='home_matches')
+    away_team = db.relationship('TeamTournamentParticipation', foreign_keys=[away_team_id], back_populates='away_matches')
     tournament = db.relationship('Tournament', back_populates='matches')
     events = db.relationship('Event', back_populates='match', lazy=True)
     

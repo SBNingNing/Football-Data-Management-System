@@ -14,7 +14,8 @@ class TeamBase(db.Model):
     notes = db.Column('备注', db.Text, comment='备注信息')
     
     # 关系 - 修正外键引用
-    team_instances = db.relationship('Team', back_populates='team_base', lazy='dynamic')
+    # 视图 Team 无真实外键，移除直接 relationship，改为查询属性
+    # team_instances = db.relationship('Team', back_populates='team_base', lazy='dynamic')
     participations = db.relationship('TeamTournamentParticipation', back_populates='team_base', lazy=True)
     
     # 索引
@@ -42,3 +43,9 @@ class TeamBase(db.Model):
             data['historical_stats'] = stats
         
         return data
+
+    @property
+    def team_instances(self):
+        """动态获取当前基础球队的活动 Team 视图记录列表"""
+        from .team import Team
+        return Team.query.filter_by(team_base_id=self.id).all()

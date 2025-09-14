@@ -1,11 +1,9 @@
-"""
-赛事路由层
-负责处理HTTP请求和响应
-"""
+"""赛事路由。"""
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required
 
 from app.services.tournament_service import TournamentService
+from app.models.tournament import Tournament
 from app.middleware.tournament_middleware import TournamentMiddleware
 from app.utils.tournament_utils import TournamentUtils
 
@@ -14,9 +12,25 @@ tournaments_bp = Blueprint('tournaments', __name__)
 
 @tournaments_bp.route('/<tournament_name>', methods=['GET'])
 def get_tournament(tournament_name):
-    """根据赛事名称获取赛事信息和统计数据"""
+    """按数字ID或名称获取赛事。"""
     try:
+        # 数字 ID 优先
+        if tournament_name.isdigit():
+            t_obj = Tournament.query.get(int(tournament_name))
+            if t_obj:
+                # 复用已有统计构建逻辑：单个名称查询接口期望 records 列表
+                teams_data = TournamentService.get_tournament_teams_data(t_obj.id)
+                single_record = TournamentService.build_tournament_record_dict(t_obj, teams_data)
+                payload = {
+                    'tournamentName': t_obj.name,
+                    'totalSeasons': 1,
+                    'records': [single_record],
+                    'matchedMode': 'id'
+                }
+                return jsonify(TournamentMiddleware.format_tournament_response(payload)), 200
+        # 名称逻辑
         tournament_info = TournamentService.get_tournament_info_by_name(tournament_name)
+        tournament_info['matchedMode'] = 'name'
         return jsonify(TournamentMiddleware.format_tournament_response(tournament_info)), 200
     except ValueError as ve:
         _, all_names = TournamentService.find_tournament_by_name(tournament_name)
@@ -30,7 +44,7 @@ def get_tournament(tournament_name):
 
 @tournaments_bp.route('', methods=['GET'])
 def get_tournaments():
-    """获取所有赛事信息（公共接口）"""
+    """全部赛事列表。"""
     try:
         validated_params = TournamentMiddleware.validate_query_params(request.args)
         tournaments_data = TournamentService.get_all_tournaments(
@@ -45,7 +59,7 @@ def get_tournaments():
 @tournaments_bp.route('', methods=['POST'])
 @jwt_required()
 def create_tournament():
-    """创建赛事"""
+    """创建赛事。"""
     try:
         data = request.get_json()
         
@@ -72,7 +86,7 @@ def create_tournament():
 @tournaments_bp.route('/<int:tournament_id>', methods=['PUT'])
 @jwt_required()
 def update_tournament(tournament_id):
-    """更新赛事信息"""
+    """更新赛事。"""
     try:
         data = request.get_json()
         
@@ -95,7 +109,7 @@ def update_tournament(tournament_id):
 @tournaments_bp.route('/<int:tournament_id>', methods=['DELETE'])
 @jwt_required()
 def delete_tournament(tournament_id):
-    """删除赛事"""
+    """删除赛事。"""
     try:
         TournamentService.delete_tournament(tournament_id)
         
@@ -113,7 +127,7 @@ def delete_tournament(tournament_id):
 @tournaments_bp.route('/instances', methods=['POST'])
 @jwt_required()
 def create_tournament_instance():
-    """创建新的赛事-赛季实例"""
+    """创建赛事实例。"""
     try:
         data = request.get_json()
         
@@ -138,7 +152,7 @@ def create_tournament_instance():
 @tournaments_bp.route('/instances/<int:tournament_id>', methods=['PUT'])
 @jwt_required()
 def update_tournament_instance(tournament_id):
-    """更新赛事实例"""
+    """更新赛事实例。"""
     try:
         data = request.get_json()
         
@@ -156,3 +170,27 @@ def update_tournament_instance(tournament_id):
         return jsonify({'status': 'error', 'message': str(ve)}), 400
     except Exception as e:
         return jsonify({'status': 'error', 'message': f'更新失败: {str(e)}'}), 500
+
+
+@tournaments_bp.route('/quick', methods=['POST'])
+@jwt_required()
+def create_tournament_quick():
+    """快速创建/复用赛事实例。"""
+    try:
+        data = request.get_json() or {}
+        result = TournamentService.create_tournament_quick(data)
+        if result.get('dryRun'):
+            msg = '预检成功，将创建新赛事实例' if result['willCreate']['tournament'] else '预检成功，赛事实例已存在'
+            code = 200
+        else:
+            if result.get('created'):
+                msg = '赛事实例创建成功'
+                code = 201
+            else:
+                msg = '赛事实例已存在返回'
+                code = 200
+        return jsonify(TournamentMiddleware.format_tournament_response(result, message=msg)), code
+    except ValueError as ve:
+        return jsonify({'status': 'error', 'message': str(ve)}), 400
+    except Exception as e:
+        return jsonify({'status': 'error', 'message': f'创建失败: {str(e)}'}), 500

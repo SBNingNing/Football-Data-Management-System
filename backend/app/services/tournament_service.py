@@ -1,6 +1,4 @@
-"""
-赛事服务层 - 处理赛事相关业务逻辑
-"""
+"""赛事服务层: 查询/聚合/快速创建赛事及实例。"""
 from typing import List, Dict, Any, Optional, Tuple
 from datetime import datetime
 import urllib.parse
@@ -18,36 +16,39 @@ logger = get_logger(__name__)
 
 
 class TournamentService:
-    """赛事服务类"""
+    """赛事业务逻辑集合。"""
     
     @staticmethod
     def find_tournament_by_name(tournament_name: str) -> Tuple[List[Tournament], List[str]]:
-        """根据赛事名称查找赛事"""
+        """名称(精确/模糊/忽略大小写)查找。"""
         decoded_name = urllib.parse.unquote(tournament_name, encoding='utf-8').strip()
-        
-        all_tournaments = Tournament.query.all()
+
+        # 由于 Tournament.name 是 @property (包装 competition.name)，不能直接在查询表达式中使用
+        # 必须通过关联 competition 表字段 competition.name 进行筛选
+        from app.models.competition import Competition as _Competition
+
+        base_query = Tournament.query.join(_Competition, Tournament.competition_id == _Competition.competition_id)
+
+        all_tournaments = base_query.all()
         all_names = [t.name for t in all_tournaments]
-        
+
         # 精确匹配
-        tournament_records = Tournament.query.filter(Tournament.name == decoded_name).all()
-        
+        tournament_records = base_query.filter(_Competition.name == decoded_name).all()
+
         # 模糊匹配
         if not tournament_records:
-            tournament_records = Tournament.query.filter(
-                Tournament.name.like(f"%{decoded_name}%")
-            ).all()
-        
-        # 忽略大小写匹配
+            tournament_records = base_query.filter(_Competition.name.like(f"%{decoded_name}%")).all()
+
+        # 忽略大小写匹配 (使用 lower 比较)
         if not tournament_records:
-            tournament_records = Tournament.query.filter(
-                Tournament.name.ilike(f"%{decoded_name}%")
-            ).all()
-        
+            from sqlalchemy import func
+            tournament_records = base_query.filter(func.lower(_Competition.name).like(f"%{decoded_name.lower()}%")) .all()
+
         return tournament_records, all_names
     
     @staticmethod
     def get_tournament_teams_data(tournament_id: int) -> List[Dict[str, Any]]:
-        """获取赛事下的所有球队数据"""
+        """列出赛事内球队及球员统计。"""
         tournament_teams = Team.query.filter(Team.tournament_id == tournament_id).all()
         teams_data = []
         
@@ -94,7 +95,7 @@ class TournamentService:
     
     @staticmethod
     def build_tournament_record_dict(tournament: Tournament, teams_data: List[Dict[str, Any]]) -> Dict[str, Any]:
-        """构建赛事记录字典"""
+        """单个赛事记录结构化。"""
         total_goals = sum(team_data['goals'] for team_data in teams_data)
         
         season_start_time = None
@@ -128,7 +129,7 @@ class TournamentService:
     
     @staticmethod
     def get_tournament_info_by_name(tournament_name: str) -> Dict[str, Any]:
-        """根据赛事名称获取完整赛事信息"""
+        """按名称聚合所有赛季。"""
         tournament_records, all_names = TournamentService.find_tournament_by_name(tournament_name)
         
         if not tournament_records:
@@ -154,7 +155,7 @@ class TournamentService:
     
     @staticmethod
     def get_all_tournaments(group_by_name: bool = False) -> List[Dict[str, Any]]:
-        """获取所有赛事信息"""
+        """全部赛事(可按名称分组)。"""
         tournaments = Tournament.query.all()
         
         if not tournaments:
@@ -167,7 +168,7 @@ class TournamentService:
     
     @staticmethod
     def _get_tournaments_grouped_by_name(tournaments: List[Tournament]) -> List[Dict[str, Any]]:
-        """按名称分组获取赛事信息"""
+        """名称分组聚合。"""
         tournaments_grouped = {}
         
         for tournament in tournaments:
@@ -216,7 +217,7 @@ class TournamentService:
     
     @staticmethod
     def _get_all_tournaments_detailed(tournaments: List[Tournament]) -> List[Dict[str, Any]]:
-        """获取所有赛事的详细信息"""
+        """详细赛事列表。"""
         tournaments_data = []
         
         for tournament in tournaments:
@@ -232,7 +233,7 @@ class TournamentService:
     
     @staticmethod
     def create_tournament(data: Dict[str, Any]) -> Tournament:
-        """创建赛事"""
+        """创建赛事。"""
         season_start_time = datetime.fromisoformat(data['season_start_time'].replace('Z', '+00:00')) if data.get('season_start_time') else datetime.now()
         season_end_time = datetime.fromisoformat(data['season_end_time'].replace('Z', '+00:00')) if data.get('season_end_time') else datetime.now()
         
@@ -251,7 +252,7 @@ class TournamentService:
     
     @staticmethod
     def update_tournament(tournament_id: int, data: Dict[str, Any]) -> Tournament:
-        """更新赛事信息"""
+        """更新赛事。"""
         tournament = Tournament.query.get(tournament_id)
         if not tournament:
             raise ValueError('赛事不存在')
@@ -272,7 +273,7 @@ class TournamentService:
     
     @staticmethod
     def delete_tournament(tournament_id: int) -> None:
-        """删除赛事"""
+        """删除赛事(若无球队关联)。"""
         tournament = Tournament.query.get(tournament_id)
         if not tournament:
             raise ValueError('赛事不存在')
@@ -286,7 +287,7 @@ class TournamentService:
     
     @staticmethod
     def create_tournament_instance(data: Dict[str, Any]) -> Tournament:
-        """创建赛事实例"""
+        """创建赛事实例。"""
         competition = Competition.query.get(data['competition_id'])
         if not competition:
             raise ValueError('赛事不存在')
@@ -318,7 +319,7 @@ class TournamentService:
     
     @staticmethod
     def update_tournament_instance(tournament_id: int, data: Dict[str, Any]) -> Tournament:
-        """更新赛事实例"""
+        """更新赛事实例。"""
         tournament = Tournament.query.get(tournament_id)
         if not tournament:
             raise ValueError('赛事不存在')
@@ -346,3 +347,122 @@ class TournamentService:
         
         db.session.commit()
         return tournament
+
+    # -------- Quick creation helper ---------
+    @staticmethod
+    def create_tournament_quick(data: Dict[str, Any]) -> Dict[str, Any]:
+        """快速创建/复用：支持 dryRun + 自动创建缺失实体。"""
+        allow_auto = data.get('createIfMissing', True)
+        dry_run = data.get('dryRun', False)
+
+        comp_id = data.get('competition_id')
+        comp_name = (data.get('competitionName') or '').strip() if data.get('competitionName') else None
+        season_id = data.get('season_id')
+        season_name = (data.get('seasonName') or '').strip() if data.get('seasonName') else None
+
+        if not comp_id and not comp_name:
+            raise ValueError('competition_id 或 competitionName 必须提供其一')
+        if not season_id and not season_name:
+            raise ValueError('season_id 或 seasonName 必须提供其一')
+
+        # competition 处理
+        competition: Optional[Competition] = None
+        if comp_id:
+            competition = Competition.query.get(comp_id)
+            if not competition:
+                raise ValueError('指定 competition_id 不存在')
+        else:
+            competition = Competition.query.filter_by(name=comp_name).first()
+            if not competition:
+                if not allow_auto:
+                    raise ValueError('赛事不存在且禁止自动创建')
+                if dry_run:
+                    # 预检模式下标记将创建
+                    competition = Competition(competition_id=-1, name=comp_name)  # 临时对象
+                else:
+                    competition = Competition(name=comp_name)
+                    db.session.add(competition)
+                    db.session.flush()
+
+        # season 处理
+        season: Optional[Season] = None
+        if season_id:
+            season = Season.query.get(season_id)
+            if not season:
+                raise ValueError('指定 season_id 不存在')
+        else:
+            season = Season.query.filter_by(name=season_name).first()
+            if not season:
+                if not allow_auto:
+                    raise ValueError('赛季不存在且禁止自动创建')
+                if dry_run:
+                    season = Season(season_id=-1, name=season_name, start_time=datetime.utcnow(), end_time=datetime.utcnow())
+                else:
+                    now = datetime.utcnow()
+                    season = Season(name=season_name, start_time=now, end_time=now)
+                    db.session.add(season)
+                    db.session.flush()
+
+        # 已有 tournament 检查（预检仍需判断）
+        existing = None
+        if competition.competition_id != -1 and season.season_id != -1:
+            existing = Tournament.query.filter_by(
+                competition_id=competition.competition_id,
+                season_id=season.season_id
+            ).first()
+        if existing:
+            return {
+                'tournamentId': existing.id,
+                'competitionId': competition.competition_id,
+                'seasonId': season.season_id,
+                'competitionName': competition.name,
+                'seasonName': season.name,
+                'created': False,
+                'dryRun': dry_run,
+                'willCreate': {
+                    'competition': False,
+                    'season': False,
+                    'tournament': False
+                }
+            }
+
+        if dry_run:
+            return {
+                'tournamentId': None,
+                'competitionId': None if competition.competition_id == -1 else competition.competition_id,
+                'seasonId': None if season.season_id == -1 else season.season_id,
+                'competitionName': competition.name,
+                'seasonName': season.name,
+                'created': False,
+                'dryRun': True,
+                'willCreate': {
+                    'competition': competition.competition_id == -1,
+                    'season': season.season_id == -1,
+                    'tournament': True
+                }
+            }
+
+        tournament = Tournament(
+            competition_id=competition.competition_id,
+            season_id=season.season_id,
+            is_grouped=data.get('isGrouped', False),
+            group_count=data.get('groupCount'),
+            playoff_spots=data.get('playoffSpots')
+        )
+        db.session.add(tournament)
+        db.session.commit()
+
+        return {
+            'tournamentId': tournament.id,
+            'competitionId': competition.competition_id,
+            'seasonId': season.season_id,
+            'competitionName': competition.name,
+            'seasonName': season.name,
+            'created': True,
+            'dryRun': False,
+            'willCreate': {
+                'competition': False,
+                'season': False,
+                'tournament': True
+            }
+        }

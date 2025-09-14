@@ -12,11 +12,11 @@ from app.middleware.team_history_middleware import (
     validate_tournament_history
 )
 
-# 创建蓝图
-team_history_bp = Blueprint('team_history', __name__)
+# 创建蓝图（统一使用 /api 前缀）
+team_history_bp = Blueprint('team_history', __name__, url_prefix='/api/team-history')
 
 
-@team_history_bp.route('/api/team-history/<team_base_id>/complete', methods=['GET'])
+@team_history_bp.route('/<team_base_id>/complete', methods=['GET'])
 @validate_team_history
 def get_team_complete_history(team_base_id: str):
     """获取球队完整的跨赛季历史记录"""
@@ -24,7 +24,7 @@ def get_team_complete_history(team_base_id: str):
     return jsonify(result), 200
 
 
-@team_history_bp.route('/api/team-history/<team_base_id>/season/<int:season_id>', methods=['GET'])
+@team_history_bp.route('/<team_base_id>/season/<int:season_id>', methods=['GET'])
 @validate_team_season_performance
 def get_team_season_performance(team_base_id: str, season_id: int):
     """获取球队在指定赛季的表现"""
@@ -32,7 +32,7 @@ def get_team_season_performance(team_base_id: str, season_id: int):
     return jsonify(result), 200
 
 
-@team_history_bp.route('/api/team-history/compare', methods=['POST'])
+@team_history_bp.route('/compare', methods=['POST'])
 @validate_team_comparison
 def compare_teams_across_seasons():
     """跨赛季球队对比"""
@@ -45,7 +45,7 @@ def compare_teams_across_seasons():
     return jsonify(result), 200
 
 
-@team_history_bp.route('/api/team-history/tournament-history/<team_base_id>', methods=['GET'])
+@team_history_bp.route('/tournament-history/<team_base_id>', methods=['GET'])
 @validate_tournament_history
 def get_team_tournament_history(team_base_id: str):
     """获取球队参赛历史"""

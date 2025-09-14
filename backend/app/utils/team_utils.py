@@ -1,7 +1,4 @@
-"""
-球队工具函数模块
-提供球队相关的工具函数和数据处理功能
-"""
+"""球队工具集: 比赛类型归一化 / 名称与统计辅助。"""
 from typing import Dict, List, Any, Optional
 from datetime import datetime
 import re
@@ -12,16 +9,41 @@ logger = get_logger(__name__)
 
 
 class TeamUtils:
-    """球队工具函数类"""
+    """球队工具函数集合。"""
+
+    # 比赛类型英文规范列表
+    VALID_MATCH_TYPES = ['champions-cup', 'womens-cup', 'eight-a-side']
+    # 中英文 & 变体别名映射到规范英文
+    MATCH_TYPE_ALIAS_MAP = {
+        # 冠军/校园杯
+        '冠军杯': 'champions-cup', '校园杯': 'champions-cup',
+        # 巾帼 / 女子 杯
+        '巾帼杯': 'womens-cup', '女子杯': 'womens-cup', '女足杯': 'womens-cup',
+        # 八人制
+        '八人制': 'eight-a-side', '八人赛': 'eight-a-side', '8人制': 'eight-a-side',
+    }
+
+    @staticmethod
+    def normalize_match_type(raw: str) -> tuple[str | None, str | None]:
+        """比赛类型别名 -> 规范英文; 返回 (canonical, error)。"""
+        if not raw:
+            return 'champions-cup', None  # 默认
+        raw = str(raw).strip()
+        canonical = TeamUtils.MATCH_TYPE_ALIAS_MAP.get(raw, raw)
+        if canonical not in TeamUtils.VALID_MATCH_TYPES:
+            valid_cn = '冠军杯/校园杯, 巾帼杯/女子杯/女足杯, 八人制/八人赛/8人制'
+            valid_en = ', '.join(TeamUtils.VALID_MATCH_TYPES)
+            return None, f'无效的比赛类型({raw})。有效英文: {valid_en} | 中文: {valid_cn}'
+        return canonical, None
     
     @staticmethod
     def determine_match_type(tournament) -> str:
-        """根据赛事名称确定matchType"""
+        """从赛事名称推断 matchType。"""
         if tournament:
             tournament_name = tournament.name.lower()
-            if '冠军杯' in tournament_name or 'champions' in tournament_name:
+            if '冠军杯' in tournament_name or '校园杯' in tournament_name or 'champions' in tournament_name:
                 return 'champions-cup'
-            elif '巾帼杯' in tournament_name or 'womens' in tournament_name:
+            elif '巾帼杯' in tournament_name or '女子杯' in tournament_name or '女足杯' in tournament_name or 'womens' in tournament_name:
                 return 'womens-cup'
             elif '八人制' in tournament_name or 'eight' in tournament_name:
                 return 'eight-a-side'
@@ -32,7 +54,7 @@ class TeamUtils:
     
     @staticmethod
     def get_tournament_id_by_match_type(match_type: str) -> int:
-        """根据比赛类型获取赛事ID"""
+        """比赛类型 -> 固定 tournamentId 映射。"""
         match_type_to_tournament = {
             'champions-cup': 1,  # 冠军杯
             'womens-cup': 2,     # 巾帼杯
@@ -42,7 +64,7 @@ class TeamUtils:
     
     @staticmethod
     def format_team_name(name: str) -> str:
-        """格式化球队名称"""
+        """格式化球队名称。"""
         if not name:
             return ""
         
@@ -53,7 +75,7 @@ class TeamUtils:
     
     @staticmethod
     def validate_team_name(name: str) -> tuple[bool, str]:
-        """验证球队名称是否符合规则"""
+        """验证球队名称。"""
         if not name or not name.strip():
             return False, "球队名称不能为空"
         
@@ -73,19 +95,19 @@ class TeamUtils:
     
     @staticmethod
     def calculate_win_rate(wins: int, total_matches: int) -> float:
-        """计算胜率"""
+        """胜率。"""
         if total_matches == 0:
             return 0.0
         return round(wins / total_matches, 3)
     
     @staticmethod
     def calculate_goal_difference(goals: int, goals_conceded: int) -> int:
-        """计算净胜球"""
+        """净胜球。"""
         return goals - goals_conceded
     
     @staticmethod
     def format_player_data(player_history) -> Dict[str, Any]:
-        """格式化球员数据"""
+        """球员历史 -> 字典。"""
         if not player_history or not player_history.player:
             return {}
         
@@ -102,7 +124,7 @@ class TeamUtils:
     
     @staticmethod
     def build_team_dict_from_model(team) -> Dict[str, Any]:
-        """从团队模型构建字典数据"""
+        """模型 -> 标准化字典。"""
         if not team:
             return {}
         
@@ -136,7 +158,7 @@ class TeamUtils:
     @staticmethod
     def sort_teams_by_criteria(teams: List[Dict[str, Any]], 
                               sort_by: str = 'points') -> List[Dict[str, Any]]:
-        """按指定条件对球队列表进行排序"""
+        """简单列表排序。"""
         if not teams:
             return []
         
@@ -160,7 +182,7 @@ class TeamUtils:
     @staticmethod
     def filter_teams_by_tournament(teams: List[Dict[str, Any]], 
                                  tournament_id: int) -> List[Dict[str, Any]]:
-        """按赛事ID过滤球队"""
+        """过滤: 赛事ID。"""
         if not teams:
             return []
         return [team for team in teams if team.get('tournamentId') == tournament_id]
@@ -168,14 +190,14 @@ class TeamUtils:
     @staticmethod
     def filter_teams_by_match_type(teams: List[Dict[str, Any]], 
                                   match_type: str) -> List[Dict[str, Any]]:
-        """按比赛类型过滤球队"""
+        """过滤: 比赛类型。"""
         if not teams:
             return []
         return [team for team in teams if team.get('matchType') == match_type]
     
     @staticmethod
     def get_team_statistics(teams: List[Dict[str, Any]]) -> Dict[str, Any]:
-        """获取球队统计信息"""
+        """总体统计。"""
         if not teams:
             return {
                 'total_teams': 0,
@@ -204,7 +226,7 @@ class TeamUtils:
     
     @staticmethod
     def validate_player_data(players: List[Dict[str, Any]]) -> tuple[bool, str]:
-        """验证球员数据"""
+        """验证球员列表。"""
         if not isinstance(players, list):
             return False, "球员数据必须是列表格式"
         
@@ -249,7 +271,7 @@ class TeamUtils:
     
     @staticmethod
     def format_timestamp(timestamp) -> Optional[str]:
-        """格式化时间戳"""
+        """统一时间格式。"""
         if not timestamp:
             return None
         
@@ -264,7 +286,7 @@ class TeamUtils:
     
     @staticmethod
     def calculate_team_historical_metrics(participations_data: List[Dict[str, Any]]) -> Dict[str, Any]:
-        """计算球队历史统计指标"""
+        """聚合历史指标。"""
         if not participations_data:
             return TeamUtils._get_empty_historical_stats()
         
@@ -326,7 +348,7 @@ class TeamUtils:
     
     @staticmethod
     def _get_empty_historical_stats() -> Dict[str, Any]:
-        """返回空的历史统计数据"""
+        """空历史结构。"""
         return {
             'basic_stats': {
                 'total_tournaments': 0,
@@ -360,7 +382,7 @@ class TeamUtils:
     
     @staticmethod
     def sort_teams_by_performance_criteria(teams_data: List[Dict[str, Any]], criteria: str = 'win_rate') -> List[Dict[str, Any]]:
-        """根据性能标准对球队数据排序"""
+        """按性能标准排序。"""
         if not teams_data:
             return []
         

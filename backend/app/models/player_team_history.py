@@ -1,7 +1,9 @@
 from app.database import db
 
 class PlayerTeamHistory(db.Model):
-    """球员-队伍记录表 - 存储球员在特定赛事中的队伍归属和统计信息"""
+    """球员-队伍记录表 - 存储球员在特定赛事中的队伍归属和统计信息。
+    注意：这里的 team_id 实际指向的是 team_tournament_participation.参与ID (即某支基础球队在某赛事中的参赛实例)，
+    而不是旧结构中的 team.球队ID。因此与 Team 的关联需要通过 participation -> team_base + tournament 反查。"""
     __tablename__ = 'player_team_history'
     
     # 主键
@@ -12,9 +14,10 @@ class PlayerTeamHistory(db.Model):
                           db.ForeignKey('player.球员ID', ondelete='CASCADE'), 
                           nullable=False, comment='球员ID')
     player_number = db.Column('球员号码', db.Integer, nullable=False, comment='球员号码')
-    team_id = db.Column('球队ID', db.Integer, 
-                        db.ForeignKey('team_tournament_participation.参与ID', ondelete='CASCADE'), 
-                        nullable=True, comment='球队ID（引用team_tournament_participation表的参与ID）')
+    # 参与记录ID（外键到 team_tournament_participation.参与ID）
+    team_id = db.Column('球队ID', db.Integer,
+                        db.ForeignKey('team_tournament_participation.参与ID', ondelete='CASCADE'),
+                        nullable=True, comment='参赛记录ID（team_tournament_participation.参与ID）')
     tournament_id = db.Column('赛事ID', db.Integer, 
                              db.ForeignKey('tournament.赛事ID', ondelete='CASCADE'), 
                              nullable=False, comment='赛事ID')
@@ -40,21 +43,25 @@ class PlayerTeamHistory(db.Model):
         db.CheckConstraint('赛事黄牌数 >= 0', name='player_team_history_chk_3'),
     )
     
+    # 兼容调用：提供 team 和 team_base 动态属性用于旧代码访问
     @property
-    def team_participation(self):
-        """获取对应的队伍参赛记录"""
-        from .team_tournament_participation import TeamTournamentParticipation
-        return TeamTournamentParticipation.query.filter_by(
-            team_id=self.team_id,
-            tournament_id=self.tournament_id
-        ).first()
-    
-    @property 
+    def team(self):
+        """通过参赛记录反查 Team（如果仍然存在旧 Team 记录）。
+        如果 Team 表与新的 participation 模型并存，可尝试根据 team_base_id + tournament_id 查找。"""
+        try:
+            participation = self.team_participation
+            if not participation:
+                return None
+            from .team import Team
+            return Team.query.filter_by(team_base_id=participation.team_base_id,
+                                        tournament_id=participation.tournament_id).first()
+        except Exception:
+            return None
+
+    @property
     def team_base(self):
-        """获取队伍基础信息"""
-        if self.team:
-            return self.team.team_base
-        return None
+        participation = self.team_participation
+        return participation.team_base if participation else None
     
     def __repr__(self):
         return f'<PlayerTeamHistory {self.player_id} in Team {self.team_id}>'
@@ -67,7 +74,7 @@ class PlayerTeamHistory(db.Model):
             'player_name': self.player.name if self.player else None,
             'player_number': self.player_number,
             'team_id': self.team_id,
-            'team_name': self.team.name if self.team else None,
+            'team_name': self.team_base.name if self.team_base else None,
             'tournament_id': self.tournament_id,
             'tournament_name': self.tournament.name if self.tournament else None,
             'tournament_goals': self.tournament_goals,

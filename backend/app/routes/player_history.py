@@ -10,14 +10,14 @@ from app.middleware.player_history_middleware import (
     validate_player_comparison, validate_team_changes
 )
 
-# 创建蓝图
-player_history_bp = Blueprint('player_history', __name__)
+# 创建蓝图（统一使用 /api 前缀）
+player_history_bp = Blueprint('player_history', __name__, url_prefix='/api/player-history')
 
 # 初始化服务
 player_history_service = PlayerHistoryService()
 
 
-@player_history_bp.route('/api/player-history/<player_id>/complete', methods=['GET'])
+@player_history_bp.route('/<player_id>/complete', methods=['GET'])
 @validate_player_history
 def get_player_complete_history(player_id: str):
     """获取球员完整的跨赛季历史记录"""
@@ -25,7 +25,7 @@ def get_player_complete_history(player_id: str):
     return result, 200
 
 
-@player_history_bp.route('/api/player-history/<player_id>/season/<int:season_id>', methods=['GET'])
+@player_history_bp.route('/<player_id>/season/<int:season_id>', methods=['GET'])
 @validate_season_performance
 def get_player_season_performance(player_id: str, season_id: int):
     """获取球员在指定赛季的表现"""
@@ -33,7 +33,7 @@ def get_player_season_performance(player_id: str, season_id: int):
     return result, 200
 
 
-@player_history_bp.route('/api/player-history/compare', methods=['POST'])
+@player_history_bp.route('/compare', methods=['POST'])
 @validate_player_comparison
 def compare_players_across_seasons():
     """跨赛季球员对比"""
@@ -45,7 +45,7 @@ def compare_players_across_seasons():
     return result, 200
 
 
-@player_history_bp.route('/api/player-history/team-changes/<player_id>', methods=['GET'])
+@player_history_bp.route('/team-changes/<player_id>', methods=['GET'])
 @validate_team_changes
 def get_player_team_changes(player_id: str):
     """获取球员转队历史"""

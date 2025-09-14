@@ -45,10 +45,6 @@ def log_error(error, context=None):
 def log_security_event(event_type, details, user_id=None):
     """记录安全相关事件"""
     msg = f"Security - {event_type}: {details}"
-    if user_id:
+    if user_id is not None:
         msg += f" | User: {user_id}"
     logger.warning(msg)
-    if user_id:
-        log_msg += f" | User ID: {user_id}"
-    
-    logger.warning(log_msg)

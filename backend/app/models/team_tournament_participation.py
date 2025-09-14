@@ -44,8 +44,8 @@ class TeamTournamentParticipation(db.Model):
     tournament = db.relationship('Tournament', back_populates='team_participations')
     player_histories = db.relationship('PlayerTeamHistory', back_populates='team_participation')
     events = db.relationship('Event', back_populates='team_participation', lazy=True)
-    home_matches = db.relationship('Match', foreign_keys='Match.home_team_id', back_populates='home_team')
-    away_matches = db.relationship('Match', foreign_keys='Match.away_team_id', back_populates='away_team')
+    home_matches = db.relationship('Match', foreign_keys='Match.home_team_id', back_populates='home_team', lazy=True)
+    away_matches = db.relationship('Match', foreign_keys='Match.away_team_id', back_populates='away_team', lazy=True)
     
     # 索引和约束
     __table_args__ = (

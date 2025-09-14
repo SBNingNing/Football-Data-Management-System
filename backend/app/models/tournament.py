@@ -24,7 +24,7 @@ class Tournament(db.Model):
     # 关系
     competition = db.relationship('Competition', back_populates='tournaments')
     season = db.relationship('Season', back_populates='tournaments')
-    teams = db.relationship('Team', back_populates='tournament', lazy=True)  # 兼容性视图
+    # 不再直接 relationship 到 Team 视图（无真实外键），改用 property
     team_participations = db.relationship('TeamTournamentParticipation', back_populates='tournament', lazy=True)  # 新的关系
     matches = db.relationship('Match', back_populates='tournament', lazy=True)
     player_histories = db.relationship('PlayerTeamHistory', back_populates='tournament', lazy=True)
@@ -76,3 +76,8 @@ class Tournament(db.Model):
             'competition': self.competition.to_dict() if self.competition else None,
             'season': self.season.to_dict() if self.season else None
         }
+
+    @property
+    def teams(self):
+        from .team import Team
+        return Team.query.filter_by(tournament_id=self.id).all()

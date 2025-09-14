@@ -84,7 +84,8 @@ class AuthService:
     def create_token(user_id):
         """创建JWT令牌"""
         try:
-            token = create_access_token(identity=user_id)
+            # PyJWT 3.x 要求 sub 必须是字符串
+            token = create_access_token(identity=str(user_id))
             logger.debug(f"Token created for: {user_id}")
             return token, None
         except Exception as e:
@@ -97,8 +98,9 @@ class AuthService:
         try:
             if user_id == 'guest':
                 return {'username': 'guest', 'role': 'guest'}, None
-                
-            user = User.query.get(user_id)
+            # 兼容字符串形式的数字 ID
+            lookup_id = int(user_id) if isinstance(user_id, str) and user_id.isdigit() else user_id
+            user = User.query.get(lookup_id)
             if not user:
                 logger.warning(f"User not found: {user_id}")
                 return None, '用户不存在'
@@ -113,7 +115,7 @@ class AuthService:
     def create_guest_token():
         """创建游客令牌"""
         try:
-            token = create_access_token(identity='guest')
+            token = create_access_token(identity='guest')  # already str
             logger.info("Guest token created")
             log_security_event("GUEST_LOGIN", "Guest access")
             return token, None

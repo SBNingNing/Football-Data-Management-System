@@ -1,6 +1,4 @@
-"""
-球队服务层 - 处理球队相关业务逻辑
-"""
+"""球队服务层: 提供球队查询/创建/更新/删除与参赛实例及球员历史的组合逻辑。"""
 from typing import Dict, List, Any, Optional, Tuple
 from app.database import db
 from app.models.team import Team
@@ -9,16 +7,17 @@ from app.models.team_tournament_participation import TeamTournamentParticipation
 from app.models.player import Player
 from app.models.player_team_history import PlayerTeamHistory
 from app.utils.logging_config import get_logger
+from app.utils.team_utils import TeamUtils
 
 logger = get_logger(__name__)
 
 
 class TeamService:
-    """球队业务服务类"""
+    """球队业务逻辑入口。尽量保持方法纯粹: 读取/写入/组装数据，不放多层解释性注释。"""
     
     @staticmethod
     def get_team_by_name_new_api(team_name: str) -> Tuple[Optional[Dict[str, Any]], Optional[str]]:
-        """使用新架构根据球队名称获取统计信息"""
+        """新架构：基于 TeamBase + Participation 聚合单队全部赛季记录。"""
         try:
             team_base = TeamBase.query.filter_by(name=team_name).first()
             if not team_base:
@@ -104,7 +103,7 @@ class TeamService:
     
     @staticmethod
     def get_team_by_name(team_name: str) -> Tuple[Optional[Dict[str, Any]], Optional[str]]:
-        """根据球队名称获取统计信息和历史记录"""
+        """旧视图方式：直接从 Team 视图聚合。"""
         try:
             team_records = Team.query.filter_by(name=team_name).all()
             if not team_records:
@@ -276,174 +275,254 @@ class TeamService:
     
     @staticmethod
     def create_team(data: Dict[str, Any]) -> Tuple[Optional[Dict[str, Any]], Optional[str]]:
-        """创建球队和球员信息"""
+        """创建参赛实例: 解析/创建赛事 -> 基础球队复用 -> participation -> 球员历史。"""
         try:
-            match_type_to_tournament = {
-                'champions-cup': 1,
-                'womens-cup': 2,
-                'eight-a-side': 3
-            }
-            tournament_id = match_type_to_tournament.get(data.get('matchType', 'champions-cup'), 1)
-            
-            existing_team = Team.query.filter_by(name=data['teamName'], tournament_id=tournament_id).first()
-            if existing_team:
-                return None, '该赛事中球队名称已存在'
-            
-            new_team = Team(
-                name=data['teamName'],
+            tournament_id, terr = TeamService._resolve_or_create_tournament(data)
+            if terr:
+                return None, terr
+
+            team_name = data.get('teamName')
+            if not team_name:
+                return None, '缺少 teamName'
+
+            # 1. 基础球队：存在则复用，否则创建
+            team_base = TeamBase.query.filter_by(name=team_name).first()
+            if not team_base:
+                team_base = TeamBase(name=team_name)
+                db.session.add(team_base)
+                db.session.flush()
+
+            # 2. 检查是否已有该赛事 active participation
+            existing_participation = TeamTournamentParticipation.query.filter_by(team_base_id=team_base.id, tournament_id=tournament_id).first()
+            if existing_participation:
+                return None, '该球队已报名此赛事'
+
+            participation = TeamTournamentParticipation(
+                team_base_id=team_base.id,
                 tournament_id=tournament_id,
                 group_id=data.get('groupId')
             )
-            db.session.add(new_team)
+            db.session.add(participation)
             db.session.flush()
-            
-            players_data = data.get('players', [])
-            for player_data in players_data:
-                if player_data.get('name') and player_data.get('studentId'):
-                    player_id = player_data['studentId']
-                    
-                    existing_player = Player.query.get(player_id)
-                    if not existing_player:
-                        new_player = Player(
-                            id=player_id,
-                            name=player_data['name']
-                        )
-                        db.session.add(new_player)
-                    else:
-                        existing_player.name = player_data['name']
-                    
-                    player_history = PlayerTeamHistory(
-                        player_id=player_id,
-                        player_number=int(player_data.get('number', 1)),
-                        team_id=new_team.id,
-                        tournament_id=tournament_id
-                    )
-                    db.session.add(player_history)
-            
+
+            # 3. 处理球员
+            players_data = data.get('players', []) or []
+            for p in players_data:
+                pid = p.get('studentId') or p.get('playerId')
+                pname = p.get('name')
+                if not pid or not pname:
+                    continue
+                player = Player.query.get(pid)
+                if not player:
+                    player = Player(id=pid, name=pname)
+                    db.session.add(player)
+                else:
+                    player.name = pname
+                number = int(p.get('number') or 0) if str(p.get('number')).isdigit() else 0
+                db.session.add(PlayerTeamHistory(player_id=pid, player_number=number, team_id=participation.id, tournament_id=tournament_id))
+
             db.session.commit()
-            return TeamService._build_team_response(new_team), None
-            
+            return TeamService._build_participation_response(participation), None
         except Exception as e:
             db.session.rollback()
-            logger.error(f"Error creating team: {e}")
-            return None, f'创建失败: {str(e)}'
+            logger.error(f'Error creating team (dynamic tournament): {e}')
+            return None, f'创建失败: {e}'
     
     @staticmethod
     def update_team(team_id: int, data: Dict[str, Any]) -> Tuple[Optional[Dict[str, Any]], Optional[str]]:
-        """更新球队信息"""
+        """更新参赛实例 (team_id 即 participation.id)。"""
         try:
-            team = Team.query.get(team_id)
-            if not team:
-                return None, '球队不存在'
-            
-            old_tournament_id = team.tournament_id
-            
+            participation = TeamTournamentParticipation.query.get(team_id)
+            if not participation:
+                return None, '参赛记录不存在'
+
+            # 更新基础名称（team_base）
             if data.get('teamName'):
-                team.name = data['teamName']
-            
+                # 检查重名
+                same_name = TeamBase.query.filter(TeamBase.name == data['teamName'], TeamBase.id != participation.team_base_id).first()
+                if same_name:
+                    return None, '存在同名基础球队'
+                participation.team_base.name = data['teamName']
+
+            # 更新赛事类型（不支持直接跨赛事迁移，需删除重建）
             if data.get('matchType'):
                 match_type_to_tournament = {
                     'champions-cup': 1,
                     'womens-cup': 2,
                     'eight-a-side': 3
                 }
-                new_tournament_id = match_type_to_tournament.get(data['matchType'], 1)
-                
-                if new_tournament_id != old_tournament_id:
-                    existing_team = Team.query.filter_by(
-                        name=team.name, 
-                        tournament_id=new_tournament_id
-                    ).filter(Team.id != team_id).first()
-                    
-                    if existing_team:
-                        return None, '目标赛事中已存在同名球队'
-                    
-                    team.tournament_id = new_tournament_id
-            
-            PlayerTeamHistory.query.filter_by(team_id=team_id, tournament_id=old_tournament_id).delete()
-            if team.tournament_id != old_tournament_id:
-                PlayerTeamHistory.query.filter_by(team_id=team_id, tournament_id=team.tournament_id).delete()
-            
-            players_data = data.get('players', [])
-            for player_data in players_data:
-                if player_data.get('name') and player_data.get('studentId'):
-                    player_id = player_data['studentId']
-                    
-                    existing_player = Player.query.get(player_id)
-                    if not existing_player:
-                        new_player = Player(
-                            id=player_id,
-                            name=player_data['name']
-                        )
-                        db.session.add(new_player)
+                new_tid = match_type_to_tournament.get(data['matchType'], participation.tournament_id)
+                if new_tid != participation.tournament_id:
+                    return None, '暂不支持直接修改赛事类型，请删除后重新创建'
+
+            if 'groupId' in data:
+                participation.group_id = data.get('groupId')
+
+            # 重建球员（简单方案：全删再插）
+            if 'players' in data:
+                PlayerTeamHistory.query.filter_by(team_id=participation.id, tournament_id=participation.tournament_id).delete()
+                players_data = data.get('players') or []
+                for p in players_data:
+                    pid = p.get('studentId') or p.get('playerId')
+                    pname = p.get('name')
+                    if not pid or not pname:
+                        continue
+                    player = Player.query.get(pid)
+                    if not player:
+                        player = Player(id=pid, name=pname)
+                        db.session.add(player)
                     else:
-                        existing_player.name = player_data['name']
-                    
-                    player_history = PlayerTeamHistory(
-                        player_id=player_id,
-                        player_number=int(player_data.get('number', 1)),
-                        team_id=team_id,
-                        tournament_id=team.tournament_id
+                        player.name = pname
+                    number = int(p.get('number') or 0) if str(p.get('number')).isdigit() else 0
+                    history = PlayerTeamHistory(
+                        player_id=pid,
+                        player_number=number,
+                        team_id=participation.id,
+                        tournament_id=participation.tournament_id
                     )
-                    db.session.add(player_history)
-            
+                    db.session.add(history)
+
             db.session.commit()
-            return TeamService._build_team_response(team), None
-            
+            return TeamService._build_participation_response(participation), None
         except Exception as e:
             db.session.rollback()
-            logger.error(f"Error updating team: {e}")
-            return None, f'更新失败: {str(e)}'
-    
+            logger.error(f'Error updating team (new path): {e}')
+            return None, f'更新失败: {e}'
+
     @staticmethod
     def delete_team(team_id: int) -> Tuple[bool, Optional[str]]:
-        """删除球队"""
+        """删除参赛实例及其球员历史（不删 TeamBase）。"""
         try:
-            team = Team.query.get(team_id)
-            if not team:
-                return False, '球队不存在'
+            participation = TeamTournamentParticipation.query.get(team_id)
+            if not participation:
+                return False, '参赛记录不存在'
 
-            db.session.delete(team)
+            # 删除相关球员历史
+            PlayerTeamHistory.query.filter_by(team_id=participation.id, tournament_id=participation.tournament_id).delete()
+            db.session.delete(participation)
             db.session.commit()
-            
-            logger.info(f"Team deleted successfully: {team_id}")
             return True, None
-
         except Exception as e:
             db.session.rollback()
-            logger.error(f"Error deleting team: {e}")
-            return False, f'删除失败: {str(e)}'
+            logger.error(f'Error deleting team (new path): {e}')
+            return False, f'删除失败: {e}'
     
     @staticmethod
     def _build_team_response(team: Team) -> Dict[str, Any]:
-        """构建球队响应数据"""
-        team_dict = team.to_dict()
-        team_dict['teamName'] = team_dict['name']
-        
-        team_players = []
-        for history in PlayerTeamHistory.query.filter_by(team_id=team.id, tournament_id=team.tournament_id).all():
-            team_players.append({
-                'name': history.player.name,
-                'playerId': history.player_id,
-                'studentId': history.player_id,
-                'id': history.player_id,
-                'number': str(history.player_number),
-                'goals': history.tournament_goals,
-                'redCards': history.tournament_red_cards,
-                'yellowCards': history.tournament_yellow_cards
+        """旧视图兼容响应构造。"""
+        participation = TeamTournamentParticipation.query.get(team.id)
+        if not participation:
+            # 退化：使用视图字段简单返回
+            return {
+                'id': team.id,
+                'teamName': team.name,
+                'tournamentId': team.tournament_id,
+                'tournamentName': team.tournament.name if team.tournament else None,
+                'groupId': team.group_id,
+                'rank': team.tournament_rank,
+                'goals': team.tournament_goals,
+                'goalsConceded': team.tournament_goals_conceded,
+                'goalDifference': team.tournament_goal_difference,
+                'redCards': team.tournament_red_cards,
+                'yellowCards': team.tournament_yellow_cards,
+                'points': team.tournament_points,
+                'players': [],
+                'matchesPlayed': team.matches_played,
+                'wins': team.wins,
+                'draws': team.draws,
+                'losses': team.losses
+            }
+        return TeamService._build_participation_response(participation)
+    
+    @staticmethod
+    def _build_participation_response(participation: TeamTournamentParticipation) -> Dict[str, Any]:
+        team_base = participation.team_base
+        tournament = participation.tournament
+        histories = PlayerTeamHistory.query.filter_by(team_id=participation.id, tournament_id=participation.tournament_id).all()
+        players = []
+        for h in histories:
+            players.append({
+                'name': h.player.name if h.player else None,
+                'playerId': h.player_id,
+                'studentId': h.player_id,
+                'id': h.player_id,
+                'number': str(h.player_number),
+                'goals': h.tournament_goals,
+                'redCards': h.tournament_red_cards,
+                'yellowCards': h.tournament_yellow_cards
             })
-        
-        team_dict['players'] = team_players
-        team_dict.update({
-            'rank': team.tournament_rank,
-            'goals': team.tournament_goals,
-            'goalsConceded': team.tournament_goals_conceded,
-            'goalDifference': team.tournament_goal_difference,
-            'redCards': team.tournament_red_cards,
-            'yellowCards': team.tournament_yellow_cards,
-            'points': team.tournament_points,
-            'tournamentId': team.tournament_id,
-            'tournamentName': team.tournament.name if team.tournament else None
-        })
-        
-        return team_dict
+        return {
+            'id': participation.id,
+            'teamName': team_base.name if team_base else None,
+            'tournamentId': participation.tournament_id,
+            'tournamentName': tournament.name if tournament else None,
+            'groupId': participation.group_id,
+            'rank': participation.tournament_rank,
+            'goals': participation.tournament_goals,
+            'goalsConceded': participation.tournament_goals_conceded,
+            'goalDifference': participation.tournament_goal_difference,
+            'redCards': participation.tournament_red_cards,
+            'yellowCards': participation.tournament_yellow_cards,
+            'points': participation.tournament_points,
+            'players': players,
+            'matchesPlayed': participation.matches_played,
+            'wins': participation.wins,
+            'draws': participation.draws,
+            'losses': participation.losses
+        }
+    
+    @staticmethod
+    def _resolve_or_create_tournament(data: Dict[str, Any]) -> Tuple[Optional[int], Optional[str]]:
+        """解析/创建赛事: 优先 tournamentId > (competitionName+seasonName) > matchType 映射。"""
+        from app.models.tournament import Tournament
+        from app.models.competition import Competition
+        from app.models.season import Season
+        from datetime import datetime, timedelta
+
+        if 'tournamentId' in data and data['tournamentId']:
+            t = Tournament.query.get(data['tournamentId'])
+            return (t.id, None) if t else (None, '指定 tournamentId 不存在')
+
+        comp_name = data.get('competitionName')
+        season_name = data.get('seasonName')
+        if comp_name and season_name:
+            comp = Competition.query.filter_by(name=comp_name).first()
+            if not comp:
+                comp = Competition(name=comp_name)
+                db.session.add(comp)
+                db.session.flush()
+            season = Season.query.filter_by(name=season_name).first()
+            if not season:
+                start = datetime.utcnow()
+                end = start + timedelta(days=90)
+                season = Season(name=season_name, start_time=start, end_time=end)
+                db.session.add(season)
+                db.session.flush()
+            existing = Tournament.query.filter_by(competition_id=comp.competition_id, season_id=season.season_id).first()
+            if existing:
+                return existing.id, None
+            new_t = Tournament(competition_id=comp.competition_id, season_id=season.season_id)
+            db.session.add(new_t)
+            db.session.flush()
+            return new_t.id, None
+
+        # fallback: matchType (支持中文/别名)
+        raw_type = data.get('matchType', 'champions-cup')
+        canonical, mt_err = TeamUtils.normalize_match_type(raw_type)
+        if mt_err:
+            return None, mt_err + '；或提供 competitionName+seasonName'
+
+        match_type_to_tournament = {
+            'champions-cup': 1,
+            'womens-cup': 2,
+            'eight-a-side': 3
+        }
+        tid = match_type_to_tournament.get(canonical)
+        if tid is None:
+            valid_cn = ['冠军杯/校园杯', '巾帼杯/女子杯/女足杯', '八人制/八人赛/8人制']
+            valid_en = list(match_type_to_tournament.keys())
+            return None, f"无效的比赛类型({raw_type})。有效类型(英文): {', '.join(valid_en)} | (中文): {', '.join(valid_cn)}；或提供 competitionName+seasonName"
+        from app.models.tournament import Tournament as T
+        if not T.query.get(tid):
+            return None, f'目标赛事不存在 (ID={tid})，请提供 competitionName+seasonName 创建'
+        return tid, None
