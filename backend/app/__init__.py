@@ -1,32 +1,33 @@
 from flask import Flask
 from flask_cors import CORS
 from app.config import Config
-from app.database import db, jwt
+from app.extensions import init_extensions, db, jwt
 from app.utils.logger import get_logger
 from app.utils.logging_config import setup_logging
+from app.errors import register_error_handlers
+from flask import g
+from app.middleware.context_middleware import ensure_request_context
 
 logger = get_logger(__name__)
 
 def create_app(config_class=Config):
     app = Flask(__name__)
     app.config.from_object(config_class)
-    
-    # 设置日志配置（在应用配置之后立即设置）
+
+    # 设置日志配置
     setup_logging(app)
-    
-    # 添加应用基本信息
-    app.config['APP_NAME'] = 'Football Management System'
-    app.config['APP_VERSION'] = '1.0.0'
-    
-    # 验证配置
+    app.config.setdefault('APP_NAME', 'Football Management System')
+    app.config.setdefault('APP_VERSION', '1.0.0')
+
+    # 配置校验
     config_errors = config_class.validate_config()
     if config_errors:
         logger.warning(f"配置验证警告: {', '.join(config_errors)}")
-    
-    db.init_app(app)
-    jwt.init_app(app)
-    
-    # 使用配置文件中的CORS设置
+
+    # 扩展初始化
+    init_extensions(app)
+
+    # CORS 统一策略
     CORS(app, resources={
         r"/api/*": {
             "origins": app.config.get('CORS_ORIGINS', ["http://localhost:3000", "http://localhost:8080"]),
@@ -34,44 +35,34 @@ def create_app(config_class=Config):
             "allow_headers": app.config.get('CORS_HEADERS', ["Content-Type", "Authorization"])
         }
     })
-    
-    # 导入模型以确保它们被注册
-    from app.models import (
-        User, Match, Player, Event, Team, TeamBase, Tournament, 
-        Competition, Season, PlayerTeamHistory, TeamTournamentParticipation
-    )
-    
-    # 注册蓝图
-    from app.routes.auth import auth_bp
-    from app.routes.matches import matches_bp
-    from app.routes.events import events_bp
-    from app.routes.teams import teams_bp
-    from app.routes.tournaments import tournaments_bp
-    from app.routes.competitions import competitions_bp
-    from app.routes.seasons import seasons_bp
-    from app.routes.player_history import player_history_bp
-    from app.routes.team_history import team_history_bp
-    from app.routes.stats import stats_bp
-    
-    app.register_blueprint(auth_bp, url_prefix='/api/auth')
-    app.register_blueprint(matches_bp, url_prefix='/api/matches')
-    app.register_blueprint(events_bp, url_prefix='/api/events')
-    app.register_blueprint(teams_bp, url_prefix='/api/teams')
-    app.register_blueprint(tournaments_bp, url_prefix='/api/tournaments')
-    app.register_blueprint(competitions_bp, url_prefix='/api/competitions')
-    app.register_blueprint(seasons_bp, url_prefix='/api/seasons')
-    app.register_blueprint(player_history_bp, url_prefix='/api/player_history')
-    app.register_blueprint(team_history_bp, url_prefix='/api/team_history')
-    # stats_bp已经包含url_prefix='/api'，所以不需要额外添加
-    app.register_blueprint(stats_bp)
-    
-    # 注册球员路由
+
+    # request context middleware (before_request hook)
+    @app.before_request
+    def _inject_ctx():  # pragma: no cover - 简单注入逻辑
+        ensure_request_context()
+
+    # 导入模型确保元数据注册
+    from app import models  # noqa: F401
+
+    # 注册蓝图集合
+    from app.routes import auth, matches, events, teams, tournaments, competitions, seasons, player_history, team_history, stats, health
+    app.register_blueprint(auth.auth_bp, url_prefix='/api/auth')
+    app.register_blueprint(matches.matches_bp, url_prefix='/api/matches')
+    app.register_blueprint(events.events_bp, url_prefix='/api/events')
+    app.register_blueprint(teams.teams_bp, url_prefix='/api/teams')
+    app.register_blueprint(tournaments.tournaments_bp, url_prefix='/api/tournaments')
+    app.register_blueprint(competitions.competitions_bp, url_prefix='/api/competitions')
+    app.register_blueprint(seasons.seasons_bp, url_prefix='/api/seasons')
+    app.register_blueprint(player_history.player_history_bp, url_prefix='/api/player_history')
+    app.register_blueprint(team_history.team_history_bp, url_prefix='/api/team_history')
+    app.register_blueprint(stats.stats_bp, url_prefix='/api')
+    app.register_blueprint(health.health_bp, url_prefix='/api')
     try:
-        from app.routes.players import players_bp
-        app.register_blueprint(players_bp, url_prefix='/api/players')
-    except ImportError as e:
-        logger.error(f"注册球员路由失败: {e}")
-    except Exception as e:
-        logger.error(f"球员路由注册过程中出现异常: {e}")
-        
+        from app.routes import players
+        app.register_blueprint(players.players_bp, url_prefix='/api/players')
+    except Exception as e:  # pragma: no cover
+        logger.error(f"球员路由注册失败: {e}")
+
+    register_error_handlers(app)
     return app
+

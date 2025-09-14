@@ -86,9 +86,9 @@ class TeamTournamentParticipation(db.Model):
         
         # 如果需要计算统计数据，使用 Service 层
         if include_calculated_stats:
-            from app.services.football_statistics_service import FootballStatisticsService
-            calculated_stats = FootballStatisticsService.calculate_team_participation_stats(self)
-            base_data['calculated_stats'] = calculated_stats['calculated_stats']
+            from app.services.participation_stats_service import ParticipationStatsService
+            stats = ParticipationStatsService.calculate_participation_metrics(self)
+            base_data['calculated_stats'] = stats
         
         return base_data
     

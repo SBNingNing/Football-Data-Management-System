@@ -2,7 +2,7 @@
 from .auth_service import AuthService
 from .competition_service import CompetitionService
 from .event_service import EventService
-from .football_statistics_service import FootballStatisticsService
+from .participation_stats_service import ParticipationStatsService
 from .match_service import MatchService
 from .player_history_service import PlayerHistoryService
 from .player_service import PlayerService
@@ -17,7 +17,7 @@ __all__ = [
     'AuthService',
     'CompetitionService', 
     'EventService',
-    'FootballStatisticsService',
+    'ParticipationStatsService',
     'MatchService',
     'PlayerHistoryService',
     'PlayerService',

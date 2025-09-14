@@ -4,9 +4,10 @@
 """
 
 import os
-from app import create_app, db
-from app.main import get_app_info, validate_app_configuration
+from app import create_app
+from app.extensions import db
 from app.config import get_config
+from app.utils.app_diagnostics import get_app_info, validate_app_configuration
 
 
 def main():
@@ -25,17 +26,15 @@ def main():
     
     try:
         logger.info(f"启动环境: {env}")
-        
-        # 验证应用配置
-        is_valid, errors = validate_app_configuration(app)
-        if not is_valid:
-            logger.error(f"应用配置验证失败: {errors}")
-            return
-        
-        # 打印应用信息
-        app_info = get_app_info(app)
-        logger.info(f"应用信息: {app_info['app_name']} v{app_info['app_version']}")
-        logger.info(f"注册的蓝图: {app_info['registered_blueprints']}")
+
+        # 运行配置验证（非阻断式，记录问题以便运维）
+        ok, config_errors = validate_app_configuration(app)
+        if not ok:
+            for err in config_errors:
+                logger.warning(f"配置校验告警: {err}")
+        info = get_app_info(app)
+        logger.info(f"App: {info['app_name']} v{info['app_version']} | Blueprints: {len(info['registered_blueprints'])}")
+        logger.debug(f"已注册蓝图: {info['registered_blueprints']}")
         
         # 创建数据库表
         # 创建数据库表
