@@ -1,6 +1,6 @@
 from app.database import db
 from app.models.competition import Competition
-from app.utils.logging_config import get_logger
+from app.utils.logger import get_logger
 from app.middleware.error_middleware import log_error
 from sqlalchemy.exc import IntegrityError
 

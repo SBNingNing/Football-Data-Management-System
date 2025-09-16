@@ -56,8 +56,6 @@
 <script>
 import { 
   Guide, 
-  Plus, 
-  Minus, 
   House, 
   Trophy, 
   Medal, 
@@ -71,8 +69,6 @@ export default {
   name: 'QuickNavigator',
   components: {
     Guide,
-    Plus,
-    Minus,
     House,
     Trophy,
     Medal,

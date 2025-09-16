@@ -10,8 +10,8 @@ from app.middleware.player_history_middleware import (
     validate_player_comparison, validate_team_changes
 )
 
-# 创建蓝图（统一使用 /api 前缀）
-player_history_bp = Blueprint('player_history', __name__, url_prefix='/api/player-history')
+# 创建蓝图（前缀在 create_app 中统一指定）
+player_history_bp = Blueprint('player_history', __name__)
 
 # 初始化服务
 player_history_service = PlayerHistoryService()

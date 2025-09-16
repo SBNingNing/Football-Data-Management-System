@@ -6,7 +6,7 @@ from app.models.team_base import TeamBase
 from app.models.team_tournament_participation import TeamTournamentParticipation
 from app.models.player import Player
 from app.models.player_team_history import PlayerTeamHistory
-from app.utils.logging_config import get_logger
+from app.utils.logger import get_logger
 from app.utils.team_utils import TeamUtils
 
 logger = get_logger(__name__)

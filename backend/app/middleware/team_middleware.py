@@ -2,7 +2,7 @@
 from functools import wraps
 from flask import request, jsonify
 from typing import Dict, Any
-from app.utils.logging_config import get_logger
+from app.utils.logger import get_logger
 from app.utils.team_utils import TeamUtils
 
 logger = get_logger(__name__)

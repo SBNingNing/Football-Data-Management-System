@@ -21,7 +21,7 @@
             class="search-input"
           >
             <template #prefix>
-              <el-icon><Search /></el-icon>
+              <el-icon><IconSearch /></el-icon>
             </template>
           </el-input>
         </el-col>
@@ -128,7 +128,8 @@
               </div>
             </div>
             <div class="team-card-overlay">
-              <el-icon><View /></el-icon>
+              <!-- 原使用 View 图标，已移除未用注册，统一采用 Trophy -->
+              <el-icon><Trophy /></el-icon>
               <span>查看详情</span>
             </div>
           </el-card>
@@ -153,35 +154,32 @@
 
 <script>
 import { 
-  Search, 
+  Search as IconSearch, 
   Refresh, 
   User, 
   UserFilled, 
   Trophy, 
   Flag, 
   Calendar, 
-  View,
-  Close,
-  Minus,
   Football,
   Medal,
   Warning
 } from '@element-plus/icons-vue';
-import axios from 'axios';
+// 使用统一 domain service + httpClient
+import logger from '@/utils/logger';
+import { fetchTeams as fetchTeamList } from '@/domain/team/teamService';
+import { getMatchTypeLabel } from '@/constants/domain';
 
 export default {
   name: 'TeamSearch',
   components: {
-    Search,
+  IconSearch,
     Refresh,
     User,
     UserFilled,
     Trophy,
     Flag,
     Calendar,
-    View,
-    Close,
-    Minus,
     Football,
     Medal,
     Warning
@@ -213,68 +211,25 @@ export default {
   },
   methods: {
     async fetchTeams() {
+      this.loading = true;
+      logger.info('开始获取球队数据...');
       try {
-        this.loading = true;
-        console.log('开始获取球队数据...');
-        
-        const response = await axios.get('/api/teams', {
-          timeout: 15000,
-          headers: {
-            'Cache-Control': 'no-cache',
-            'Pragma': 'no-cache'
-          }
-        });
-        
-        console.log('球队API原始响应:', response.data);
-        
-        if (response.data?.status === 'success') {
-          this.teams = response.data.data || [];
-          console.log('成功获取球队数据:', this.teams.length, '支球队');
-          
-          // 处理球队数据，确保字段一致性和完整性
-          this.teams = this.teams.map(team => ({
-            ...team,
-            // 确保关键字段存在，使用后端返回的字段名
-            id: team.id || `team_${Math.random().toString(36).substr(2, 9)}`,
-            teamName: team.teamName || team.name || '未知球队',
-            matchType: team.matchType || 'champions-cup',
-            tournamentId: team.tournamentId || team.tournament_id,
-            tournamentName: team.tournamentName || team.tournament_name,
-            rank: team.rank || team.tournament_rank,
-            goals: team.goals || team.tournament_goals || 0,
-            goalsConceded: team.goalsConceded || team.tournament_goals_conceded || 0,
-            goalDifference: team.goalDifference || team.tournament_goal_difference || 0,
-            points: team.points || team.tournament_points || 0,
-            yellowCards: team.yellowCards || team.tournament_yellow_cards || 0,
-            redCards: team.redCards || team.tournament_red_cards || 0,
-            players: team.players || []
-          }));
-          
-          // 提取可用的赛事列表
-          this.extractAvailableTournaments();
-          
-          console.log('处理后的球队数据:', this.teams);
-          
-          // 初始化过滤
-          this.filterTeams();
-          
-        } else {
-          console.warn('意外的响应格式:', response.data);
+        const { ok, data, error } = await fetchTeamList();
+        if (!ok) {
+          const message = error?.message || '获取球队列表失败';
+          logger.warn('[TeamSearch] 获取失败', error);
+          this.$message.error(message);
           this.teams = [];
+          return;
         }
-      } catch (error) {
-        console.error('获取球队列表失败:', error);
-        
-        let errorMessage = '获取球队列表失败';
-        if (error.response?.status === 404) {
-          errorMessage = '球队接口不存在，请检查后端服务';
-        } else if (error.response?.status === 500) {
-          errorMessage = '服务器内部错误，请稍后重试';
-        } else if (error.request) {
-          errorMessage = '网络连接失败，请检查网络设置';
-        }
-        
-        this.$message.error(errorMessage);
+        this.teams = data;
+        logger.info('成功获取球队数据:', this.teams.length, '支球队');
+        this.extractAvailableTournaments();
+        logger.debug('处理后的球队数据:', this.teams);
+        this.filterTeams();
+      } catch (e) {
+        logger.error('获取球队列表异常:', e);
+        this.$message.error('获取球队列表失败');
         this.teams = [];
       } finally {
         this.loading = false;
@@ -340,24 +295,17 @@ export default {
       this.totalTeams = filtered.length;
       this.currentPage = 1;
       
-      console.log(`过滤后找到 ${this.filteredTeams.length} 支球队`);
+  logger.debug(`过滤后找到 ${this.filteredTeams.length} 支球队`);
     },
 
-    getMatchTypeLabel(matchType) {
-      const labels = {
-        'champions-cup': '冠军杯',
-        'womens-cup': '巾帼杯',
-        'eight-a-side': '八人制'
-      };
-      return labels[matchType] || matchType;
-    },
+    getMatchTypeLabel,
 
     navigateToTeamDetail(team) {
-      console.log('点击球队:', team);
+  logger.debug('点击球队:', team);
       
       // 确保球队数据完整性
       if (!team.teamName) {
-        console.error('球队信息不完整:', team);
+  logger.error('球队信息不完整:', team);
         this.$message.error('球队信息不完整，无法查看详情');
         return;
       }
@@ -389,15 +337,15 @@ export default {
           teamData: JSON.stringify(teamData)
         }
       }).then(() => {
-        console.log('成功跳转到球队详情页');
+        logger.info('成功跳转到球队详情页');
       }).catch(err => {
-        console.error('路由跳转失败:', err);
+        logger.error('路由跳转失败:', err);
         this.$message.error('页面跳转失败，请检查路由配置');
       });
     },
 
     async refreshTeams() {
-      console.log('手动刷新球队数据');
+      logger.info('手动刷新球队数据');
       this.searchKeyword = '';
       this.selectedMatchType = '';
       this.selectedTournament = '';

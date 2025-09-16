@@ -19,8 +19,20 @@ def create_app(config_class=Config):
     app.config.setdefault('APP_NAME', 'Football Management System')
     app.config.setdefault('APP_VERSION', '1.0.0')
 
-    # 配置校验
-    config_errors = config_class.validate_config()
+    # 在开发环境，如果未设置安全密钥，则自动生成一次性随机密钥，避免误用默认弱密钥
+    try:
+        if app.config.get('DEBUG', False):
+            import secrets
+            if not app.config.get('SECRET_KEY') or app.config.get('SECRET_KEY') == 'dev-key-should-be-changed':
+                app.config['SECRET_KEY'] = secrets.token_urlsafe(32)
+            if not app.config.get('JWT_SECRET_KEY') or app.config.get('JWT_SECRET_KEY') == 'jwt-dev-key-change-in-production':
+                app.config['JWT_SECRET_KEY'] = secrets.token_urlsafe(32)
+    except Exception:
+        # 生成失败不阻断启动
+        pass
+
+    # 配置校验（使用运行时 app.config 进行校验，避免因为默认值导致的误报）
+    config_errors = config_class.validate_config(app.config)
     if config_errors:
         logger.warning(f"配置验证警告: {', '.join(config_errors)}")
 
@@ -53,8 +65,8 @@ def create_app(config_class=Config):
     app.register_blueprint(tournaments.tournaments_bp, url_prefix='/api/tournaments')
     app.register_blueprint(competitions.competitions_bp, url_prefix='/api/competitions')
     app.register_blueprint(seasons.seasons_bp, url_prefix='/api/seasons')
-    app.register_blueprint(player_history.player_history_bp, url_prefix='/api/player_history')
-    app.register_blueprint(team_history.team_history_bp, url_prefix='/api/team_history')
+    app.register_blueprint(player_history.player_history_bp, url_prefix='/api/player-history')
+    app.register_blueprint(team_history.team_history_bp, url_prefix='/api/team-history')
     app.register_blueprint(stats.stats_bp, url_prefix='/api')
     app.register_blueprint(health.health_bp, url_prefix='/api')
     try:

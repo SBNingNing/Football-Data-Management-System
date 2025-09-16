@@ -1,11 +1,13 @@
 """
 球员路由层 - 专注于HTTP请求处理和响应
 """
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request
 from flask_jwt_extended import jwt_required
 from app.services.player_service import PlayerService
-from app.middleware.player_middleware import validate_player_creation_data, validate_player_id
+from app.middleware.player_middleware import validate_player_id
 from app.utils.logger import get_logger
+from app.utils.response import success_response, error_response
+from app.schemas.player import PlayerCreate, PlayerUpdate
 
 players_bp = Blueprint('players', __name__)
 logger = get_logger(__name__)
@@ -16,18 +18,10 @@ def get_players():
     """获取所有球员信息（公共接口）"""
     try:
         players_data = PlayerService.get_all_players()
-        return jsonify({
-            'status': 'success', 
-            'data': players_data,
-            'total': len(players_data)
-        }), 200
+        return success_response(players_data, message='获取球员信息成功', meta={'total': len(players_data)})
     except Exception as e:
         logger.error(f"获取球员列表失败: {str(e)}", exc_info=True)
-        return jsonify({
-            'status': 'error', 
-            'message': f'获取球员信息失败: {str(e)}',
-            'data': []
-        }), 500
+        return error_response('PLAYER_LIST_ERROR', '获取球员信息失败', 500, detail=str(e))
 
 
 @players_bp.route('/<string:player_id>', methods=['GET'])
@@ -37,32 +31,36 @@ def get_player(player_id):
     try:
         player_data = PlayerService.get_player_by_id(player_id)
         if not player_data:
-            return jsonify({'status': 'error', 'message': '球员不存在'}), 404
-        
-        return jsonify({'status': 'success', 'data': player_data}), 200
+            return error_response('PLAYER_NOT_FOUND', '球员不存在', 404)
+        return success_response(player_data, message='获取球员信息成功')
     except Exception as e:
         logger.error(f"获取球员 {player_id} 信息失败: {str(e)}", exc_info=True)
-        return jsonify({'status': 'error', 'message': f'获取失败: {str(e)}'}), 500
+        return error_response('PLAYER_DETAIL_ERROR', '获取失败', 500, detail=str(e))
 
 
 @players_bp.route('', methods=['POST'])
 @jwt_required()
-@validate_player_creation_data
 def create_player():
     """创建球员信息"""
     try:
-        data = request.get_json()
-        new_player = PlayerService.create_player(data)
-        return jsonify({
-            'status': 'success', 
-            'message': '球员创建成功',
-            'data': new_player.to_dict()
-        }), 201
+        payload = request.get_json() or {}
+        model = PlayerCreate(**payload)
+        new_player = PlayerService.create_player({
+            'name': model.name,
+            'studentId': model.student_id
+        })
+        return success_response(new_player.to_dict(), message='球员创建成功', status_code=201)
     except ValueError as e:
-        return jsonify({'status': 'error', 'message': str(e)}), 400
+        return error_response('PLAYER_CREATE_CONFLICT', str(e), 400)
     except Exception as e:
+        try:
+            from pydantic import ValidationError  # type: ignore
+            if isinstance(e, ValidationError):
+                return error_response('VALIDATION_ERROR', '参数验证失败', 400, detail=e.errors())
+        except Exception:
+            pass
         logger.error(f"创建球员失败: {str(e)}", exc_info=True)
-        return jsonify({'status': 'error', 'message': f'创建失败: {str(e)}'}), 500
+        return error_response('PLAYER_CREATE_ERROR', '创建失败', 500, detail=str(e))
 
 
 @players_bp.route('/<string:player_id>', methods=['PUT'])
@@ -71,14 +69,22 @@ def create_player():
 def update_player(player_id):
     """更新球员信息"""
     try:
-        data = request.get_json()
-        PlayerService.update_player(player_id, data)
-        return jsonify({'status': 'success', 'message': '更新成功'}), 200
+        payload = request.get_json() or {}
+        from pydantic import ValidationError  # type: ignore
+        model = PlayerUpdate(**payload)
+        PlayerService.update_player(player_id, model.dict(exclude_unset=True, by_alias=True))
+        return success_response(message='更新成功')
     except ValueError as e:
-        return jsonify({'status': 'error', 'message': str(e)}), 404
+        return error_response('PLAYER_NOT_FOUND', str(e), 404)
     except Exception as e:
+        try:
+            from pydantic import ValidationError  # type: ignore
+            if isinstance(e, ValidationError):
+                return error_response('VALIDATION_ERROR', '参数验证失败', 400, detail=e.errors())
+        except Exception:
+            pass
         logger.error(f"更新球员 {player_id} 失败: {str(e)}", exc_info=True)
-        return jsonify({'status': 'error', 'message': f'更新失败: {str(e)}'}), 500
+        return error_response('PLAYER_UPDATE_ERROR', '更新失败', 500, detail=str(e))
 
 
 @players_bp.route('/<string:player_id>', methods=['DELETE'])
@@ -88,9 +94,9 @@ def delete_player(player_id):
     """删除球员"""
     try:
         PlayerService.delete_player(player_id)
-        return jsonify({'status': 'success', 'message': '删除成功'}), 200
+        return success_response(message='删除成功')
     except ValueError as e:
-        return jsonify({'status': 'error', 'message': str(e)}), 404
+        return error_response('PLAYER_NOT_FOUND', str(e), 404)
     except Exception as e:
         logger.error(f"删除球员 {player_id} 失败: {str(e)}", exc_info=True)
-        return jsonify({'status': 'error', 'message': f'删除失败: {str(e)}'}), 500
+        return error_response('PLAYER_DELETE_ERROR', '删除失败', 500, detail=str(e))

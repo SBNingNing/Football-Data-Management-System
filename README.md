@@ -13,13 +13,13 @@
 
 ## 技术栈详情
 
-### 前端技术栈
-- **框架**: Vue.js 3
-- **UI组件库**: Element Plus
-- **状态管理**: Vuex/Pinia
-- **路由**: Vue Router
-- **HTTP客户端**: Axios
-- **构建工具**: Vite
+### 前端技术栈 (概要)
+- Vue 3 + Vite + Element Plus
+- 状态管理：Pinia (早期部分代码可能仍含 Vuex/旧 store 痕迹)
+- 路由：Vue Router
+- HTTP：统一封装 httpClient (axios 包装 + 缓存/错误标准化)
+
+更完整的前端分层、组合式与常量策略见 `frontend/frontend-ARCHITECTURE.md`。
 
 ### 后端技术栈
 - **框架**: Flask 2.0+
@@ -211,6 +211,18 @@
 4. 前端页面开发
 5. 系统集成与测试
 6. 部署与上线
+
+
+## 前端架构与状态说明
+前端更详细的架构（服务层/常量/组合式/反馈模式规划）、状态拆分与迁移策略不再在主 README 展开，集中维护于：
+`frontend/frontend-ARCHITECTURE.md`
+
+若参与前端开发，请首先阅读该文件以了解：
+1. 目录分层与命名约定
+2. 领域 service 与 httpClient 使用规范
+3. 比赛/事件常量统一来源
+4. 待落地的组合式规划 (滚动恢复、反馈统一)
+5. 遗留文件清理策略
 
 
 

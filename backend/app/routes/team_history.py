@@ -12,8 +12,8 @@ from app.middleware.team_history_middleware import (
     validate_tournament_history
 )
 
-# 创建蓝图（统一使用 /api 前缀）
-team_history_bp = Blueprint('team_history', __name__, url_prefix='/api/team-history')
+# 创建蓝图（前缀在 create_app 中统一指定）
+team_history_bp = Blueprint('team_history', __name__)
 
 
 @team_history_bp.route('/<team_base_id>/complete', methods=['GET'])

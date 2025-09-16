@@ -1,5 +1,6 @@
 import axios from 'axios'
 import { ElMessage } from 'element-plus'
+import logger from '@/utils/logger'
 
 // 创建axios实例
 const service = axios.create({
@@ -10,8 +11,8 @@ const service = axios.create({
 // 请求拦截器
 service.interceptors.request.use(
   config => {
-    console.log('发送请求:', config.method?.toUpperCase(), config.url)
-    console.log('请求配置:', config)
+  logger.debug('[request] 发送', config.method?.toUpperCase(), config.url)
+  logger.debug('[request] 配置', config)
     
     // 如果有token，添加到请求头
     const token = localStorage.getItem('token')
@@ -21,7 +22,7 @@ service.interceptors.request.use(
     return config
   },
   error => {
-    console.error('请求拦截器错误:', error)
+  logger.error('[request] 请求拦截器错误', error)
     return Promise.reject(error)
   }
 )
@@ -29,11 +30,11 @@ service.interceptors.request.use(
 // 响应拦截器
 service.interceptors.response.use(
   response => {
-    console.log('收到响应:', response.status, response.data)
+  logger.debug('[request] 响应', response.status)
     return response
   },
   error => {
-    console.error('响应错误:', error)
+  logger.error('[request] 响应错误', error)
     
     if (error.code === 'ECONNABORTED') {
       ElMessage.error('请求超时，请检查网络连接')

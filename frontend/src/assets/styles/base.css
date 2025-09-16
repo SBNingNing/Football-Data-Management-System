@@ -1,0 +1,97 @@
+/* =====================================================================
+ * 文件: base.css (全局基础样式 / 结构与工具类)
+ * 作用:
+ *   1. 提供轻量 Reset（不做侵入性重置，避免破坏第三方组件默认行为）。
+ *   2. 定义通用布局/间距/对齐工具类 (.u-flex / .u-gap-16 等)。
+ *   3. 提供可复用的结构型样式骨架（渐变头部 / 统计卡片 / 时间线 / 通用徽章）。
+ * 使用建议:
+ *   - 组件内若存在大量重复结构，可优先尝试使用这里的基础类再做少量覆写。
+ *   - 不要在此加入强业务耦合的选择器（例如特定页面 ID）。
+ *   - 若新增工具类，请保持命名语义与最小职责（单一功能）。
+ *   - 与 variables.css 配合：通过 var(--token) 替代硬编码色值与尺寸。
+ * 版本记录:
+ *   - v1: 初始创建，包含基础布局、渐变头部、统计卡、徽章、时间线。
+ * ===================================================================== */
+html, body, #app {
+  margin: 0;
+  padding: 0;
+  min-height: 100%;
+  font-family: var(--font-family-base);
+  background: var(--color-neutral-200);
+}
+
+body {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Utility classes */
+.u-flex { display: flex; }
+.u-flex-center { display: flex; align-items: center; justify-content: center; }
+.u-flex-between { display: flex; justify-content: space-between; }
+.u-gap-8 { gap: 8px; }
+.u-gap-16 { gap: 16px; }
+.u-mt-20 { margin-top: 20px; }
+.u-text-muted { color: var(--color-neutral-600); }
+
+/* Gradient header helper (apply plus color modifier) */
+.gradient-header {
+  position: relative;
+  color: #fff;
+  padding: 30px 20px;
+  border-radius: var(--radius-md);
+  text-align: center;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+}
+.gradient-header--blue {
+  background: linear-gradient(135deg, var(--color-primary-gradient-start) 0%, var(--color-primary-gradient-end) 100%);
+}
+.gradient-header--green {
+  background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%);
+}
+
+/* Stat card skeleton */
+.stat-card {
+  display: flex;
+  align-items: center;
+  height: 100px;
+  padding: 15px;
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-card);
+  transition: transform 0.2s ease;
+  width: 100%;
+  background: #fff;
+}
+.stat-card:hover { transform: translateY(-2px); }
+
+/* Stat card variants (替代内联背景色) */
+.stat-card--goals { background:#1e88e5; color:#fff; }
+.stat-card--yellow { background:#f39c12; color:#fff; }
+.stat-card--red { background:#e74c3c; color:#fff; }
+
+/* Generic badge */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+}
+.badge--goal { background:#e8f5e8; color:#67c23a; }
+.badge--yellow { background:#fdf6ec; color:#e6a23c; }
+.badge--red { background:#fef0f0; color:#f56c6c; }
+.badge--own { background:#fff3e0; color:#ff9800; }
+
+/* Timeline base */
+.timeline { position: relative; }
+.timeline::before { content:''; position:absolute; left:30px; top:0; bottom:0; width:2px; background:#e4e7ed; }
+.timeline-item { position:relative; padding:15px 0 15px 70px; margin-bottom:10px; }
+.timeline-marker { position:absolute; left:20px; top:15px; width:20px; height:20px; border-radius:50%; display:flex; align-items:center; justify-content:center; background:#fff; border:2px solid #e4e7ed; z-index:1; }
+
+@media (max-width: 768px) {
+  .timeline::before { left:15px; }
+  .timeline-item { padding-left:50px; }
+  .timeline-marker { left:5px; }
+}

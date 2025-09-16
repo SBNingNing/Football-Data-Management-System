@@ -21,7 +21,7 @@
             class="search-input"
           >
             <template #prefix>
-              <el-icon><Search /></el-icon>
+              <el-icon><IconSearch /></el-icon>
             </template>
           </el-input>
         </el-col>
@@ -143,7 +143,7 @@
               </div>
             </div>
             <div class="player-card-overlay">
-              <el-icon><View /></el-icon>
+              <el-icon><IconView /></el-icon>
               <span>查看详情</span>
             </div>
           </el-card>
@@ -168,35 +168,32 @@
 
 <script>
 import { 
-  Search, 
+  Search as IconSearch, 
   Refresh, 
   User, 
   UserFilled, 
   CreditCard, 
-  Trophy, 
-  Tickets, 
   Football, 
   Warning, 
   CircleClose, 
-  View,
+  View as IconView,
   Collection
 } from '@element-plus/icons-vue';
+import logger from '@/utils/logger.js'
 import axios from 'axios';
 
 export default {
   name: 'PlayerSearch',
   components: {
-    Search,
+  IconSearch,
     Refresh,
     User,
     UserFilled,
     CreditCard,
-    Trophy,
-    Tickets,
     Football,
     Warning,
     CircleClose,
-    View,
+  IconView,
     Collection
   },
   data() {
@@ -229,10 +226,12 @@ export default {
       try {
         this.loading = true;
         const response = await axios.get('/api/players');
-        
-        if (response.data?.status === 'success') {
-          this.players = response.data.data || [];
-          console.log('成功获取球员数据:', this.players.length, '名球员');
+        const body = response.data;
+        // 兼容旧 {status:'success', data:[...]} 与 新 {success:true,data:[...]} 已被 httpClient 的自动解包之外的 axios 直接调用，这里手动解包
+        if ((body?.success === true || body?.status === 'success')) {
+          const arr = Array.isArray(body.data) ? body.data : Array.isArray(body.records) ? body.records : body.data;
+          this.players = Array.isArray(arr)?arr:[];
+          logger.info('players fetched', this.players.length);
           
           // 处理球员数据，确保字段一致性
           this.players = this.players.map(player => ({
@@ -252,16 +251,16 @@ export default {
           // 初始化过滤
           this.filterPlayers();
           
-        } else if (Array.isArray(response.data)) {
-          this.players = response.data;
+        } else if (Array.isArray(body)) {
+          this.players = body;
           this.extractTeamOptions();
           this.filterPlayers();
         } else {
-          console.warn('意外的响应格式:', response.data);
+          logger.warn('unexpected players response format', body);
           this.players = [];
         }
       } catch (error) {
-        console.error('获取球员列表失败:', error);
+  logger.error('fetch players failed', error);
         
         let errorMessage = '获取球员列表失败';
         if (error.response?.status === 404) {
@@ -292,7 +291,7 @@ export default {
         }
       });
       this.teamOptions = Array.from(teams).sort();
-      console.log('提取的队伍选项:', this.teamOptions);
+  logger.debug('team options', this.teamOptions);
     },
 
     handleSearch() {
@@ -352,7 +351,7 @@ export default {
       this.totalPlayers = filtered.length;
       this.currentPage = 1;
       
-      console.log(`过滤后找到 ${this.filteredPlayers.length} 名球员`);
+  logger.debug('players filtered count', this.filteredPlayers.length);
     },
 
     getTagType(matchType) {
@@ -369,11 +368,11 @@ export default {
     },
 
     navigateToPlayerHistory(player) {
-      console.log('点击球员:', player);
+  logger.info('click player', player);
       
       const playerId = player.id || player.studentId;
       if (!playerId) {
-        console.error('球员ID不存在:', player);
+        logger.error('球员ID不存在:', player);
         this.$message.error('球员信息不完整，无法查看详情');
         return;
       }
@@ -385,15 +384,15 @@ export default {
           playerId: playerId
         }
       }).then(() => {
-        console.log('成功跳转到球员详情页');
+  logger.debug('navigate player detail success');
       }).catch(err => {
-        console.error('路由跳转失败:', err);
+  logger.error('navigate player detail failed', err);
         this.$message.error('页面跳转失败');
       });
     },
 
     async refreshPlayers() {
-      console.log('手动刷新球员数据');
+  logger.info('manual refresh players');
       this.searchKeyword = '';
       this.selectedTeam = '';
       this.selectedMatchType = '';

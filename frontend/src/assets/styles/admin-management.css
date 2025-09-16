@@ -1,0 +1,280 @@
+/* 合并管理后台样式 (原: management.css + input-management.css + management-entities.css) */
+/* 保留原有类名与变量，新增统一前缀变量，视觉保持不变 */
+:root {
+  /* 尺寸 & 圆角 */
+  --adm-radius-sm: 8px; /* 原 input-management */
+  --adm-radius-md: 12px;
+  --adm-radius-lg: 16px;
+  --mgr-entity-radius: 8px; /* 保留引用兼容 */
+
+  /* 色彩 */
+  --adm-color-border: #e5e7eb;
+  --adm-color-text-primary: #1f2937; /* DataInput 主文字 */
+  --adm-color-text-secondary: #6b7280; /* DataInput 次文字 */
+  --mgr-entity-color-text-primary: #303133; /* DataManagement 主文字 */
+  --mgr-entity-color-text-secondary: #606266; /* DataManagement 次文字 */
+  --adm-color-accent-blue: #3b82f6;
+  --adm-color-accent-green: #10b981;
+  --adm-color-accent-amber: #f59e0b;
+  --adm-color-accent-red: #ef4444;
+  --mgr-entity-color-accent-blue: #409EFF; /* 比赛/球队卡片蓝 */
+  --mgr-entity-color-score-green: #67c23a;
+
+  /* 渐变 */
+  --adm-color-gradient-green: linear-gradient(135deg, #10b981, #059669);
+  --adm-color-gradient-amber: linear-gradient(135deg, #f59e0b, #d97706);
+  --adm-color-gradient-red: linear-gradient(135deg, #ef4444, #dc2626);
+
+  /* 阴影 */
+  --adm-shadow-card: 0 4px 16px rgba(0, 0, 0, 0.08);
+  --adm-shadow-card-hover: 0 8px 25px rgba(0, 0, 0, 0.15);
+  --adm-shadow-accent-blue: 0 8px 25px rgba(59, 130, 246, 0.15);
+  --adm-shadow-accent-green: 0 8px 25px rgba(16, 185, 129, 0.25);
+  --adm-shadow-accent-amber: 0 8px 25px rgba(245, 158, 11, 0.25);
+  --adm-shadow-accent-red: 0 8px 25px rgba(239, 68, 68, 0.25);
+  --mgr-entity-shadow-hover: 0 8px 25px rgba(0,0,0,0.15);
+
+  /* 过渡 */
+  --adm-transition-base: all 0.3s ease;
+  --mgr-entity-transition: all 0.3s ease; /* 保留 */
+}
+
+/* ========== 通用结构 (原 management.css) ========== */
+.search-section { margin-bottom: 20px; padding: 15px; background-color: #f8f9fa; border-radius: 8px; }
+.search-input { width:100%; }
+.cards-container { min-height:400px; }
+.pagination-wrapper { margin-top:30px; display:flex; justify-content:center; }
+.manage-card { margin-bottom:20px; }
+
+/* ========== DataInput 通用卡片 & 选择 ========== */
+.info-card { display:flex; align-items:center; gap:12px; padding:20px; background:#fff; border-radius:12px; border:1px solid var(--adm-color-border); transition: var(--adm-transition-base); position:relative; overflow:hidden; }
+.info-card::before { content:''; position:absolute; top:0; left:0; right:0; height:3px; background: linear-gradient(90deg, var(--card-color), var(--card-color-light)); }
+.info-card:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(0,0,0,0.1); }
+
+.type-card { background:#fff; border:2px solid var(--adm-color-border); border-radius: var(--adm-radius-lg); padding:24px; text-align:center; cursor:pointer; transition: var(--adm-transition-base); position:relative; overflow:hidden; transform-origin:center; }
+.type-card:hover { transform: translateY(-4px); }
+.type-card.active { transform: translateY(-2px); }
+.type-card-icon { transition: transform 0.3s ease; }
+.type-card:hover .type-card-icon { transform: scale(1.1); }
+
+.type-card.teams-card { --card-gradient: linear-gradient(90deg, #10b981, #34d399); --card-border:#10b981; --card-shadow: rgba(16,185,129,0.25); }
+.type-card.schedule-card { --card-gradient: linear-gradient(90deg, #f59e0b, #fbbf24); --card-border:#f59e0b; --card-shadow: rgba(245,158,11,0.25); }
+.type-card.events-card { --card-gradient: linear-gradient(90deg, #ef4444, #f87171); --card-border:#ef4444; --card-shadow: rgba(239,68,68,0.25); }
+
+.teams-bg { background: var(--adm-color-gradient-green); }
+.schedule-bg { background: var(--adm-color-gradient-amber); }
+.events-bg { background: var(--adm-color-gradient-red); }
+
+@keyframes formCardAppear { 0% { opacity:0; transform: translateY(30px) scale(0.95);} 100% { opacity:1; transform: translateY(0) scale(1);} }
+@keyframes pulse { 0% { transform: scale(1);} 50% { transform: scale(1.05);} 100% { transform: scale(1);} }
+@keyframes selectedCardPulse { 0% { transform: translateY(-2px) scale(1); box-shadow: var(--adm-shadow-accent-green);} 50% { transform: translateY(-4px) scale(1.02); box-shadow: var(--adm-shadow-accent-green);} 100% { transform: translateY(-2px) scale(1); box-shadow: var(--adm-shadow-accent-green);} }
+@keyframes checkmarkAppear { 0% { opacity:0; transform: scale(0) rotate(-180deg);} 100% { opacity:1; transform: scale(1) rotate(0);} }
+
+.type-card.active .type-card-icon { animation: pulse 2s infinite; }
+.type-card.active { box-shadow: 0 8px 25px var(--card-shadow); }
+.type-card.active::after { content:'✓'; position:absolute; top:12px; right:12px; width:24px; height:24px; background: var(--card-border); color:#fff; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:bold; animation: checkmarkAppear 0.3s ease-out; }
+
+.form-card { border:1px solid var(--adm-color-border); border-radius: var(--adm-radius-lg); overflow:hidden; animation: formCardAppear 0.6s ease-out; margin-bottom:40px; }
+.input-type-selection { margin-bottom:32px; position:relative; }
+html { scroll-behavior: smooth; }
+
+/* ========== Grid 响应式断点工具 ========== */
+/* 用法：在已有 .entity-grid + .grid-cols-N 容器上附加下列类之一实现断点折叠 */
+/* .grid-collapse-sm: <= 768px 折叠为 1 列； .grid-collapse-md: <= 992px 折叠为 1 列 */
+.grid-collapse-sm { /* 占位，无直观样式，靠媒体查询 */ display:contents; }
+.grid-collapse-md { display:contents; }
+@media (max-width: 768px) {
+  .grid-collapse-sm { grid-template-columns: 1fr !important; }
+}
+@media (max-width: 992px) {
+  .grid-collapse-md { grid-template-columns: 1fr !important; }
+}
+
+/* ========== DataManagement 实体卡片 (原 management-entities.css) ========== */
+.match-card, .event-card, .player-card, .team-card { position:relative; cursor:pointer; transition: var(--mgr-entity-transition); margin-bottom:20px; min-height:200px; }
+.match-card:hover, .event-card:hover, .player-card:hover, .team-card:hover { transform:translateY(-2px); box-shadow: var(--mgr-entity-shadow-hover); }
+
+.match-info { padding:10px 0; }
+.match-title { font-size:16px; font-weight:bold; color: var(--mgr-entity-color-text-primary); margin-bottom:10px; }
+.match-teams { display:flex; align-items:center; justify-content:center; gap:10px; margin-bottom:10px; }
+.team { font-weight:500; color: var(--mgr-entity-color-accent-blue); }
+.vs { color:#909399; font-weight:bold; }
+.match-score { text-align:center; font-size:18px; font-weight:bold; color: var(--mgr-entity-color-score-green); margin-bottom:15px; }
+.match-meta { display:flex; flex-direction:column; gap:5px; margin-bottom:10px; }
+.meta-item { display:flex; align-items:center; gap:5px; font-size:12px; color: var(--mgr-entity-color-text-secondary); }
+.match-status { text-align:center; margin-bottom:10px; }
+
+.event-card { min-height:180px; }
+.event-info { padding:10px 0; }
+.event-type { text-align:center; margin-bottom:10px; }
+.event-match { font-size:14px; font-weight:500; color: var(--mgr-entity-color-text-primary); margin-bottom:8px; text-align:center; }
+.event-player, .event-time, .event-match-type { display:flex; align-items:center; gap:5px; font-size:12px; color: var(--mgr-entity-color-text-secondary); margin-bottom:5px; }
+
+.player-info { display:flex; align-items:flex-start; gap:12px; padding:10px 0; }
+.player-avatar { display:flex; align-items:center; justify-content:center; width:50px; height:50px; background: linear-gradient(135deg, #409EFF, #36A3FF); border-radius:50%; color:#fff; flex-shrink:0; }
+.avatar-icon { font-size:24px; }
+.player-details { flex:1; min-width:0; }
+.player-name { font-size:16px; font-weight:bold; color: var(--mgr-entity-color-text-primary); margin-bottom:8px; }
+.player-meta { display:flex; flex-direction:column; gap:4px; margin-bottom:10px; }
+.player-stats { display:flex; gap:6px; flex-wrap:wrap; }
+.stat-badge { display:inline-flex; align-items:center; gap:2px; padding:2px 6px; border-radius:12px; font-size:11px; font-weight:500; }
+.stat-badge.goals { background:#e8f5e8; color:#67c23a; }
+.stat-badge.yellow-cards { background:#fdf6ec; color:#e6a23c; }
+.stat-badge.red-cards { background:#fef0f0; color:#f56c6c; }
+
+.team-info { padding:10px 0; }
+.team-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; }
+.team-name { font-size:18px; font-weight:bold; color: var(--mgr-entity-color-text-primary); }
+.team-stats { margin-bottom:15px; }
+.stat-item { display:flex; align-items:center; gap:5px; font-size:14px; color: var(--mgr-entity-color-text-secondary); }
+.team-players { margin-bottom:15px; }
+.players-header { font-size:14px; font-weight:500; color: var(--mgr-entity-color-text-primary); margin-bottom:8px; }
+.players-list { display:flex; flex-wrap:wrap; gap:4px; }
+.player-tag { font-size:11px; margin:0; }
+.more-tag { font-size:11px; cursor:pointer; }
+.no-players { color:#c0c4cc; font-style:italic; font-size:12px; }
+
+.card-actions { display:flex; justify-content:center; gap:8px; padding-top:10px; border-top:1px solid #f0f0f0; }
+.no-data { padding:40px 0; text-align:center; }
+
+/* ========== Edit Dialogs（新增统一风格） ========== */
+.player-input-row { display:flex; align-items:center; gap:10px; margin-bottom:10px; }
+/* 基于原来30% / 25% / 30% 与按钮剩余宽度，使用 flex: 比例近似 */
+.player-field-name { flex: 3 1 0; }
+.player-field-number { flex: 2.5 1 0; }
+.player-field-student { flex: 3 1 0; }
+.player-field-actions { flex: 1 0 auto; display:flex; justify-content:flex-end; }
+
+/* ========== Event Input 专用（已统一到通用网格 utilities） ========== */
+/* .event-grid-3 已移除：使用 .entity-grid + .grid-cols-3 + 可选 .compact-gap 组合替代 */
+.empty-events { padding:24px 0 8px 0; }
+
+/* ========== Team Input (迁移自 TeamInput.vue) ========== */
+.team-input-wrapper { padding:24px 24px 0 24px; background:#fff; }
+.team-input-wrapper .team-form { max-width:none; }
+.team-input-wrapper .players-form-item { margin-bottom:32px; }
+.team-input-wrapper .player-management { border:1px solid var(--adm-color-border); border-radius:12px; background:#fafbfc; overflow:hidden; }
+.team-input-wrapper .player-header { display:flex; justify-content:space-between; align-items:center; padding:20px 24px; background:linear-gradient(135deg,#f8fafc 0%,#f1f5f9 100%); border-bottom:1px solid var(--adm-color-border); }
+.team-input-wrapper .header-left { display:flex; align-items:center; gap:16px; }
+.team-input-wrapper .players-title { display:flex; align-items:center; margin:0; font-size:16px; font-weight:600; color: var(--adm-color-text-primary); }
+.team-input-wrapper .players-title .el-icon { margin-right:8px; color: var(--adm-color-accent-blue); }
+.team-input-wrapper .player-count { padding:4px 12px; background:#fff; border:1px solid #d1d5db; border-radius:16px; font-size:13px; color:#6b7280; }
+.team-input-wrapper .player-count strong { color: var(--adm-color-text-primary); font-weight:600; }
+.team-input-wrapper .header-actions { display:flex; gap:12px; }
+.team-input-wrapper .add-player-btn { border-radius:8px; box-shadow:0 2px 4px rgba(59,130,246,.2); transition: var(--adm-transition-base); }
+.team-input-wrapper .add-player-btn:hover { transform:translateY(-1px); box-shadow:0 4px 12px rgba(59,130,246,.3); }
+.team-input-wrapper .select-player-btn { border-radius:8px; box-shadow:0 2px 4px rgba(34,197,94,.2); transition: var(--adm-transition-base); }
+.team-input-wrapper .select-player-btn:hover { transform:translateY(-1px); box-shadow:0 4px 12px rgba(34,197,94,.3); }
+.team-input-wrapper .players-container { padding:24px; max-height:500px; overflow-y:auto; }
+/* .players-grid-two-columns 已移除：使用 .entity-grid + .grid-cols-2 替代 */
+.team-input-wrapper .player-card { background:#fff; border:1px solid var(--adm-color-border); border-radius:12px; padding:20px; transition: var(--adm-transition-base); position:relative; min-width:0; }
+.team-input-wrapper .player-card:hover { border-color: var(--adm-color-accent-blue); box-shadow:0 4px 12px rgba(59,130,246,.1); transform:translateY(-2px); }
+.team-input-wrapper .player-card-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; }
+.team-input-wrapper .player-number-badge { background:linear-gradient(135deg,#3b82f6,#1d4ed8); color:#fff; padding:6px 12px; border-radius:20px; font-size:12px; font-weight:600; }
+.team-input-wrapper .badge-text { text-shadow:0 1px 2px rgba(0,0,0,.1); }
+.team-input-wrapper .delete-btn { color:#ef4444; padding:8px; border-radius:50%; transition: var(--adm-transition-base); }
+.team-input-wrapper .delete-btn:hover { background:#fef2f2; color:#dc2626; transform:scale(1.1); }
+.team-input-wrapper .compact-form-item { margin-bottom:16px; }
+.team-input-wrapper .compact-form-item :deep(.el-form-item__label) { font-size:13px; font-weight:600; color:#4b5563; margin-bottom:6px; }
+.team-input-wrapper .compact-form-item :deep(.el-input__wrapper) { border-radius:8px; transition: var(--adm-transition-base); }
+.team-input-wrapper .compact-form-item :deep(.el-input__wrapper:hover) { border-color: var(--adm-color-accent-blue); }
+.team-input-wrapper .empty-players { padding:40px 24px; text-align:center; }
+.team-input-wrapper .empty-actions { display:flex; gap:12px; justify-content:center; margin-top:16px; }
+.team-input-wrapper .submit-form-item { margin-bottom:0; padding-top:16px; border-top:1px solid #f3f4f6; }
+.team-input-wrapper .submit-btn { min-width:160px; height:44px; border-radius:8px; font-weight:600; box-shadow:0 2px 4px rgba(34,197,94,.2); transition: var(--adm-transition-base); }
+.team-input-wrapper .submit-btn:hover:not(:disabled) { transform:translateY(-1px); box-shadow:0 4px 12px rgba(34,197,94,.3); }
+.team-input-wrapper .submit-btn:disabled { opacity:.6; cursor:not-allowed; }
+.team-input-wrapper .player-selector-dialog :deep(.el-dialog__body) { padding:20px; }
+.team-input-wrapper .player-selector-content { max-height:500px; display:flex; flex-direction:column; }
+.team-input-wrapper .search-bar { margin-bottom:20px; display:flex; gap:12px; align-items:center; }
+.team-input-wrapper .search-input { flex:1; }
+.team-input-wrapper .refresh-btn { border-radius:8px; min-width:100px; }
+.team-input-wrapper .player-note { color:#f56c6c; font-size:12px; background:#fef0f0; padding:2px 6px; border-radius:4px; }
+.team-input-wrapper .existing-players-list { flex:1; max-height:400px; overflow-y:auto; border:1px solid var(--adm-color-border); border-radius:8px; position:relative; }
+.team-input-wrapper .existing-player-item { display:flex; justify-content:space-between; align-items:center; padding:16px; border-bottom:1px solid #f3f4f6; cursor:pointer; transition: var(--adm-transition-base); }
+.team-input-wrapper .existing-player-item:hover { background:#f8fafc; }
+.team-input-wrapper .existing-player-item.selected { background:#ecfdf5; border-color:#22c55e; }
+.team-input-wrapper .player-info { flex:1; }
+.team-input-wrapper .player-name { font-weight:600; color: var(--adm-color-text-primary); margin-bottom:4px; }
+.team-input-wrapper .player-details { display:flex; gap:12px; font-size:13px; color: var(--adm-color-text-secondary); }
+.team-input-wrapper .player-student-id { color:#4b5563; }
+.team-input-wrapper .selection-indicator { width:24px; height:24px; display:flex; align-items:center; justify-content:center; }
+.team-input-wrapper .no-players { padding:40px; text-align:center; }
+/* 过渡 */
+.team-input-wrapper .player-list-enter-active, .team-input-wrapper .player-list-leave-active { transition: var(--adm-transition-base); }
+.team-input-wrapper .player-list-enter-from { opacity:0; transform:translateY(20px) scale(.9); }
+.team-input-wrapper .player-list-leave-to { opacity:0; transform:translateY(-20px) scale(.9); }
+.team-input-wrapper .player-list-move { transition: transform .3s ease; }
+/* 响应式 */
+@media (max-width:768px) {
+  .team-input-wrapper .player-header { flex-direction:column; gap:16px; align-items:stretch; }
+  .team-input-wrapper .header-left { justify-content:space-between; }
+  .team-input-wrapper .header-actions { justify-content:center; }
+  /* 移除旧类 players-grid-two-columns 的响应式覆盖 */
+  .team-input-wrapper .empty-actions { flex-direction:column; align-items:center; }
+  .team-input-wrapper .player-selector-dialog :deep(.el-dialog) { width:95% !important; margin:5vh auto; }
+  .team-input-wrapper .player-details { flex-direction:column; gap:4px; }
+}
+@media (max-width:1200px) and (min-width:769px) {
+  /* 移除旧类 players-grid-two-columns 的间距覆盖 */
+  .team-input-wrapper .player-card { padding:16px; }
+}
+
+/* ========== Schedule Input (迁移自 ScheduleInput.vue) ========== */
+.schedule-input-wrapper { padding:24px; background:#fff; }
+.schedule-input-wrapper .schedule-form { max-width:none; }
+.schedule-input-wrapper .team-option { display:flex; justify-content:space-between; align-items:center; padding:4px 0; }
+.schedule-input-wrapper .team-name { font-weight:500; color: var(--adm-color-text-primary); }
+.schedule-input-wrapper .team-players { font-size:12px; color: var(--adm-color-text-secondary); background:#f3f4f6; padding:2px 8px; border-radius:10px; }
+.schedule-input-wrapper .match-preview { margin:24px 0; border:1px solid var(--adm-color-border); border-radius:12px; background:linear-gradient(135deg,#f8fafc 0%,#f1f5f9 100%); overflow:hidden; }
+.schedule-input-wrapper .preview-header { padding:16px 20px; background:#fff; border-bottom:1px solid var(--adm-color-border); }
+.schedule-input-wrapper .preview-title { display:flex; align-items:center; margin:0; font-size:16px; font-weight:600; color: var(--adm-color-text-primary); }
+.schedule-input-wrapper .preview-title .el-icon { margin-right:8px; color: var(--adm-color-accent-blue); }
+.schedule-input-wrapper .preview-content { padding:20px; }
+.schedule-input-wrapper .match-info { text-align:center; }
+.schedule-input-wrapper .match-title { font-size:18px; font-weight:600; color: var(--adm-color-text-primary); margin-bottom:20px; }
+.schedule-input-wrapper .match-teams { display:flex; justify-content:center; align-items:center; gap:24px; margin-bottom:20px; }
+.schedule-input-wrapper .team { display:flex; flex-direction:column; align-items:center; gap:8px; }
+.schedule-input-wrapper .team-avatar { background:linear-gradient(135deg,#3b82f6,#1d4ed8); color:#fff; font-weight:600; }
+.schedule-input-wrapper .team .team-name { font-size:14px; font-weight:600; color: var(--adm-color-text-primary); text-align:center; }
+.schedule-input-wrapper .vs { font-size:16px; font-weight:700; color: var(--adm-color-accent-red); background:#fff; padding:8px 16px; border-radius:20px; border:2px solid #fee2e2; }
+.schedule-input-wrapper .match-details { display:flex; justify-content:center; gap:32px; flex-wrap:wrap; }
+.schedule-input-wrapper .detail-item { display:flex; align-items:center; gap:8px; color:#4b5563; font-size:14px; }
+.schedule-input-wrapper .detail-item .el-icon { color:#6b7280; }
+.schedule-input-wrapper .submit-form-item { margin-bottom:0; padding-top:16px; border-top:1px solid #f3f4f6; }
+.schedule-input-wrapper .submit-btn { min-width:160px; height:44px; border-radius:8px; font-weight:600; box-shadow:0 2px 4px rgba(34,197,94,.2); transition: var(--adm-transition-base); }
+.schedule-input-wrapper .submit-btn:hover:not(:disabled) { transform:translateY(-1px); box-shadow:0 4px 12px rgba(34,197,94,.3); }
+.schedule-input-wrapper .submit-btn:disabled { opacity:.6; cursor:not-allowed; }
+@media (max-width:768px) {
+  .schedule-input-wrapper .match-teams { flex-direction:column; gap:16px; }
+  .schedule-input-wrapper .vs { transform:rotate(90deg); font-size:14px; padding:6px 12px; }
+  .schedule-input-wrapper .match-details { flex-direction:column; gap:12px; align-items:center; }
+}
+.schedule-input-wrapper :deep(.el-input__wrapper),
+.schedule-input-wrapper :deep(.el-select .el-select__wrapper) { border-radius:8px; transition: var(--adm-transition-base); }
+.schedule-input-wrapper :deep(.el-input__wrapper:hover),
+.schedule-input-wrapper :deep(.el-select .el-select__wrapper:hover) { border-color: var(--adm-color-accent-blue); }
+.schedule-input-wrapper :deep(.el-date-editor.el-input) { width:100%; }
+
+/* ========== 通用提交区域与按钮 Utility ========== */
+.entity-submit-zone { margin-bottom:0; padding-top:16px; border-top:1px solid #f3f4f6; }
+.btn-entity-submit { min-width:160px; height:44px; border-radius:8px; font-weight:600; box-shadow:0 2px 4px rgba(34,197,94,.2); transition: var(--adm-transition-base); }
+.btn-entity-submit:hover:not(:disabled) { transform:translateY(-1px); box-shadow:0 4px 12px rgba(34,197,94,.3); }
+.btn-entity-submit:disabled { opacity:.6; cursor:not-allowed; }
+
+/* 兼容旧类：submit-form-item / submit-btn 仍存在时复用新样式 */
+/* 旧类兼容：直接组合选择器共享样式 */
+.submit-form-item { margin-bottom:0; padding-top:16px; border-top:1px solid #f3f4f6; }
+.submit-btn { min-width:160px; height:44px; border-radius:8px; font-weight:600; box-shadow:0 2px 4px rgba(34,197,94,.2); transition: var(--adm-transition-base); }
+.submit-btn:hover:not(:disabled) { transform:translateY(-1px); box-shadow:0 4px 12px rgba(34,197,94,.3); }
+.submit-btn:disabled { opacity:.6; cursor:not-allowed; }
+
+/* ========== 通用网格 Utility ========== */
+.entity-grid { display:grid; gap:20px; }
+.entity-grid.compact-gap { gap:12px; }
+.grid-cols-2 { grid-template-columns:1fr 1fr; }
+.grid-cols-3 { grid-template-columns:1fr 1fr 1fr; }
+@media (max-width: 768px) {
+  .grid-cols-2 { grid-template-columns:1fr; }
+  .grid-cols-3 { grid-template-columns:1fr; }
+}

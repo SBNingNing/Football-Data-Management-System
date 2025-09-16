@@ -7,6 +7,7 @@ import PlayerHistory from '../views/player/player_history.vue'
 import TeamHistory from '../views/team/team_history.vue'
 import TournamentHistory from '../views/tournament/tournament_history.vue'
 import MatchDetail from '../views/match/match_detail.vue'
+import { useAuthGuard } from '@/composables/auth'
 
 const routes = [
   {
@@ -26,17 +27,20 @@ const routes = [
   {
     path: '/home',
     name: 'Home',
-    component: Home
+    component: Home,
+    meta: { requiresAuth: true }
   },
   {
     path: '/admin/board',
     name: 'Board',
-    component: Board
+    component: Board,
+    meta: { requiresAuth: true, roles: ['admin'] }
   },
   {
     path: '/player',
     name: 'PlayerHistory',
-    component: PlayerHistory
+    component: PlayerHistory,
+    meta: { requiresAuth: true }
   },
   {
     path: '/player/:playerId',
@@ -45,12 +49,14 @@ const routes = [
     props: route => ({ 
       playerId: route.params.playerId,
       ...route.query
-    })
+    }),
+    meta: { requiresAuth: true }
   },
   {
     path: '/team',
     name: 'TeamHistory',
-    component: TeamHistory
+    component: TeamHistory,
+    meta: { requiresAuth: true }
   },
   {
     path: '/team/:teamName',
@@ -59,7 +65,8 @@ const routes = [
     props: route => ({
       teamName: route.params.teamName,
       ...route.query
-    })
+    }),
+    meta: { requiresAuth: true }
   },
   {
     path: '/tournament',
@@ -68,7 +75,8 @@ const routes = [
   {
     path: '/tournament/:tournamentName',
     name: 'TournamentHistory',
-    component: TournamentHistory
+    component: TournamentHistory,
+    meta: { requiresAuth: true }
   },
   {
     path: '/match-detail/:matchId',
@@ -77,7 +85,8 @@ const routes = [
     props: route => ({
       matchId: route.params.matchId,
       ...route.query
-    })
+    }),
+    meta: { requiresAuth: true }
   },
   {
     path: '/match/detail/:matchId',
@@ -86,13 +95,25 @@ const routes = [
     props: route => ({
       matchId: route.params.matchId,
       ...route.query
-    })
+    }),
+    meta: { requiresAuth: true }
   }
 ]
 
 const router = createRouter({
   history: createWebHistory(),
   routes
+})
+
+// 全局前置守卫
+router.beforeEach((to, from, next) => {
+  const { check } = useAuthGuard()
+  const r = check(to)
+  if (r.allow) return next()
+  if (r.redirect) {
+    return next({ path: r.redirect, query: { redirect: to.fullPath, reason: r.reason } })
+  }
+  next(false)
 })
 
 export default router

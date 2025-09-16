@@ -2,7 +2,7 @@ from datetime import datetime
 from flask_jwt_extended import create_access_token
 from app.database import db
 from app.models.user import User
-from app.utils.logging_config import get_logger
+from app.utils.logger import get_logger
 from app.middleware.error_middleware import log_error, log_security_event
 
 logger = get_logger(__name__)

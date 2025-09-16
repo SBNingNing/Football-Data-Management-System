@@ -1,9 +1,10 @@
 """
 球员验证中间件
 """
-from flask import request, jsonify
+from flask import request
 from functools import wraps
 from app.utils.logger import get_logger
+from app.utils.response import error_response
 
 logger = get_logger(__name__)
 
@@ -16,7 +17,7 @@ def validate_player_creation_data(f):
         
         if not data or not data.get('name') or not data.get('studentId'):
             logger.error("创建球员失败：球员姓名和学号不能为空")
-            return jsonify({'status': 'error', 'message': '球员姓名和学号不能为空'}), 400
+            return error_response('VALIDATION_ERROR', '球员姓名和学号不能为空', 400)
         
         return f(*args, **kwargs)
     
@@ -30,7 +31,7 @@ def validate_player_id(f):
         player_id = kwargs.get('player_id')
         if not player_id:
             logger.error("操作失败：球员ID不能为空")
-            return jsonify({'status': 'error', 'message': '球员ID不能为空'}), 400
+            return error_response('VALIDATION_ERROR', '球员ID不能为空', 400)
         
         return f(*args, **kwargs)
     

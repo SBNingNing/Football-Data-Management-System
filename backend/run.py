@@ -52,7 +52,12 @@ def main():
         debug = app.config.get('DEBUG', False)
         
         logger.info(f"启动服务器: http://{host}:{port}")
-        app.run(debug=debug, host=host, port=port)
+        # 在 Windows 上使用 stat 模式重载以避免对日志文件的过度敏感；
+        # 仅在开发模式启用重载；生产禁用。
+        if debug:
+            app.run(debug=True, host=host, port=port, use_reloader=True, reloader_type='stat')
+        else:
+            app.run(debug=False, host=host, port=port)
         
     except Exception as e:
         logger.error(f"应用启动失败: {e}")

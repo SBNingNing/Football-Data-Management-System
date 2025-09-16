@@ -220,6 +220,8 @@
 
 <script>
 import { User, Trophy, Loading, Warning } from '@element-plus/icons-vue'
+// 统一日志
+import logger from '@/utils/logger';
 
 export default {
   name: 'RankingsSection',
@@ -247,6 +249,7 @@ export default {
       default: false
     }
   },
+  emits: ['competition-change', 'rankings-tab-change'],
   data() {
     return {
       selectedCompetition: 'championsCup',
@@ -261,7 +264,7 @@ export default {
         cards: { players: [], teams: [] },
         points: []
       };
-      console.log(`当前赛事 ${this.selectedCompetition} 的排行数据:`, rankings);
+  logger.debug(`当前赛事 ${this.selectedCompetition} 的排行数据:`, rankings);
       return rankings;
     },
     currentPlayoffBracket() {
@@ -298,7 +301,7 @@ export default {
   },
   methods: {
     onCompetitionChange() {
-      console.log('赛事类型切换到:', this.selectedCompetition);
+  logger.info('赛事类型切换到:', this.selectedCompetition);
       this.currentRankingsTab = '常规赛';
       this.activeRankingTab = 'scorers';
       
@@ -307,11 +310,11 @@ export default {
       
       // 添加延迟确保数据获取完成后再检查
       this.$nextTick(() => {
-        console.log('切换后的排行数据:', this.currentRankings);
+  logger.debug('切换后的排行数据:', this.currentRankings);
       });
     },
     onRankingsTabChange() {
-      console.log('排行榜标签切换到:', this.currentRankingsTab);
+  logger.info('排行榜标签切换到:', this.currentRankingsTab);
       this.$emit('rankings-tab-change', this.currentRankingsTab);
     },
     getCompetitionName(competition) {
@@ -323,12 +326,12 @@ export default {
       return nameMap[competition] || '未知赛事';
     },
     navigateToPlayer(player) {
-      console.log('点击了球员:', player) // 调试用
+  logger.debug('点击了球员:', player) // 调试用
       
       // 确保有ID数据再跳转
       const playerId = player.id || player.studentId || player.playerId
       if (!playerId) {
-        console.error('球员ID不存在:', player)
+  logger.error('球员ID不存在:', player)
         this.$message.error('球员信息不完整，无法查看详情')
         return
       }
@@ -340,16 +343,16 @@ export default {
           playerId: playerId
         }
       }).catch(err => {
-        console.error('路由跳转失败:', err)
+        logger.error('路由跳转失败:', err)
         this.$message.error('页面跳转失败')
       })
     },
     navigateToTeam(team) {
-      console.log('点击了球队:', team)
+      logger.debug('点击了球队:', team)
       
       const teamName = team.team || team.name
       if (!teamName) {
-        console.error('球队名称不存在:', team)
+  logger.error('球队名称不存在:', team)
         this.$message.error('球队信息不完整，无法查看详情')
         return
       }
@@ -360,16 +363,16 @@ export default {
           teamName: teamName
         }
       }).catch(err => {
-        console.error('路由跳转失败:', err)
+        logger.error('路由跳转失败:', err)
         this.$message.error('页面跳转失败')
       })
     },
     navigateToTeamFromPlayer(player) {
-      console.log('从球员数据点击了球队:', player)
+      logger.debug('从球员数据点击了球队:', player)
       
       const teamName = player.team
       if (!teamName) {
-        console.error('球队名称不存在:', player)
+  logger.error('球队名称不存在:', player)
         this.$message.error('球队信息不完整，无法查看详情')
         return
       }
@@ -380,7 +383,7 @@ export default {
           teamName: teamName
         }
       }).catch(err => {
-        console.error('路由跳转失败:', err)
+        logger.error('路由跳转失败:', err)
         this.$message.error('页面跳转失败')
       })
     }

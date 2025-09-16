@@ -1,4 +1,5 @@
 import os
+import tempfile
 from datetime import timedelta
 import logging
 
@@ -53,19 +54,38 @@ class Config:
     UPLOAD_FOLDER = os.environ.get('UPLOAD_FOLDER', 'uploads')
     
     @classmethod
-    def validate_config(cls):
-        """验证配置的有效性"""
+    def validate_config(cls, mapping=None):
+        """验证配置的有效性
+        支持传入 app.config 这样的映射，优先使用运行时配置值；
+        未传入时退回到类属性校验。
+        """
         errors = []
-        
-        if not cls.SECRET_KEY or cls.SECRET_KEY == 'dev-key-should-be-changed':
+
+        def _get(cfg, key, default=None):
+            if cfg is None:
+                return getattr(cls, key, default)
+            # 映射优先（如 app.config）
+            if isinstance(cfg, dict):
+                return cfg.get(key, getattr(cls, key, default))
+            return getattr(cfg, key, getattr(cls, key, default))
+
+        secret_key = _get(mapping, 'SECRET_KEY')
+        jwt_secret = _get(mapping, 'JWT_SECRET_KEY')
+        user_validation = _get(mapping, 'USER_VALIDATION') or {}
+
+        if not secret_key or secret_key == 'dev-key-should-be-changed':
             errors.append("SECRET_KEY should be set to a secure value")
-        
-        if not cls.JWT_SECRET_KEY or cls.JWT_SECRET_KEY == 'jwt-dev-key-change-in-production':
+
+        if not jwt_secret or jwt_secret == 'jwt-dev-key-change-in-production':
             errors.append("JWT_SECRET_KEY should be set to a secure value")
-        
-        if cls.USER_VALIDATION['PASSWORD_MIN_LENGTH'] < 6:
-            errors.append("PASSWORD_MIN_LENGTH should be at least 6")
-        
+
+        try:
+            pwd_min = user_validation.get('PASSWORD_MIN_LENGTH', cls.USER_VALIDATION['PASSWORD_MIN_LENGTH'])
+            if int(pwd_min) < 6:
+                errors.append("PASSWORD_MIN_LENGTH should be at least 6")
+        except Exception:
+            errors.append("USER_VALIDATION.PASSWORD_MIN_LENGTH must be an integer >= 6")
+
         return errors
 
 class DevelopmentConfig(Config):
@@ -73,6 +93,9 @@ class DevelopmentConfig(Config):
     DEBUG = True
     LOG_LEVEL = 'DEBUG'
     SQLALCHEMY_ECHO = True  # 打印SQL语句
+    # 为避免开发模式下 Flask 热重载监控到项目内日志文件变更导致重启，
+    # 将默认日志文件放在系统临时目录（可通过环境变量 LOG_FILE 覆盖）。
+    LOG_FILE = os.environ.get('LOG_FILE', os.path.join(tempfile.gettempdir(), 'football_fms', 'app.log'))
     
     # 开发环境使用具体的前端地址，更安全
     CORS_ORIGINS = ['http://localhost:3000', 'http://localhost:8080', 'http://127.0.0.1:3000']

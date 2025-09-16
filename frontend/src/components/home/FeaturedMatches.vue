@@ -19,19 +19,21 @@
             <span class="team2">{{ match.team2 }}</span>
           </div>
           <div class="featured-match-footer">
-            <span class="match-location"><i class="el-icon-location"></i> {{ match.location }}</span>
+            <span class="match-location"><el-icon><LocationFilled /></el-icon> {{ match.location }}</span>
           </div>
         </div>
       </el-carousel-item>
     </el-carousel>
     <div v-else class="no-matches">
-      <p>暂无近期比赛</p>
+      <el-icon class="no-data-icon"><Calendar /></el-icon>
+      <p>近期无比赛</p>
     </div>
   </el-card>
 </template>
 
 <script>
-import { ElMessage } from 'element-plus';
+import logger from '@/utils/logger';
+import { Calendar, LocationFilled } from '@element-plus/icons-vue'
 
 export default {
   name: 'FeaturedMatches',
@@ -41,6 +43,7 @@ export default {
       default: () => []
     }
   },
+  components: { Calendar, LocationFilled },
   methods: {
     getMatchTypeLabel(type) {
       const labels = {
@@ -67,7 +70,7 @@ export default {
         }
         
         if (isNaN(date.getTime())) {
-          console.warn('Invalid date:', dateInput);
+          logger.warn('Invalid date:', dateInput);
           return '';
         }
         
@@ -80,22 +83,22 @@ export default {
           timeZone: 'Asia/Shanghai'
         });
       } catch (error) {
-        console.error('Date formatting error:', error, dateInput);
+  logger.error('Date formatting error:', error, dateInput);
         return '';
       }
     },
     viewMatchDetails(match) {
-      console.log('查看比赛详情:', match);
+  logger.debug('查看比赛详情:', match);
       if (match.id) {
         // 使用路由名称进行跳转，确保与路由配置一致
         this.$router.push({
           name: 'match-detail', // 使用kebab-case命名的路由名称
           params: { matchId: match.id }
         }).catch(err => {
-          console.error('路由跳转失败:', err);
+          logger.error('路由跳转失败:', err);
           // 如果路由名称不匹配，尝试使用path方式
           this.$router.push(`/match-detail/${match.id}`).catch(pathErr => {
-            console.error('路径跳转也失败:', pathErr);
+            logger.error('路径跳转也失败:', pathErr);
             this.$message.error('页面跳转失败，请检查路由配置');
           });
         });
@@ -163,6 +166,12 @@ export default {
 .no-matches p {
   margin: 0;
   font-size: 16px;
+}
+
+.no-data-icon {
+  font-size: 48px;
+  margin-bottom: 15px;
+  color: #e0e0e0;
 }
 
 .clearfix::after {

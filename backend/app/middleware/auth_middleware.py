@@ -1,7 +1,7 @@
 from functools import wraps
 from flask import jsonify
 from flask_jwt_extended import get_jwt_identity, jwt_required
-from app.utils.logging_config import get_logger
+from app.utils.logger import get_logger
 from app.middleware.error_middleware import log_security_event
 
 logger = get_logger(__name__)

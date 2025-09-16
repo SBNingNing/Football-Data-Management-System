@@ -1,6 +1,7 @@
 # 工具包初始化文件
 from .security import SecurityUtils
-from .logging_config import setup_logging, get_logger
+from .logging_config import setup_logging
+from .logger import get_logger
 from .validation_config import ValidationConfig
 from .stats_utils import StatsUtils
 from .team_utils import TeamUtils

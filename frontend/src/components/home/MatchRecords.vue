@@ -21,7 +21,7 @@
             class="search-input"
           >
             <template #prefix>
-              <el-icon><Search /></el-icon>
+              <el-icon><IconSearch /></el-icon>
             </template>
           </el-input>
         </el-col>
@@ -128,7 +128,7 @@
             </div>
             
             <div class="match-card-overlay">
-              <el-icon><View /></el-icon>
+              <el-icon><IconView /></el-icon>
               <span>查看详情</span>
             </div>
           </el-card>
@@ -153,23 +153,24 @@
 
 <script>
 import { 
-  Search, 
+  Search as IconSearch, 
   Refresh, 
   Calendar, 
   Clock, 
   LocationFilled, 
-  View 
+  View as IconView 
 } from '@element-plus/icons-vue';
+import logger from '@/utils/logger.js'
 
 export default {
   name: 'MatchRecords',
   components: {
-    Search,
+  IconSearch,
     Refresh,
     Calendar,
     Clock,
     LocationFilled,
-    View
+  IconView
   },
   props: {
     matchRecords: {
@@ -181,6 +182,7 @@ export default {
       default: 0
     }
   },
+  emits: ['filter-change', 'search', 'page-change'],
   data() {
     return {
       selectedType: '',
@@ -206,23 +208,18 @@ export default {
     // 监听props变化，确保数据更新
     matchRecords: {
       handler(newVal) {
-        console.log('MatchRecords props updated:', newVal);
+        logger.debug('MatchRecords props updated', newVal);
       },
       immediate: true
     },
     matchRecordsTotal: {
       handler(newVal) {
-        console.log('MatchRecordsTotal props updated:', newVal);
+        logger.debug('MatchRecordsTotal props updated', newVal);
       },
       immediate: true
     }
   },
-  mounted() {
-    // 组件挂载后立即发送请求，确保使用正确的分页参数
-    this.$nextTick(() => {
-      this.emitDataRequest('filter-change');
-    });
-  },
+  // 移除挂载即请求，避免与父级 pending v-if 导致反复卸载/挂载形成刷新循环
   methods: {
     // 统一的数据获取方法
     emitDataRequest(eventType = 'filter-change') {
@@ -234,7 +231,7 @@ export default {
         pageSize: this.pageSize
       };
       
-      console.log(`${eventType} triggered:`, params);
+  logger.info(`${eventType} triggered`, params);
       this.$emit(eventType, params);
     },
 
@@ -270,7 +267,7 @@ export default {
     },
 
     refreshMatches() {
-      console.log('手动刷新比赛数据');
+      logger.info('manual refresh matches');
       this.loading = true;
       this.emitDataRequest('filter-change');
       setTimeout(() => {
@@ -339,23 +336,23 @@ export default {
           timeZone: 'Asia/Shanghai'
         });
       } catch (error) {
-        console.error('Date formatting error:', error, dateInput);
+        logger.error('Date formatting error:', error, dateInput);
         return '时间待定';
       }
     },
 
     viewMatchDetails(match) {
-      console.log('查看比赛详情:', match);
+      logger.info('view match detail', match);
       if (match.id) {
         // 使用路由名称进行跳转，确保与路由配置一致
         this.$router.push({
           name: 'match-detail', // 使用kebab-case命名的路由名称
           params: { matchId: match.id }
         }).catch(err => {
-          console.error('路由跳转失败:', err);
+          logger.error('路由跳转失败:', err);
           // 如果路由名称不匹配，尝试使用path方式
           this.$router.push(`/match-detail/${match.id}`).catch(pathErr => {
-            console.error('路径跳转也失败:', pathErr);
+            logger.error('路径跳转也失败:', pathErr);
             this.$message.error('页面跳转失败，请检查路由配置');
           });
         });

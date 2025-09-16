@@ -121,7 +121,7 @@
       <div v-if="isFormValid" class="match-preview">
         <div class="preview-header">
           <h4 class="preview-title">
-            <el-icon><View /></el-icon>
+            <el-icon><IconView /></el-icon>
             比赛预览
           </h4>
         </div>
@@ -153,13 +153,14 @@
         </div>
       </div>
 
-      <el-form-item class="submit-form-item">
+      <el-form-item class="submit-form-item entity-submit-zone">
         <el-button 
           type="primary" 
           @click="submitSchedule"
           size="large"
-          class="submit-btn"
-          :disabled="!isFormValid"
+          class="submit-btn btn-entity-submit"
+          :disabled="!isFormValid || submitting"
+          :loading="submitting"
         >
           <el-icon><Check /></el-icon>
           提交赛程信息
@@ -170,7 +171,8 @@
 </template>
 
 <script>
-import { Trophy, UserFilled, Calendar, MapLocation, View, Check } from '@element-plus/icons-vue'
+import { Trophy, UserFilled, Calendar, MapLocation, View as IconView, Check } from '@element-plus/icons-vue'
+import { createMatch } from '@/domain/match/matchService'
 
 export default {
   name: 'ScheduleInput',
@@ -179,13 +181,21 @@ export default {
     UserFilled,
     Calendar,
     MapLocation,
-    View,
+  IconView,
     Check
   },
   props: {
-    matchType: String,
-    teams: Array
+    matchType: {
+      type: String,
+      default: ''
+    },
+    teams: {
+      type: Array,
+      default: () => []
+    }
   },
+  // 声明组件可触发的事件，便于类型与 Lint 校验
+  emits: ['submit'],
   data() {
     return {
       scheduleForm: {
@@ -194,7 +204,8 @@ export default {
         team2: '',
         date: '',
         location: ''
-      }
+      },
+      submitting: false
     }
   },
   computed: {
@@ -208,22 +219,39 @@ export default {
     }
   },
   methods: {
-    submitSchedule() {
+    async submitSchedule() {
+      if (this.submitting) return;
       if (!this.isFormValid) {
         this.$message.warning('请填写完整的赛程信息');
         return;
       }
-
-      // 修正：将日期转为字符串并加上时区（北京时间），避免时区丢失
       let form = { ...this.scheduleForm };
       if (form.date instanceof Date) {
-        // 转为北京时间字符串
         const pad = n => n < 10 ? '0' + n : n;
-        const dt = new Date(form.date.getTime()); 
+        const dt = new Date(form.date.getTime());
         form.date = `${dt.getFullYear()}-${pad(dt.getMonth() + 1)}-${pad(dt.getDate())} ${pad(dt.getHours())}:${pad(dt.getMinutes())}:${pad(dt.getSeconds())}`;
       }
-      this.$emit('submit', form);
-      this.scheduleForm = { matchName: '', team1: '', team2: '', date: '', location: '' };
+      try {
+        this.submitting = true;
+        const { ok, data, error } = await createMatch(form)
+        if(!ok){
+          this.$message.error(error?.message || '创建比赛失败')
+          return
+        }
+        try {
+          import('@/utils/httpClient').then(m=>{
+            m.default.cache.invalidate('matches:records')
+            m.default.cache.invalidate('stats:dashboard')
+          })
+  } catch { /* ignore cache invalidation errors */ }
+        this.$message.success('比赛创建成功')
+        this.$emit('submit', data || form)
+        this.scheduleForm = { matchName: '', team1: '', team2: '', date: '', location: '' };
+  } catch{ 
+        this.$message.error('创建比赛异常')
+      } finally {
+        this.submitting = false;
+      }
     },
     getMatchTypeLabel() {
       const labels = {
@@ -248,7 +276,7 @@ export default {
           minute: '2-digit',
           weekday: 'long'
         });
-      } catch (error) {
+      } catch {
         return date;
       }
     }
@@ -257,196 +285,5 @@ export default {
 </script>
 
 <style scoped>
-.schedule-input-wrapper {
-  padding: 24px;
-  background: white;
-}
-
-.schedule-form {
-  max-width: none;
-}
-
-/* 球队选项样式 */
-.team-option {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 4px 0;
-}
-
-.team-name {
-  font-weight: 500;
-  color: #1f2937;
-}
-
-.team-players {
-  font-size: 12px;
-  color: #6b7280;
-  background: #f3f4f6;
-  padding: 2px 8px;
-  border-radius: 10px;
-}
-
-/* 比赛预览卡片 */
-.match-preview {
-  margin: 24px 0;
-  border: 1px solid #e5e7eb;
-  border-radius: 12px;
-  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
-  overflow: hidden;
-}
-
-.preview-header {
-  padding: 16px 20px;
-  background: white;
-  border-bottom: 1px solid #e5e7eb;
-}
-
-.preview-title {
-  display: flex;
-  align-items: center;
-  margin: 0;
-  font-size: 16px;
-  font-weight: 600;
-  color: #1f2937;
-}
-
-.preview-title .el-icon {
-  margin-right: 8px;
-  color: #3b82f6;
-}
-
-.preview-content {
-  padding: 20px;
-}
-
-.match-info {
-  text-align: center;
-}
-
-.match-title {
-  font-size: 18px;
-  font-weight: 600;
-  color: #1f2937;
-  margin-bottom: 20px;
-}
-
-.match-teams {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 24px;
-  margin-bottom: 20px;
-}
-
-.team {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
-}
-
-.team-avatar {
-  background: linear-gradient(135deg, #3b82f6, #1d4ed8);
-  color: white;
-  font-weight: 600;
-}
-
-.team .team-name {
-  font-size: 14px;
-  font-weight: 600;
-  color: #1f2937;
-  text-align: center;
-}
-
-.vs {
-  font-size: 16px;
-  font-weight: 700;
-  color: #ef4444;
-  background: white;
-  padding: 8px 16px;
-  border-radius: 20px;
-  border: 2px solid #fee2e2;
-}
-
-.match-details {
-  display: flex;
-  justify-content: center;
-  gap: 32px;
-  flex-wrap: wrap;
-}
-
-.detail-item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  color: #4b5563;
-  font-size: 14px;
-}
-
-.detail-item .el-icon {
-  color: #6b7280;
-}
-
-/* 提交按钮 */
-.submit-form-item {
-  margin-bottom: 0;
-  padding-top: 16px;
-  border-top: 1px solid #f3f4f6;
-}
-
-.submit-btn {
-  min-width: 160px;
-  height: 44px;
-  border-radius: 8px;
-  font-weight: 600;
-  box-shadow: 0 2px 4px rgba(34, 197, 94, 0.2);
-  transition: all 0.3s ease;
-}
-
-.submit-btn:hover:not(:disabled) {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(34, 197, 94, 0.3);
-}
-
-.submit-btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-/* 响应式设计 */
-@media (max-width: 768px) {
-  .match-teams {
-    flex-direction: column;
-    gap: 16px;
-  }
-
-  .vs {
-    transform: rotate(90deg);
-    font-size: 14px;
-    padding: 6px 12px;
-  }
-
-  .match-details {
-    flex-direction: column;
-    gap: 12px;
-    align-items: center;
-  }
-}
-
-/* 表单控件样式优化 */
-:deep(.el-input__wrapper),
-:deep(.el-select .el-select__wrapper) {
-  border-radius: 8px;
-  transition: all 0.3s ease;
-}
-
-:deep(.el-input__wrapper:hover),
-:deep(.el-select .el-select__wrapper:hover) {
-  border-color: #3b82f6;
-}
-
-:deep(.el-date-editor.el-input) {
-  width: 100%;
-}
+/* 样式已迁移至 admin-management.css (.schedule-input-wrapper...) */
 </style>

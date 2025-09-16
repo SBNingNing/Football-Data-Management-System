@@ -1,6 +1,6 @@
 from functools import wraps
 from flask import request, jsonify
-from app.utils.logging_config import get_logger
+from app.utils.logger import get_logger
 from app.utils.validation_config import ValidationConfig
 
 logger = get_logger(__name__)

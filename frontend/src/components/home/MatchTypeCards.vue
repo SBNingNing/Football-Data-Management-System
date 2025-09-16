@@ -35,11 +35,12 @@
 <script setup>
 import { useRouter } from 'vue-router'
 import { Trophy, Female, Football } from '@element-plus/icons-vue'
+import logger from '@/utils/logger';
 
 const router = useRouter()
 
 const navigateToTournament = (tournamentName) => {
-  console.log('点击了:', tournamentName) // 调试用
+  logger.debug('点击赛事类型卡片:', tournamentName) // 调试用
   router.push({
     path: `/tournament/${encodeURIComponent(tournamentName)}`
   })
