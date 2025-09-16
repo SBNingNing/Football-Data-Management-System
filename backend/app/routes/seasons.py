@@ -2,11 +2,12 @@
 赛季路由层 - 处理HTTP请求和响应
 """
 
-from flask import Blueprint, jsonify
+from flask import Blueprint, jsonify, request
 from flask_jwt_extended import jwt_required
 from sqlalchemy.exc import IntegrityError
 
 from app.services.season_service import SeasonService
+from app.schemas import SeasonCreate, SeasonUpdate, SeasonOut
 from app.middleware.season_middleware import (
     validate_season_creation_data,
     validate_season_update_data,
@@ -26,11 +27,9 @@ def get_seasons():
     """获取所有赛季信息"""
     try:
         seasons = SeasonService.get_all_seasons()
-        
-        return jsonify({
-            'status': 'success',
-            'data': seasons
-        }), 200
+        # 统一使用 SeasonOut 序列化（保持字段名不变）
+        seasons_out = [SeasonOut(**s).model_dump(by_alias=True) for s in seasons]
+        return jsonify({'status': 'success', 'data': seasons_out}), 200
         
     except Exception as e:
         logger.error(f"获取赛季列表失败: {str(e)}")
@@ -46,11 +45,8 @@ def get_season(season_id):
     """根据ID获取单个赛季信息"""
     try:
         season = SeasonService.get_season_by_id(season_id)
-        
-        return jsonify({
-            'status': 'success',
-            'data': season
-        }), 200
+        season_out = SeasonOut(**season).model_dump(by_alias=True)
+        return jsonify({'status': 'success', 'data': season_out}), 200
         
     except Exception as e:
         logger.error(f"获取赛季信息失败: {str(e)}")
@@ -68,16 +64,10 @@ def get_season(season_id):
 def create_season():
     """创建新赛季"""
     try:
-        from flask import request
-        data = request.get_json()
-        
-        season_data, message = SeasonService.create_season(data)
-        
-        return jsonify({
-            'status': 'success',
-            'message': message,
-            'data': season_data
-        }), 201
+        payload = SeasonCreate(**(request.get_json() or {}))
+        season_data, message = SeasonService.create_season(payload.model_dump(by_alias=True))
+        season_out = SeasonOut(**season_data).model_dump(by_alias=True)
+        return jsonify({'status': 'success', 'message': message, 'data': season_out}), 201
         
     except IntegrityError:
         return jsonify({
@@ -106,16 +96,10 @@ def create_season():
 def update_season(season_id):
     """更新赛季信息"""
     try:
-        from flask import request
-        data = request.get_json()
-        
-        season_data, message = SeasonService.update_season(season_id, data)
-        
-        return jsonify({
-            'status': 'success',
-            'message': message,
-            'data': season_data
-        }), 200
+        payload = SeasonUpdate(**(request.get_json() or {}))
+        season_data, message = SeasonService.update_season(season_id, payload.model_dump(exclude_unset=True, by_alias=True))
+        season_out = SeasonOut(**season_data).model_dump(by_alias=True)
+        return jsonify({'status': 'success', 'message': message, 'data': season_out}), 200
         
     except IntegrityError:
         return jsonify({

@@ -4,6 +4,7 @@
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required
 from app.services.event_service import EventService
+from app.schemas import EventCreate, EventUpdate, EventOut
 from app.middleware.event_middleware import validate_event_creation_data, validate_event_update_data
 from app.utils.logger import get_logger
 
@@ -17,7 +18,8 @@ logger = get_logger(__name__)
 def create_event():
     """创建事件"""
     try:
-        data = request.get_json()
+        payload = EventCreate(**(request.get_json() or {}))
+        data = payload.model_dump(by_alias=True)
         logger.info(f"创建事件请求数据: {data}")
         
         # 调用服务层创建事件
@@ -25,7 +27,7 @@ def create_event():
         
         # 格式化返回数据
         event_dict = EventService._format_event_data(new_event)
-        event_dict['matchName'] = data['matchName']
+        event_dict['matchName'] = data.get('matchName') or event_dict.get('matchName')
         
         return jsonify({
             'status': 'success',
@@ -65,7 +67,8 @@ def get_events():
 def update_event(event_id):
     """更新事件信息"""
     try:
-        data = request.get_json()
+        payload = EventUpdate(**(request.get_json() or {}))
+        data = payload.model_dump(exclude_unset=True, by_alias=True)
         logger.info(f"更新事件 {event_id} 请求数据: {data}")
         
         # 调用服务层更新事件

@@ -72,7 +72,7 @@ def update_player(player_id):
         payload = request.get_json() or {}
         from pydantic import ValidationError  # type: ignore
         model = PlayerUpdate(**payload)
-        PlayerService.update_player(player_id, model.dict(exclude_unset=True, by_alias=True))
+        PlayerService.update_player(player_id, model.model_dump(exclude_unset=True, by_alias=True))
         return success_response(message='更新成功')
     except ValueError as e:
         return error_response('PLAYER_NOT_FOUND', str(e), 404)

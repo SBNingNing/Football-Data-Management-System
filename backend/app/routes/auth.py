@@ -3,6 +3,7 @@ from flask_jwt_extended import get_jwt_identity
 from app.services.auth_service import AuthService
 from app.middleware.auth_middleware import auth_required
 from app.middleware.validation_middleware import validate_json, validate_user_data
+from app.schemas import RegisterIn, LoginIn, LoginOut, RegisterOut, GuestLoginOut, UserView, GuestUserView
 
 auth_bp = Blueprint('auth', __name__)
 
@@ -11,32 +12,30 @@ auth_bp = Blueprint('auth', __name__)
 @validate_user_data
 def register():
     """用户注册"""
-    data = request.get_json()
+    payload = RegisterIn(**(request.get_json() or {}))
     
     user, error = AuthService.register_user(
-        username=data['username'],
-        email=data['email'],
-        password=data['password']
+        username=payload.username,
+        email=payload.email,
+        password=payload.password
     )
     
     if error:
         return jsonify({'error': error}), 400
         
-    return jsonify({
-        'message': '注册成功', 
-        'user_id': user.用户ID
-    }), 201
+    out = RegisterOut(user_id=user.用户ID)
+    return jsonify(out.model_dump(by_alias=True)), 201
 
 @auth_bp.route('/login', methods=['POST'])
 @validate_json(['username', 'password'])
 def login():
     """用户登录"""
-    data = request.get_json()
+    payload = LoginIn(**(request.get_json() or {}))
     
     # 认证用户
     user, error = AuthService.authenticate_user(
-        username=data['username'],
-        password=data['password']
+        username=payload.username,
+        password=payload.password
     )
     
     if error:
@@ -48,11 +47,8 @@ def login():
     if token_error:
         return jsonify({'error': token_error}), 500
     
-    return jsonify({
-        'message': '登录成功',
-        'access_token': access_token,
-        'user': user.to_dict()
-    }), 200
+    out = LoginOut(access_token=access_token, user=UserView(**user.to_dict()))
+    return jsonify(out.model_dump(by_alias=True)), 200
 
 @auth_bp.route('/me', methods=['GET'])
 @auth_required
@@ -66,9 +62,11 @@ def get_current_user():
     
     # 如果是注册用户，返回完整信息；如果是游客，返回基本信息
     if isinstance(user, dict):  # 游客用户
-        return jsonify(user), 200
+        guest = GuestUserView(**user)
+        return jsonify(guest.model_dump(by_alias=True)), 200
     else:  # 注册用户
-        return jsonify(user.to_dict()), 200
+        view = UserView(**user.to_dict())
+        return jsonify(view.model_dump(by_alias=True)), 200
 
 @auth_bp.route('/guest-login', methods=['POST'])
 def guest_login():
@@ -78,11 +76,5 @@ def guest_login():
     if error:
         return jsonify({'error': error}), 500
         
-    return jsonify({
-        'message': '游客登录成功',
-        'access_token': access_token,
-        'user': {
-            'username': 'guest',
-            'role': 'guest'
-        }
-    }), 200
+    out = GuestLoginOut(access_token=access_token)
+    return jsonify(out.model_dump(by_alias=True)), 200

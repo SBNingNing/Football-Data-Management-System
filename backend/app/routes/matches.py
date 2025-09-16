@@ -6,6 +6,7 @@
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required
 from app.services.match_service import MatchService
+from app.schemas import MatchCreate, MatchUpdate
 from app.middleware.match_middleware import (
     validate_create_match, validate_update_match, validate_get_match,
     validate_delete_match, validate_search_matches, MatchMiddleware
@@ -23,8 +24,9 @@ match_service = MatchService()
 @validate_create_match
 def create_match():
     """创建比赛"""
-    data = request.get_json()
-    result = match_service.create_match(data)
+    payload = MatchCreate(**(request.get_json() or {}))
+    # 服务层当前使用 team1/team2/date/matchType 等键，这里保持原前端负载结构不变
+    result = match_service.create_match(payload.model_dump(by_alias=True))
     return jsonify(result), 201
 
 
@@ -52,8 +54,8 @@ def get_matches():
 @validate_update_match
 def update_match(match_id: str):
     """更新比赛信息"""
-    data = request.get_json()
-    result = match_service.update_match(match_id, data)
+    payload = MatchUpdate(**(request.get_json() or {}))
+    result = match_service.update_match(match_id, payload.model_dump(exclude_unset=True, by_alias=True))
     return jsonify(result), 200
 
 

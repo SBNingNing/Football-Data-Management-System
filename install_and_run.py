@@ -47,6 +47,22 @@ def start_service(name, cmd, cwd=None):
         print(f"启动{name}服务失败：{e}")
         return False
 
+def find_python_executable(base_dir: Path) -> str:
+    """优先查找并返回本项目虚拟环境的 Python 解释器路径，否则回退到系统 python。
+
+    Windows: football_system/\Scripts\python.exe
+    Unix   : football_system/bin/python
+    """
+    venv_dir = base_dir / 'football_system'
+    if os.name == 'nt':
+        candidate = venv_dir / 'Scripts' / 'python.exe'
+    else:
+        candidate = venv_dir / 'bin' / 'python'
+
+    if candidate.exists():
+        return str(candidate)
+    return 'python'
+
 def main():
     """主函数"""
     print("足球管理系统安装和启动脚本")
@@ -93,11 +109,12 @@ def main():
     
     backend_run = Path("backend") / "run.py"
     if backend_run.exists():
-        # 设置环境变量并启动后端服务 - 使用新的Flask 2.3+标准
-        backend_cmd = f"cd /d \"{script_dir}\" && set FLASK_DEBUG=1 && python backend\\run.py"
-        if os.name != 'nt':
-            backend_cmd = f"cd \"{script_dir}\" && export FLASK_DEBUG=1 && python backend/run.py"
-        
+        # 设置环境变量并启动后端服务 - 使用项目虚拟环境优先的 Python 解释器
+        python_exe = find_python_executable(script_dir)
+        if os.name == 'nt':
+            backend_cmd = f"cd /d \"{script_dir}\" && set FLASK_DEBUG=1 && \"{python_exe}\" backend\\run.py"
+        else:
+            backend_cmd = f"cd \"{script_dir}\" && export FLASK_DEBUG=1 && \"{python_exe}\" backend/run.py"
         start_service("后端", backend_cmd)
     else:
         print("错误：找不到backend\\run.py文件！")
