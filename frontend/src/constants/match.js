@@ -5,24 +5,21 @@
  * 后续组件与服务都应引用这里，避免重复魔法字符串
  */
 
-// 比赛状态（内部统一枚举）
+// 比赛状态（内部统一枚举）- 与后端数据库保持一致
 export const MATCH_STATUS = Object.freeze({
-  PENDING: 'pending', // 未开始
-  ONGOING: 'ongoing', // 进行中
-  COMPLETED: 'completed' // 已完赛
+  PENDING: 'P', // 未开始
+  COMPLETED: 'F' // 已完赛
 })
 
 // 状态 -> 展示文本
 export const MATCH_STATUS_TEXT = Object.freeze({
   [MATCH_STATUS.PENDING]: '未开始',
-  [MATCH_STATUS.ONGOING]: '进行中',
   [MATCH_STATUS.COMPLETED]: '已完赛'
 })
 
 // 状态 -> 标签 type (Element Plus)
 export const MATCH_STATUS_TAG_TYPE = Object.freeze({
   [MATCH_STATUS.PENDING]: 'info',
-  [MATCH_STATUS.ONGOING]: 'warning',
   [MATCH_STATUS.COMPLETED]: 'success'
 })
 

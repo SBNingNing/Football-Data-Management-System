@@ -50,7 +50,7 @@ def start_service(name, cmd, cwd=None):
 def find_python_executable(base_dir: Path) -> str:
     """优先查找并返回本项目虚拟环境的 Python 解释器路径，否则回退到系统 python。
 
-    Windows: football_system/\Scripts\python.exe
+    Windows: football_system\\Scripts\\python.exe
     Unix   : football_system/bin/python
     """
     venv_dir = base_dir / 'football_system'
@@ -76,7 +76,6 @@ def main():
     # 检查前端目录
     print_section("检查前端目录")
     if not check_directory_exists("frontend", "前端"):
-        input("按任意键退出...")
         sys.exit(1)
     
     # 安装前端依赖
@@ -89,11 +88,9 @@ def main():
         print("找到package.json，开始安装依赖...")
         if not run_command("npm install", cwd=frontend_dir):
             print("npm install 失败！")
-            input("按任意键退出...")
             sys.exit(1)
     else:
         print("错误：frontend目录中找不到package.json！")
-        input("按任意键退出...")
         sys.exit(1)
     
     # 启动前端服务
@@ -118,7 +115,6 @@ def main():
         start_service("后端", backend_cmd)
     else:
         print("错误：找不到backend\\run.py文件！")
-        input("按任意键退出...")
         sys.exit(1)
     
     # 等待服务启动
@@ -129,10 +125,7 @@ def main():
     print("\n前后端服务已启动（调试模式）：")
     print("前端: http://localhost:3000")
     print("后端: http://localhost:5000 （调试模式，日志会显示在后端窗口中）")
-    print("\n注意：后端窗口将显示所有调试日志信息")
-    print("按任意键退出...")
-    
-    input()
+    print("\n注意：后端窗口将显示所有调试日志信息；本窗口不再阻塞，脚本即将退出。")
 
 if __name__ == "__main__":
     main()

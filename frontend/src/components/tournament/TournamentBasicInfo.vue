@@ -6,6 +6,10 @@
           <el-icon><Calendar /></el-icon>
           总赛季数: {{ competition.totalSeasons }}
         </span>
+        <span class="meta-item" v-if="typeof competition.totalMatches==='number'">
+          <el-icon><Calendar /></el-icon>
+          比赛场次: {{ competition.totalMatches }}
+        </span>
       </template>
     </EntityHeader>
   </el-card>

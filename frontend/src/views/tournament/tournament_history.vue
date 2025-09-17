@@ -5,6 +5,22 @@
     <template v-else>
       <TournamentBasicInfo :competition="competition" @back="goToHomePage" />
       <TournamentHistoryStats :competition="competition" />
+      <el-card class="competition-all-matches" v-if="allMatches && allMatches.length">
+        <template #header>
+          <div class="clearfix"><span>全部比赛 ({{ allMatches.length }})</span></div>
+        </template>
+        <el-table :data="mappedMatches" style="width:100%" max-height="420">
+          <el-table-column prop="matchDate" label="日期" />
+          <el-table-column prop="tournament" label="赛事" />
+          <el-table-column prop="season" label="赛季" />
+          <el-table-column prop="homeTeam" label="主队" />
+          <el-table-column prop="awayTeam" label="客队" />
+          <el-table-column prop="homeScore" label="主" width="60" />
+          <el-table-column prop="awayScore" label="客" width="60" />
+          <el-table-column prop="totalYellowCards" label="黄牌" width="80" />
+          <el-table-column prop="totalRedCards" label="红牌" width="80" />
+        </el-table>
+      </el-card>
       <TournamentSeasonsRecords
         :records="competition.records"
         :leaderboards="leaderboards"
@@ -16,7 +32,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, reactive } from 'vue'
+import { ref, onMounted, reactive, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { useTournamentHistory } from '@/composables/domain/tournament'
@@ -26,13 +42,15 @@ import PanelSkeleton from '@/components/common/PanelSkeleton.vue'
 import TournamentBasicInfo from '@/components/tournament/TournamentBasicInfo.vue'
 import TournamentHistoryStats from '@/components/tournament/TournamentHistoryStats.vue'
 import TournamentSeasonsRecords from '@/components/tournament/TournamentSeasonsRecords.vue'
-import '@/styles/tournament-history.css'
+// tournament-history.css样式已合并到base.css中
+import { toMatchViewModel } from '@/utils/mappers/matchMapper'
 
 const route = useRoute()
 const router = useRouter()
 const activeSeason = ref(null)
-const { competition, loading, error, load, retry } = useTournamentHistory()
+const { competition, allMatches, loading, error, load, retry } = useTournamentHistory()
 const leaderboards = reactive({})
+const mappedMatches = computed(()=> (allMatches?.value || []).map(toMatchViewModel))
 
 onMounted(async () => {
   const name = route.params.tournamentName

@@ -9,7 +9,6 @@ import './assets/main.css'
 import '@/assets/styles/variables.css'
 import '@/assets/styles/base.css'
 import '@/assets/styles/admin-management.css'
-import '@/styles/global.css'
 
 const app = createApp(App)
 

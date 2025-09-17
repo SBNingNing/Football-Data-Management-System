@@ -10,6 +10,7 @@ from app.models.competition import Competition
 from app.models.season import Season
 from app.models.team import Team
 from app.models.player_team_history import PlayerTeamHistory
+from app.models.match import Match
 from app.utils.logger import get_logger
 
 logger = get_logger(__name__)
@@ -92,11 +93,18 @@ class TournamentService:
             teams_data.append(team_dict)
         
         return teams_data
+
+    @staticmethod
+    def get_tournament_matches_data(tournament_id: int) -> List[Dict[str, Any]]:
+        """列出赛事内的比赛列表"""
+        matches = Match.query.filter(Match.tournament_id == tournament_id).order_by(Match.match_time.asc()).all()
+        return [m.to_dict() for m in matches]
     
     @staticmethod
     def build_tournament_record_dict(tournament: Tournament, teams_data: List[Dict[str, Any]]) -> Dict[str, Any]:
         """单个赛事记录结构化。"""
         total_goals = sum(team_data['goals'] for team_data in teams_data)
+        matches_data = TournamentService.get_tournament_matches_data(tournament.id)
         
         season_start_time = None
         season_end_time = None
@@ -121,6 +129,8 @@ class TournamentService:
             'teamCount': len(teams_data),
             'totalGoals': total_goals,
             'totalTeams': len(teams_data),
+            'matches': matches_data,
+            'matchCount': len(matches_data),
             'seasonStartTime': season_start_time,
             'seasonEndTime': season_end_time,
             'isGrouped': tournament.is_grouped or False,
@@ -233,41 +243,31 @@ class TournamentService:
     
     @staticmethod
     def create_tournament(data: Dict[str, Any]) -> Tournament:
-        """创建赛事。"""
-        season_start_time = datetime.fromisoformat(data['season_start_time'].replace('Z', '+00:00')) if data.get('season_start_time') else datetime.now()
-        season_end_time = datetime.fromisoformat(data['season_end_time'].replace('Z', '+00:00')) if data.get('season_end_time') else datetime.now()
-        
-        new_tournament = Tournament(
-            name=data['name'],
-            season_name=data['season_name'],
-            is_grouped=data.get('is_grouped', False),
-            season_start_time=season_start_time,
-            season_end_time=season_end_time
-        )
-        
-        db.session.add(new_tournament)
-        db.session.commit()
-        
-        return new_tournament
+        """按 competition_id + season_id 创建赛事实例（向后兼容入口）。"""
+        required_fields = ['competition_id', 'season_id']
+        for f in required_fields:
+            if f not in data or data.get(f) in (None, ''):
+                raise ValueError(f'{f}不能为空')
+        return TournamentService.create_tournament_instance(data)
     
     @staticmethod
     def update_tournament(tournament_id: int, data: Dict[str, Any]) -> Tournament:
-        """更新赛事。"""
+        """更新赛事实例：支持 is_grouped/group_count/playoff_spots，或变更 comp/season。"""
+        # 变更 comp/season 走实例更新
+        if any(k in data for k in ('competition_id', 'season_id')):
+            return TournamentService.update_tournament_instance(tournament_id, data)
+
         tournament = Tournament.query.get(tournament_id)
         if not tournament:
             raise ValueError('赛事不存在')
-        
-        if data.get('name'):
-            tournament.name = data['name']
-        if data.get('season_name'):
-            tournament.season_name = data['season_name']
+
         if 'is_grouped' in data:
             tournament.is_grouped = data['is_grouped']
-        if data.get('season_start_time'):
-            tournament.season_start_time = datetime.fromisoformat(data['season_start_time'].replace('Z', '+00:00'))
-        if data.get('season_end_time'):
-            tournament.season_end_time = datetime.fromisoformat(data['season_end_time'].replace('Z', '+00:00'))
-        
+        if 'group_count' in data:
+            tournament.group_count = data['group_count']
+        if 'playoff_spots' in data:
+            tournament.playoff_spots = data['playoff_spots']
+
         db.session.commit()
         return tournament
     
@@ -359,6 +359,14 @@ class TournamentService:
         comp_name = (data.get('competitionName') or '').strip() if data.get('competitionName') else None
         season_id = data.get('season_id')
         season_name = (data.get('seasonName') or '').strip() if data.get('seasonName') else None
+        
+        # 如果提供了ID但看起来像名称（包含非数字字符），则作为名称处理
+        if comp_id and not str(comp_id).isdigit():
+            comp_name = str(comp_id).strip()
+            comp_id = None
+        if season_id and not str(season_id).isdigit():
+            season_name = str(season_id).strip()
+            season_id = None
 
         if not comp_id and not comp_name:
             raise ValueError('competition_id 或 competitionName 必须提供其一')
@@ -377,7 +385,7 @@ class TournamentService:
                 if not allow_auto:
                     raise ValueError('赛事不存在且禁止自动创建')
                 if dry_run:
-                    # 预检模式下标记将创建
+                    # 试运行模式下标记将创建
                     competition = Competition(competition_id=-1, name=comp_name)  # 临时对象
                 else:
                     competition = Competition(name=comp_name)

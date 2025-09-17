@@ -42,6 +42,8 @@ class TournamentUtils:
             'teams': [],
             'teamCount': 0,
             'totalGoals': 0,
+            'matches': [],
+            'matchCount': 0,
             'seasonStartTime': tournament_dict['season_start_time'],
             'seasonEndTime': tournament_dict['season_end_time'],
             'isGrouped': tournament_dict['is_grouped'],

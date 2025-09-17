@@ -21,8 +21,8 @@
 </template>
 <script setup>
 import { ref } from 'vue'
-import MetaDataSection from '@/components/admin/MetaDataSection.vue'
-import DataInput from '@/components/admin/DataInput.vue'
+import MetaDataSection from '@/components/common/MetaDataSection.vue'
+import DataInput from '@/components/Data/DataInput.vue'
 
 defineProps({
   teams: { type: Array, default: () => [] },

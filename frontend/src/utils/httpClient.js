@@ -1,7 +1,16 @@
 // httpClient.js: 统一 HTTP 基础设施 (axios 封装)
-// 特性: 统一返回结构 { ok, data, error, status, headers, meta }
-// 可选: 缓存 (ttl), 重试, transform 管线, 日志, error 分类。
-// 说明: 先内置简单内存缓存; 后续可抽离到 domain/common/cache.js。
+// 核心功能:
+// - 统一返回结构 { ok, data, error, status, headers, meta }
+// - 自动认证 Token 管理和本地存储
+// - 内置缓存系统 (支持 TTL, 委托给 domain/common/cache 模块)
+// - 智能重试机制 (可配置重试次数、延迟和条件)
+// - 数据 Transform 管线 (支持多层转换函数)
+// - 完整的错误分类和规范化处理
+// - 请求性能监控和日志记录
+// - 统一响应自动解包 (支持 { success:true, data:... } 结构)
+// - 缓存管理方法 (invalidate, clear)
+// 
+// 使用场景: 所有前端 API 调用的统一入口，提供一致的错误处理和性能监控
 
 import axios from 'axios';
 import logger from '@/utils/logger';

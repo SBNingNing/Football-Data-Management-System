@@ -38,7 +38,7 @@ import TeamComparison from '@/components/match/TeamComparison.vue'
 import PlayerPerformances from '@/components/match/PlayerPerformances.vue'
 import MatchEventsTimeline from '@/components/match/MatchEventsTimeline.vue'
 import { useMatchDetailPage } from '@/composables/domain/match'
-import '@/styles/match-detail.css'
+import '@/assets/styles/match-detail.css'
 
 const {
   match, events, loading, error,
@@ -56,4 +56,3 @@ defineExpose({ retry, viewPlayerHistory })
 </script>
 
 <!-- 样式集中管理: src/styles/match-detail.css -->
- 

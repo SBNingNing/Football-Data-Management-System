@@ -1,0 +1,13 @@
+/* team-history.css: 从原 team_history.vue scoped 样式抽离，保持类名不变 */
+/* 重复样式已合并到base.css，此处只保留team-history特有样式。 */
+.team-info { padding: 20px; }
+.team-name-card { margin-bottom: 20px; }
+.team-stats { margin-bottom: 24px; }
+.team-matches { margin-bottom: 24px; }
+.player-name-cell { display: flex; align-items: center; }
+.clickable-player { display: flex; align-items: center; gap: 6px; color: #409EFF; cursor: pointer; padding: 4px 8px; border-radius: 4px; transition: all 0.3s ease; font-weight: 500; }
+.clickable-player:hover { color: #ffffff; background-color: #409EFF; transform: translateY(-1px); box-shadow: 0 2px 6px rgba(64, 158, 255, 0.3); }
+.player-icon { font-size: 14px; transition: transform 0.3s ease; }
+.clickable-player:hover .player-icon { transform: scale(1.1); }
+.player-link { color: #409EFF; text-decoration: none; }
+.player-link:hover { color: #66b1ff; text-decoration: underline; }

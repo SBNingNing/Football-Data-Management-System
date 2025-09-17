@@ -245,6 +245,36 @@ html { scroll-behavior: smooth; }
 .schedule-input-wrapper .submit-btn { min-width:160px; height:44px; border-radius:8px; font-weight:600; box-shadow:0 2px 4px rgba(34,197,94,.2); transition: var(--adm-transition-base); }
 .schedule-input-wrapper .submit-btn:hover:not(:disabled) { transform:translateY(-1px); box-shadow:0 4px 12px rgba(34,197,94,.3); }
 .schedule-input-wrapper .submit-btn:disabled { opacity:.6; cursor:not-allowed; }
+
+/* 赛程预览卡片样式 (新增) */
+.schedule-input-wrapper .match-preview-status { text-align:center; margin-bottom:10px; font-size:13px; color: var(--mgr-entity-color-score-green); font-weight:500; }
+.schedule-input-wrapper .match-preview-match-title { font-size:16px; font-weight:bold; color: var(--mgr-entity-color-text-primary); margin-bottom:10px; }
+.schedule-input-wrapper .match-preview-team-avatar { margin-right:8px; background:linear-gradient(135deg,#409EFF,#36A3FF); color:#fff; }
+.schedule-input-wrapper .match-preview-team-name { font-weight:500; color: var(--mgr-entity-color-accent-blue); }
+.schedule-input-wrapper .match-preview-details { display:flex; flex-direction:column; gap:5px; margin-bottom:10px; }
+.schedule-input-wrapper .match-preview-header { display:flex; align-items:center; justify-content:center; margin-bottom:16px; padding-bottom:12px; border-bottom:1px solid var(--adm-color-border); }
+.schedule-input-wrapper .match-preview-content { display:flex; flex-direction:column; gap:12px; }
+
+/* 添加卡片动画效果 */
+.schedule-input-wrapper .match-preview-card { animation:cardAppear 0.6s ease-out; }
+@keyframes cardAppear {
+  0% { opacity:0; transform:translateY(30px) scale(0.95); }
+  100% { opacity:1; transform:translateY(0) scale(1); }
+}
+
+/* 添加卡片悬停效果 */
+.schedule-input-wrapper .match-preview-card:hover { transform:translateY(-4px); box-shadow:0 12px 30px rgba(0,0,0,0.2); }
+
+/* 添加卡片边框渐变效果 */
+.schedule-input-wrapper .match-preview-card::before { content:''; position:absolute; top:0; left:0; right:0; height:3px; background:linear-gradient(90deg,#409EFF,#36A3FF); border-radius: var(--adm-radius-lg) var(--adm-radius-lg) 0 0; }
+
+/* 优化团队头像样式 */
+.schedule-input-wrapper .match-preview-team { display:flex; align-items:center; padding:8px 12px; background:rgba(64,158,255,0.05); border-radius:8px; transition: var(--adm-transition-base); }
+.schedule-input-wrapper .match-preview-team:hover { background:rgba(64,158,255,0.1); transform:scale(1.02); }
+
+/* 优化VS文本样式 */
+.schedule-input-wrapper .match-preview-vs { font-size:18px; font-weight:bold; color:#ffeb3b; text-shadow:0 1px 2px rgba(0,0,0,0.2); padding:0 8px; }
+
 @media (max-width:768px) {
   .schedule-input-wrapper .match-teams { flex-direction:column; gap:16px; }
   .schedule-input-wrapper .vs { transform:rotate(90deg); font-size:14px; padding:6px 12px; }

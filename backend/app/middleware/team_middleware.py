@@ -15,12 +15,12 @@ def validate_team_data(f):
         data = request.get_json()
         
         if not data:
-            logger.warning("Empty team data provided")
+            logger.warning("请提供球队数据")
             return jsonify({'status': 'error', 'message': '请提供球队数据'}), 400
         
         # 验证球队名称
         if not data.get('teamName'):
-            logger.warning("Team name is required but not provided")
+            logger.warning("球队名称不能为空")
             return jsonify({'status': 'error', 'message': '球队名称不能为空'}), 400
         
         # 验证球队名称长度
@@ -85,7 +85,7 @@ def validate_team_id(f):
         team_id = kwargs.get('team_id')
         
         if not team_id or not isinstance(team_id, int) or team_id <= 0:
-            logger.warning(f"Invalid team ID: {team_id}")
+            logger.warning(f"无效的球队ID: {team_id}")
             return jsonify({'status': 'error', 'message': '无效的球队ID'}), 400
         
         return f(*args, **kwargs)
@@ -99,7 +99,7 @@ def validate_team_name(f):
         team_name = kwargs.get('team_name')
         
         if not team_name or not isinstance(team_name, str):
-            logger.warning(f"Invalid team name: {team_name}")
+            logger.warning(f"无效的球队名称: {team_name}")
             return jsonify({'status': 'error', 'message': '无效的球队名称'}), 400
         
         # 验证球队名称长度和字符
@@ -137,10 +137,10 @@ def handle_team_errors(f):
         try:
             return f(*args, **kwargs)
         except ValueError as ve:
-            logger.warning(f"Validation error in team operation: {ve}")
+            logger.warning(f"球队操作验证错误: {ve}")
             return jsonify({'status': 'error', 'message': str(ve)}), 400
         except Exception as e:
-            logger.error(f"Unexpected error in team operation: {e}")
+            logger.error(f"球队操作意外错误: {e}")
             return jsonify({'status': 'error', 'message': '服务器内部错误'}), 500
     return decorated_function
 
@@ -151,14 +151,14 @@ def log_team_operation(operation_type: str):
         @wraps(f)
         def decorated_function(*args, **kwargs):
             # 记录操作开始
-            logger.info(f"Team {operation_type} operation started")
+            logger.info(f"球队{operation_type}操作开始")
             
             try:
                 result = f(*args, **kwargs)
-                logger.info(f"Team {operation_type} operation completed successfully")
+                logger.info(f"球队{operation_type}操作成功完成")
                 return result
             except Exception as e:
-                logger.error(f"Team {operation_type} operation failed: {e}")
+                logger.error(f"球队{operation_type}操作失败: {e}")
                 raise
                 
         return decorated_function

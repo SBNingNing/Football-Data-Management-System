@@ -40,9 +40,9 @@
 </template>
 <script setup>
 import { UserFilled, Calendar, Flag, Close } from '@element-plus/icons-vue'
-import TeamInput from '../TeamInput.vue'
-import ScheduleInput from '../ScheduleInput.vue'
-import EventInput from '../EventInput.vue'
+import TeamInput from '../../team/TeamInput.vue'
+import ScheduleInput from '../../tournament/ScheduleInput.vue'
+import EventInput from '../../Events/EventInput.vue'
 defineProps({
   type: { type: String, default: '' },
   matchType: { type: String, default: '' },

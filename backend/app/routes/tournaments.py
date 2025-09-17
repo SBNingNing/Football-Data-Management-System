@@ -59,24 +59,21 @@ def get_tournaments():
 @tournaments_bp.route('', methods=['POST'])
 @jwt_required()
 def create_tournament():
-    """创建赛事。"""
+    """创建赛事实例：要求 competition_id + season_id。"""
     try:
-        data = request.get_json()
-        
-        if not data or not data.get('name'):
-            return jsonify({'status': 'error', 'message': '赛事名称不能为空'}), 400
-        
-        if not data.get('season_name'):
-            return jsonify({'status': 'error', 'message': '赛季名称不能为空'}), 400
-        
-        new_tournament = TournamentService.create_tournament(data)
-        tournament_dict = TournamentUtils.build_tournament_dict_from_model(new_tournament)
-        
+        data = request.get_json() or {}
+        # 直接复用实例创建逻辑
+        required_fields = ['competition_id', 'season_id']
+        for field in required_fields:
+            if not data.get(field):
+                return jsonify({'status': 'error', 'message': f'{field}不能为空'}), 400
+
+        tournament = TournamentService.create_tournament_instance(data)
         return jsonify(TournamentMiddleware.format_tournament_response(
-            tournament_dict,
-            message='赛事创建成功'
+            tournament.to_dict(),
+            message='赛事实例创建成功'
         )), 201
-        
+
     except ValueError as ve:
         return jsonify({'status': 'error', 'message': str(ve)}), 400
     except Exception as e:
@@ -180,7 +177,7 @@ def create_tournament_quick():
         data = request.get_json() or {}
         result = TournamentService.create_tournament_quick(data)
         if result.get('dryRun'):
-            msg = '预检成功，将创建新赛事实例' if result['willCreate']['tournament'] else '预检成功，赛事实例已存在'
+            msg = '试运行成功，将创建新赛事实例' if result['willCreate']['tournament'] else '试运行成功，赛事实例已存在'
             code = 200
         else:
             if result.get('created'):

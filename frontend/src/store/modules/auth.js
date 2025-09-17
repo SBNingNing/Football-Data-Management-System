@@ -1,7 +1,7 @@
 // useAuthStore: 只负责用户身份 & token；不夹杂业务数据列表
 import { defineStore } from 'pinia'
 import { login, register, guestLogin, adminLogin, logout as apiLogout } from '@/api/auth'
-import { setAuthToken } from '@/api/client'
+import { setAuthToken } from '@/utils/httpClient'
 
 export const useAuthStore = defineStore('auth', {
   state: () => ({

@@ -15,7 +15,7 @@
             <el-icon><Refresh /></el-icon>
             刷新数据
           </el-button>
-          <el-button text @click="scrollToMatchTypeSelection">
+          <el-button text @click="scrollToMatchTypeSelection(matchTypeSelectorRef)">
             <el-icon><ArrowUp /></el-icon>
             回到顶部
           </el-button>
@@ -25,6 +25,7 @@
 
     <!-- 比赛类型选择与统计 (拆分组件) -->
     <MatchTypeSelector
+      ref="matchTypeSelectorRef"
       v-model="matchTypeForm.matchType"
       :get-match-type-label="getMatchTypeLabel"
       :get-match-type-tag-type="getMatchTypeTagType"
@@ -34,28 +35,8 @@
         <TypeStatsPanel
           :match-type="currentMatchType"
           :team-count="filteredTeams.length"
-            :match-count="filteredMatches.length"
-          :event-count="getEventCount()"
-        />
-      </template>
-    </MatchTypeSelector>
-
-    <!-- 录入类型选择 -->
-    <div v-if="currentMatchType && !selectedInputType" class="input-type-selection" ref="typeSelectionContainer">
-      <InputTypeCards
-        v-model="selectedInputType"
-        :team-count="filteredTeams.length"
-        :match-count="filteredMatches.length"
-        :event-count="getEventCount()"
-        @select="selectInputType"
-      />
-    </div>
-
-    <!-- 录入表单区域 -->
-    <div v-if="selectedInputType" class="input-form-container" ref="inputFormContainer">
-      <InputFormsWrapper
-        :type="selectedInputType"
-        :match-type="currentMatchType"
+              <!-- 页面头部（拆分组件） -->
+              <InputHeader @refresh="refreshData" @scroll-top="() => scrollToMatchTypeSelection(matchTypeSelectorRef)" />
         :teams="filteredTeams"
         :matches="filteredMatches"
         @back="goBackToSelection"
@@ -100,19 +81,8 @@ import {
 // props & emits
 const props = defineProps({
   teams: { type: Array, default: () => [] },
-  matches: { type: Array, default: () => [] },
-  events: { type: Array, default: () => [] }
-})
-const emit = defineEmits(['team-submit', 'schedule-submit', 'event-submit', 'refresh-data'])
-
-// state
-const matchTypeForm = reactive({ matchType: '' })
-const currentMatchType = ref('')
-const selectedInputType = ref('')
-
-// refs (仅需要仍在父级中的容器)
-const typeSelectionContainer = ref(null)
-const inputFormContainer = ref(null)
+              <EmptyState v-if="!currentMatchType" />
+const matchTypeSelectorRef = ref(null)
 
 // computed
 const filteredTeams = computed(() => props.teams.filter(t => t.matchType === currentMatchType.value))
@@ -123,6 +93,8 @@ const { getMatchTypeLabel: getMetaLabel, getMatchTypeTagType, createReactiveStat
 const { scrollToBottom, scrollToTypeSelection, scrollToTypeSelectionAfterMatchType, scrollToMatchTypeSelection } =
   useScrollHelpers({ offsets: { typeSelection: 120, matchType: 100 } })
 const getMatchTypeLabel = (type) => type ? getMetaLabel(type) : getMetaLabel(currentMatchType.value)
+          import InputHeader from './data-input/InputHeader.vue'
+          import EmptyState from './data-input/EmptyState.vue'
 const statsRef = createReactiveStats(currentMatchType, { teams: props.teams, matches: props.matches, events: props.events })
 const getEventCount = () => statsRef.value.events
 

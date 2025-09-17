@@ -167,8 +167,8 @@ class MatchUtils:
         """构建基础比赛字典"""
         match_dict = match.to_dict()
         match_dict['matchName'] = match_dict['match_name']
-        match_dict['team1'] = match.home_team.name if match.home_team else ''
-        match_dict['team2'] = match.away_team.name if match.away_team else ''
+        match_dict['team1'] = match.home_team.team_base.name if match.home_team and match.home_team.team_base else ''
+        match_dict['team2'] = match.away_team.team_base.name if match.away_team and match.away_team.team_base else ''
         match_dict['date'] = MatchUtils.format_match_time(match.match_time)
         match_dict['home_score'] = match.home_score if match.home_score is not None else 0
         match_dict['away_score'] = match.away_score if match.away_score is not None else 0

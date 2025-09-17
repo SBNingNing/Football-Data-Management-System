@@ -28,7 +28,7 @@ import PlayerTeamHistory from '@/components/player/PlayerTeamHistory.vue'
 import PlayerCareerStats from '@/components/player/PlayerCareerStats.vue'
 import PlayerSeasonsPerformance from '@/components/player/PlayerSeasonsPerformance.vue'
 import { usePlayerHistoryPage } from '@/composables/domain/player'
-import '@/styles/player-history.css'
+import '@/assets/styles/player-history.css'
 
 const { player, loading, error, activeSeason, init, refreshPlayer, retry, goToHomePage } = usePlayerHistoryPage()
 onMounted(init)

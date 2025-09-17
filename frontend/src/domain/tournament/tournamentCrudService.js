@@ -54,11 +54,12 @@ export function fetchTournamentById(id, { force=false, cacheTTL=15000 } = {}){
 
 export function createTournament(payload){
   return serviceWrap(async () => {
-    if(!payload || !payload.name) throw buildError('缺少赛事名称','TOURNAMENT_NAME_MISSING')
-    if(!payload.season_name && !payload.seasonName) throw buildError('缺少赛季名称','TOURNAMENT_SEASON_NAME_MISSING')
+    // 后端已调整为按 competition_id + season_id 创建赛事实例
+    if(!payload || !payload.competition_id) throw buildError('缺少 competition_id','TOURNAMENT_COMPETITION_ID_MISSING')
+    if(!payload.season_id) throw buildError('缺少 season_id','TOURNAMENT_SEASON_ID_MISSING')
     const res = await http.post('/tournaments', payload)
-    if(!res.ok) throw buildError(res.error?.message || '创建赛事失败','TOURNAMENT_CREATE_FAILED', res.error)
-    return normalizeTournament(res.data?.data || res.data)
+    if(!res.ok) throw buildError(res.error?.message || '创建赛事实例失败','TOURNAMENT_CREATE_FAILED', res.error)
+    return res.data?.data || res.data
   })
 }
 

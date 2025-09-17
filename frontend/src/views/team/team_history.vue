@@ -22,7 +22,7 @@ import TeamBasicInfo from '@/components/team/TeamBasicInfo.vue'
 import TeamKeyStats from '@/components/team/TeamKeyStats.vue'
 import TeamSeasonRecords from '@/components/team/TeamSeasonRecords.vue'
 import { useTeamHistoryPage } from '@/composables/domain/team'
-import '@/styles/team-history.css'
+import '@/assets/styles/team-history.css'
 
 const { team, records, loading, error, activeSeason, refreshing, refreshTeamData, navigateToPlayer, goToHomePage, init, handleRetry } = useTeamHistoryPage()
 

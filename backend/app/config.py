@@ -39,9 +39,6 @@ class Config:
     
     # 日志配置
     LOG_LEVEL = os.environ.get('LOG_LEVEL', 'INFO')
-    # 使用backend目录下的logs文件夹记录后端运行状况
-    BACKEND_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    LOG_FILE = os.environ.get('LOG_FILE', os.path.join(BACKEND_ROOT, 'logs', 'app.log'))
     LOG_MAX_BYTES = int(os.environ.get('LOG_MAX_BYTES', 10485760))  # 10MB
     LOG_BACKUP_COUNT = int(os.environ.get('LOG_BACKUP_COUNT', 5))
     
@@ -93,9 +90,9 @@ class DevelopmentConfig(Config):
     DEBUG = True
     LOG_LEVEL = 'DEBUG'
     SQLALCHEMY_ECHO = True  # 打印SQL语句
-    # 为避免开发模式下 Flask 热重载监控到项目内日志文件变更导致重启，
-    # 将默认日志文件放在系统临时目录（可通过环境变量 LOG_FILE 覆盖）。
-    LOG_FILE = os.environ.get('LOG_FILE', os.path.join(tempfile.gettempdir(), 'football_fms', 'app.log'))
+    # 使用backend目录下的logs文件夹记录后端运行状况
+    BACKEND_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    LOG_FILE = os.environ.get('LOG_FILE', os.path.join(BACKEND_ROOT, 'logs', 'app.log'))
     
     # 开发环境使用具体的前端地址，更安全
     CORS_ORIGINS = ['http://localhost:3000', 'http://localhost:8080', 'http://127.0.0.1:3000']
@@ -149,6 +146,10 @@ class TestingConfig(Config):
     
     # 测试时禁用CSRF保护
     WTF_CSRF_ENABLED = False
+    
+    # 测试环境也使用项目内的logs文件夹
+    BACKEND_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    LOG_FILE = os.environ.get('LOG_FILE', os.path.join(BACKEND_ROOT, 'logs', 'test.log'))
 
 # 配置映射
 config = {

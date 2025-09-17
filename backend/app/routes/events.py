@@ -51,13 +51,17 @@ def create_event():
 def get_events():
     """获取所有事件"""
     try:
+        # 记录请求信息
+        logger.info(f"获取事件列表请求 - Headers: {dict(request.headers)}")
+        
         # 调用服务层获取事件列表
         events_data = EventService.get_all_events()
         
+        logger.info(f"成功获取事件列表，共 {len(events_data)} 条记录")
         return jsonify({'status': 'success', 'data': events_data}), 200
         
     except Exception as e:
-        logger.error(f"获取事件列表失败: {str(e)}")
+        logger.error(f"获取事件列表失败: {str(e)}", exc_info=True)
         return jsonify({'status': 'error', 'message': f'获取失败: {str(e)}'}), 500
 
 

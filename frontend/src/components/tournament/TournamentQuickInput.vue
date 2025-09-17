@@ -9,17 +9,17 @@
       </div>
     </template>
     <el-form :model="form" label-width="110px" class="tournament-quick-form">
-      <el-form-item label="Competition ID">
-        <el-input v-model="form.competition_id" placeholder="competition_id" />
+      <el-form-item label="赛事ID或名称">
+        <el-input v-model="form.competition_id" placeholder="请输入赛事ID或赛事名称" />
       </el-form-item>
-      <el-form-item label="Season ID">
-        <el-input v-model="form.season_id" placeholder="season_id" />
+      <el-form-item label="赛季ID或名称">
+        <el-input v-model="form.season_id" placeholder="请输入赛季ID或赛季名称(如: 2024-2025)" />
       </el-form-item>
-      <el-form-item label="Dry Run">
+      <el-form-item label="试运行模式">
         <el-switch v-model="form.dryRun" />
       </el-form-item>
       <el-form-item class="entity-submit-zone">
-        <el-button type="primary" :disabled="!canSubmit" :loading="submitting" @click="submit">{{ form.dryRun ? '预检' : '快速创建/复用' }}</el-button>
+        <el-button type="primary" :disabled="!canSubmit" :loading="submitting" @click="submit">{{ form.dryRun ? '试运行' : '创建赛事实例' }}</el-button>
       </el-form-item>
     </el-form>
     <div v-if="response" class="quick-result">
@@ -55,7 +55,7 @@ function submit(){
       invalidatePrefixes: ['tournament:','stats:'],
       onSuccess: (data) => {
         response.value = JSON.stringify(data, null, 2)
-        notify.success(form.dryRun ? '预检成功' : '赛事实例创建/复用成功')
+        notify.success(form.dryRun ? '试运行成功' : '赛事实例创建成功')
         emit('submit', data)
         if(!form.dryRun) reset()
       }

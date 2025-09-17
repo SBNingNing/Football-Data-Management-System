@@ -71,15 +71,15 @@
 </template>
 
 <script setup>
-import WelcomeCard from '@/components/admin/WelcomeCard.vue'
-import EditDialogs from '@/components/admin/EditDialogs.vue'
+import WelcomeCard from '@/components/common/WelcomeCard.vue'
+import EditDialogs from '@/components/common/EditDialogs.vue'
 import AdminManageSection from '@/components/admin/AdminManageSection.vue'
 import AdminInputSection from '@/components/admin/AdminInputSection.vue'
 import AdminLoadingOverlay from '@/components/admin/AdminLoadingOverlay.vue'
 import { Setting, EditPen } from '@element-plus/icons-vue'
 import { onMounted } from 'vue'
 import { useAdminBoardPage } from '@/composables/admin'
-import '@/styles/admin-board.css'
+import '@/assets/styles/admin-board.css'
 
 const {
   activeTab, manageMatchType, loading,

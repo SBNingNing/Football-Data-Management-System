@@ -13,6 +13,8 @@ class TournamentRecord(SchemaBase):
     teamCount: int
     totalGoals: int
     totalTeams: int
+    matches: List[dict]
+    matchCount: int
     seasonStartTime: Optional[str]
     seasonEndTime: Optional[str]
     isGrouped: bool

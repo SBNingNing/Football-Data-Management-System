@@ -48,7 +48,9 @@ class Match(db.Model):
     )
     
     def __repr__(self):
-        return f'<Match {self.id} {self.home_team.name if self.home_team else "Unknown"} vs {self.away_team.name if self.away_team else "Unknown"}>'
+        home_name = self.home_team.team_base.name if self.home_team and getattr(self.home_team, 'team_base', None) else "Unknown"
+        away_name = self.away_team.team_base.name if self.away_team and getattr(self.away_team, 'team_base', None) else "Unknown"
+        return f'<Match {self.id} {home_name} vs {away_name}>'
     
     def to_dict(self):
         """将对象转换为字典，便于API返回JSON"""
@@ -58,9 +60,9 @@ class Match(db.Model):
             'match_time': self.match_time.isoformat() if self.match_time else None,
             'location': self.location,
             'home_team_id': self.home_team_id,
-            'home_team_name': self.home_team.name if self.home_team else None,
+            'home_team_name': (self.home_team.team_base.name if self.home_team and getattr(self.home_team, 'team_base', None) else None),
             'away_team_id': self.away_team_id,
-            'away_team_name': self.away_team.name if self.away_team else None,
+            'away_team_name': (self.away_team.team_base.name if self.away_team and getattr(self.away_team, 'team_base', None) else None),
             'home_score': self.home_score,
             'away_score': self.away_score,
             'group_id': self.group_id,

@@ -60,6 +60,17 @@ export function fetchTournamentAggregate(tournamentName) {
   const raw = (data?.data && !data.__raw) ? data.data : (data.data || data)
     const records = raw.records || []
     const { totalGoals, totalYellowCards, totalRedCards } = deriveTotals(records)
+    // matches 聚合（后端每个赛季记录现包含 matches / matchCount）
+    const allMatches = []
+    let totalMatches = 0
+    records.forEach(season => {
+      if (Array.isArray(season.matches)) {
+        allMatches.push(...season.matches)
+        totalMatches += season.matches.length
+      } else if (typeof season.matchCount === 'number') {
+        totalMatches += season.matchCount
+      }
+    })
     const { topScorers, topCards } = buildTopLists(records)
     const result = {
       competition: {
@@ -68,8 +79,10 @@ export function fetchTournamentAggregate(tournamentName) {
         totalGoals,
         totalYellowCards,
         totalRedCards,
+        totalMatches,
         records
       },
+      allMatches,
       topScorers,
       topCards
     }

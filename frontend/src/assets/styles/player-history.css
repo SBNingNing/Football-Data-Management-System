@@ -1,19 +1,8 @@
 /* player-history.css
  * 从 player_history.vue 抽离的样式，保持原外观。
+ * 重复样式已合并到base.css，此处只保留player-history特有样式。
  */
 .summary-stats { margin-top:25px; display:flex; justify-content:center; gap:24px; flex-wrap:wrap; }
-.meta-item { display:flex; align-items:center; gap:8px; font-size:16px; font-weight:500; opacity:.9; }
-.meta-item i { font-size:18px; }
-.stat-item { display:flex; align-items:center; height:100px; padding:15px; border-radius:8px; box-shadow:0 2px 8px rgba(0,0,0,.1); transition:transform .2s; }
-.stat-item:hover { transform:translateY(-2px); }
-.stat-info { display:flex; flex-direction:column; margin-left:15px; }
-.stat-number { font-size:28px; font-weight:700; }
-.stat-label { font-size:14px; }
-.season-title { display:flex; align-items:center; justify-content:space-between; width:100%; }
-.season-info { font-size:12px; color:#909399; margin-left:20px; }
-.season-stat { display:flex; flex-direction:column; }
-.season-label { font-size:14px; color:#909399; }
-.season-number { font-size:18px; font-weight:700; color:#303133; }
 .player-team-history { margin-bottom:20px; }
 .team-history-card { margin-bottom:10px; box-shadow:0 2px 4px rgba(0,0,0,.1); }
 .team-info-row { display:flex; align-items:center; justify-content:space-between; }

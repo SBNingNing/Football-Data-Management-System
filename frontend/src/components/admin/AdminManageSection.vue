@@ -34,7 +34,7 @@
 </template>
 <script setup>
 import { Refresh } from '@element-plus/icons-vue'
-import DataManagement from '@/components/admin/DataManagement.vue'
+import DataManagement from '@/components/Data/DataManagement.vue'
 
 defineProps({
   teams: { type: Array, default: () => [] },

@@ -25,9 +25,9 @@
 </template>
 
 <script setup>
-import SeasonInput from '@/components/admin/SeasonInput.vue'
-import CompetitionInput from '@/components/admin/CompetitionInput.vue'
-import TournamentQuickInput from '@/components/admin/TournamentQuickInput.vue'
+import SeasonInput from '@/components/tournament/SeasonInput.vue'
+import CompetitionInput from '@/components/tournament/CompetitionInput.vue'
+import TournamentQuickInput from '@/components/tournament/TournamentQuickInput.vue'
 import { useMetaData } from '@/composables/admin/useMetaData'
 import { onMounted } from 'vue'
 

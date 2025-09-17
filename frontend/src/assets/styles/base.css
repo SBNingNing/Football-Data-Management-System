@@ -16,11 +16,8 @@ html, body, #app {
   margin: 0;
   padding: 0;
   min-height: 100%;
-  font-family: var(--font-family-base);
-  background: var(--color-neutral-200);
-}
-
-body {
+  font-family: 'Helvetica Neue', Helvetica, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', Arial, sans-serif;
+  background: #f5f7fa;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -95,3 +92,105 @@ body {
   .timeline-item { padding-left:50px; }
   .timeline-marker { left:5px; }
 }
+
+/* ========== 通用统计卡片样式（从player-history.css、team-history.css、tournament-history.css合并） ========== */
+.stat-item { 
+  display: flex; 
+  align-items: center; 
+  height: 100px; 
+  padding: 15px; 
+  border-radius: 8px; 
+  box-shadow: 0 2px 8px rgba(0,0,0,.1); 
+  transition: transform .2s; 
+  gap: 16px;
+}
+.stat-item:hover { 
+  transform: translateY(-2px); 
+  box-shadow: 0 8px 24px rgba(0,0,0,0.15); 
+}
+.stat-info { 
+  display: flex; 
+  flex-direction: column; 
+  margin-left: 15px;
+}
+.stat-number { 
+  font-size: 28px; 
+  font-weight: 700; 
+  line-height: 1; 
+  margin-bottom: 6px;
+}
+.stat-label { 
+  font-size: 14px; 
+  opacity: .9;
+}
+
+/* ========== 通用赛季统计样式（从player-history.css、team-history.css、tournament-history.css合并） ========== */
+.season-title { 
+  display: flex; 
+  align-items: center; 
+  justify-content: space-between; 
+  width: 100%;
+  font-weight: 600; 
+  font-size: 16px;
+}
+.season-info { 
+  font-size: 12px; 
+  color: #909399; 
+  margin-left: 20px;
+}
+.season-stat { 
+  display: flex; 
+  flex-direction: column;
+  background: #f5f7fa; 
+  padding: 12px 14px; 
+  border-radius: 10px; 
+  text-align: center; 
+  box-shadow: 0 2px 4px rgba(0,0,0,.04);
+}
+.season-label { 
+  font-size: 14px; 
+  color: #909399; 
+  margin-bottom: 5px;
+}
+.season-number { 
+  font-size: 18px; 
+  font-weight: 700; 
+  color: #303133;
+}
+
+/* ========== 通用元数据项样式（从match-detail.css、tournament-history.css合并） ========== */
+.meta-item { 
+  display: flex; 
+  align-items: center; 
+  gap: 8px; 
+  font-size: 16px; 
+  font-weight: 500; 
+  opacity: .9;
+}
+.meta-item .el-icon { 
+  font-size: 18px;
+}
+
+/* ========== 通用返回按钮样式（从match-detail.css、tournament-history.css合并） ========== */
+.back-button-container { 
+  position: absolute; 
+  top: 20px; 
+  left: 20px;
+}
+.back-button { 
+  background-color: rgba(255,255,255,.1); 
+  border-color: rgba(255,255,255,.3); 
+  color: #fff;
+}
+.back-button:hover { 
+  background-color: rgba(255,255,255,.2); 
+  border-color: rgba(255,255,255,.5); 
+  color: #fff;
+}
+
+/* ========== Tournament History 特有样式（从tournament-history.css合并） ========== */
+.competition-history { max-width:1200px; margin:0 auto; }
+.competition-basic-info, .competition-history-stats, .competition-seasons { margin-bottom:20px; }
+.competition-name-header { background:linear-gradient(135deg,#1e88e5 0%,#1976d2 100%); color:#fff; padding:30px 20px; border-radius:8px; text-align:center; box-shadow:0 4px 12px rgba(30,136,229,.3); position:relative; }
+.tournament-title { font-size:36px; font-weight:700; margin:0 0 15px; text-shadow:0 2px 4px rgba(0,0,0,.2); }
+.tournament-meta { display:flex; justify-content:center; gap:30px; margin-top:15px; }
