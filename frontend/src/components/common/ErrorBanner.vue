@@ -1,5 +1,5 @@
 <template>
-  <div v-if="visible" class="error-banner" :class="{ 'is-dense': dense }">
+  <div v-if="visible" class="error-banner float-shadow" :class="{ 'is-dense': dense }">
     <el-icon class="icon" color="#f56c6c"><WarningFilled /></el-icon>
     <div class="message">{{ displayMessage }}</div>
     <div class="actions">
@@ -13,6 +13,7 @@
 import { computed } from 'vue'
 import { normalizeError } from '@/utils/error'
 import { WarningFilled } from '@element-plus/icons-vue'
+import '@/assets/styles/error-banner.css'
 
 const props = defineProps({
   error: { type: [Object, String], default: null },
@@ -37,11 +38,3 @@ function onRetry() {
   emit('retry')
 }
 </script>
-
-<style scoped>
-.error-banner { display:flex; align-items:center; padding:10px 12px; border:1px solid #fbc4c4; background:#fef0f0; border-radius:6px; gap:8px; }
-.error-banner.is-dense { padding:6px 8px; }
-.icon { flex-shrink:0; }
-.message { flex:1; font-size:13px; color:#c45656; line-height:1.4; }
-.actions { display:flex; align-items:center; gap:6px; }
-</style>

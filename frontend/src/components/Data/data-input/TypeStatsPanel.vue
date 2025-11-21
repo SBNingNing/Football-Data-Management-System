@@ -29,7 +29,7 @@
 <script setup>
 import { UserFilled, Calendar, Flag } from '@element-plus/icons-vue'
 const props = defineProps({
-  matchType: { type: String, default: '' },
+  matchType: { type: [String, Number], default: '' },
   teamCount: { type: Number, default: 0 },
   matchCount: { type: Number, default: 0 },
   eventCount: { type: Number, default: 0 }

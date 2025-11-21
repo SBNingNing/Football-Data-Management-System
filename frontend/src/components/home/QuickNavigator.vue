@@ -62,7 +62,9 @@ import {
   Calendar, 
   User, 
   UserFilled, 
-  Top 
+  Top,
+  Plus,
+  Minus 
 } from '@element-plus/icons-vue'
 
 export default {
@@ -75,14 +77,18 @@ export default {
     Calendar,
     User,
     UserFilled,
-    Top
+    Top,
+    Plus, // eslint-disable-line vue/no-unused-components
+    Minus // eslint-disable-line vue/no-unused-components
   },
   data() {
     return {
       showNavigator: false,
       isExpanded: true,
       activeSection: 'welcome',
-      scrollTimer: null
+      scrollTimer: null,
+      Plus,
+      Minus
     }
   },
   mounted() {
@@ -103,11 +109,20 @@ export default {
     },
     
     addScrollListener() {
-      window.addEventListener('scroll', this.handleScroll)
+      // 使用安全的事件监听器，防止扩展干扰
+      try {
+        window.addEventListener('scroll', this.handleScroll, { passive: true })
+      } catch (error) {
+        console.warn('滚动监听器添加失败:', error.message)
+      }
     },
     
     removeScrollListener() {
-      window.removeEventListener('scroll', this.handleScroll)
+      try {
+        window.removeEventListener('scroll', this.handleScroll)
+      } catch (error) {
+        console.warn('滚动监听器移除失败:', error.message)
+      }
       if (this.scrollTimer) {
         clearTimeout(this.scrollTimer)
       }

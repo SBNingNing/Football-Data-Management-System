@@ -17,7 +17,7 @@ export function toPlayerHistoryViewModel(raw = {}, playerId) {
     currentTeam: info.team_name || info.current_team || '暂无队伍',
     currentTournament: info.tournament_name || info.current_tournament || '暂无赛事',
     currentSeason: info.season_name || info.current_season || '暂无赛季',
-    matchType: info.matchType || info.match_type || 'champions-cup',
+    matchType: info.matchType || info.match_type || '',
     playerNumber: info.player_number || info.number || 0,
     totalGoals: career.total_goals || career.career_goals || 0,
     totalYellowCards: career.total_yellow_cards || career.career_yellow_cards || 0,

@@ -80,7 +80,8 @@ def create_season():
             'message': str(e)
         }), 400
     except Exception as e:
-        logger.error(f"创建赛季失败: {str(e)}")
+        import traceback
+        logger.error(f"创建赛季失败: {str(e)}\n{traceback.format_exc()}")
         return jsonify({
             'status': 'error', 
             'message': f'创建失败: {str(e)}'

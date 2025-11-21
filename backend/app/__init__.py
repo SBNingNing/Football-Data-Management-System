@@ -7,6 +7,7 @@ from app.utils.logging_config import setup_logging
 from app.errors import register_error_handlers
 from flask import g
 from app.middleware.context_middleware import ensure_request_context
+from app.middleware.security_headers import security_headers
 
 logger = get_logger(__name__)
 
@@ -14,8 +15,6 @@ def create_app(config_class=Config):
     app = Flask(__name__)
     app.config.from_object(config_class)
 
-    # 设置日志配置
-    setup_logging(app)
     app.config.setdefault('APP_NAME', 'Football Management System')
     app.config.setdefault('APP_VERSION', '1.0.0')
 
@@ -36,6 +35,9 @@ def create_app(config_class=Config):
     if config_errors:
         logger.warning(f"配置验证警告: {', '.join(config_errors)}")
 
+    # 设置日志配置（必须在配置验证之后）
+    setup_logging(app)
+
     # 扩展初始化
     init_extensions(app)
 
@@ -53,28 +55,32 @@ def create_app(config_class=Config):
     def _inject_ctx():  # pragma: no cover - 简单注入逻辑
         ensure_request_context()
 
+    # 安全头部中间件 (after_request hook)
+    @app.after_request
+    def _add_security_headers(response):
+        return security_headers(response)
+
     # 导入模型确保元数据注册
     from app import models  # noqa: F401
 
     # 注册蓝图集合
     from app.routes import auth, matches, events, teams, tournaments, competitions, seasons, player_history, team_history, stats, health
-    app.register_blueprint(auth.auth_bp, url_prefix='/api/auth')
-    app.register_blueprint(matches.matches_bp, url_prefix='/api/matches')
-    app.register_blueprint(events.events_bp, url_prefix='/api/events')
-    app.register_blueprint(teams.teams_bp, url_prefix='/api/teams')
-    app.register_blueprint(tournaments.tournaments_bp, url_prefix='/api/tournaments')
-    app.register_blueprint(competitions.competitions_bp, url_prefix='/api/competitions')
-    app.register_blueprint(seasons.seasons_bp, url_prefix='/api/seasons')
-    app.register_blueprint(player_history.player_history_bp, url_prefix='/api/player-history')
-    app.register_blueprint(team_history.team_history_bp, url_prefix='/api/team-history')
-    app.register_blueprint(stats.stats_bp, url_prefix='/api')
-    app.register_blueprint(health.health_bp, url_prefix='/api')
+    app.register_blueprint(auth.auth_bp, url_prefix='/auth')
+    app.register_blueprint(matches.matches_bp, url_prefix='/matches')
+    app.register_blueprint(events.events_bp, url_prefix='/events')
+    app.register_blueprint(teams.teams_bp, url_prefix='/teams')
+    app.register_blueprint(tournaments.tournaments_bp, url_prefix='/tournaments')
+    app.register_blueprint(competitions.competitions_bp, url_prefix='/competitions')
+    app.register_blueprint(seasons.seasons_bp, url_prefix='/seasons')
+    app.register_blueprint(player_history.player_history_bp, url_prefix='/player-history')
+    app.register_blueprint(team_history.team_history_bp, url_prefix='/team-history')
+    app.register_blueprint(stats.stats_bp, url_prefix='/stats')
+    app.register_blueprint(health.health_bp, url_prefix='/health')
     try:
         from app.routes import players
-        app.register_blueprint(players.players_bp, url_prefix='/api/players')
+        app.register_blueprint(players.players_bp, url_prefix='/players')
     except Exception as e:  # pragma: no cover
         logger.error(f"球员路由注册失败: {e}")
 
     register_error_handlers(app)
     return app
-

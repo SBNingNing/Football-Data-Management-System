@@ -6,7 +6,7 @@
  */
 import http from '@/utils/httpClient';
 
-export const fetchMatches = () => http.get('/matches');                 // GET 列表
+export const fetchMatches = (params) => http.get('/matches', { params });                 // GET 列表
 export const createMatch = (data) => http.post('/matches', data);       // POST 创建
 export const updateMatch = (id, data) => http.put(`/matches/${id}`, data); // PUT 更新
 export const deleteMatch = (id) => http.delete(`/matches/${id}`);       // DELETE 删除

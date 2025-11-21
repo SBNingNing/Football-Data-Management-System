@@ -92,7 +92,6 @@
               style="width: 100%;"
               format="YYYY-MM-DD HH:mm"
               value-format="YYYY-MM-DD HH:mm:ss"
-              :disabled-date="disabledDate"
             >
               <template #prefix>
                 <el-icon><Calendar /></el-icon>
@@ -113,25 +112,6 @@
                 <el-icon><MapLocation /></el-icon>
               </template>
             </el-input>
-          </el-form-item>
-        </el-col>
-      </el-row>
-
-      <el-row :gutter="24">
-        <el-col :span="24">
-          <el-form-item label="所属赛事实例" prop="tournamentId" required>
-            <el-select
-              v-model="scheduleForm.tournamentId"
-              placeholder="请选择赛事实例"
-              size="large"
-              style="width:100%;"
-              filterable
-              clearable
-              :disabled="tournamentsLoading"
-              :no-data-text="tournamentsLoading ? '加载中...' : '暂无赛事实例'"
-            >
-              <el-option v-for="t in tournaments" :key="t.id" :label="t.name || ('Tournament#'+t.id)" :value="t.id" />
-            </el-select>
           </el-form-item>
         </el-col>
       </el-row>
@@ -209,16 +189,13 @@ export default {
   },
   props: {
     matchType: {
-      type: String,
+      type: [String, Number],
       default: ''
     },
     teams: {
       type: Array,
       default: () => []
     }
-  },
-  mounted(){
-    this.loadTournaments()
   },
   // 声明组件可触发的事件，便于类型与 Lint 校验
   emits: ['submit'],
@@ -241,7 +218,6 @@ export default {
         team2Id: [{ required: true, message: '请选择参赛球队2', trigger: 'change' }],
         date: [{ required: true, message: '请选择比赛日期', trigger: 'change' }],
         location: [{ required: true, message: '请输入比赛地点', trigger: 'blur' }],
-        tournamentId: [{ required: true, message: '请选择赛事实例', trigger: 'change' }]
       }
     }
   },
@@ -252,8 +228,7 @@ export default {
              this.scheduleForm.team2Id && 
              this.scheduleForm.date && 
              this.scheduleForm.location.trim() &&
-             this.scheduleForm.team1Id !== this.scheduleForm.team2Id &&
-             this.scheduleForm.tournamentId
+             this.scheduleForm.team1Id !== this.scheduleForm.team2Id
     },
     team1Name(){
       const t = this.teams.find(t=>t.id===this.scheduleForm.team1Id)
@@ -263,6 +238,9 @@ export default {
       const t = this.teams.find(t=>t.id===this.scheduleForm.team2Id)
       return t?.teamName || ''
     }
+  },
+  mounted(){
+    this.loadTournaments()
   },
   methods: {
     async handleSubmit() {
@@ -282,9 +260,12 @@ export default {
         homeTeamId: this.scheduleForm.team1Id,
         awayTeamId: this.scheduleForm.team2Id,
         location: this.scheduleForm.location,
-        tournamentId: this.scheduleForm.tournamentId || this.getTournamentIdByMatchType(this.matchType) // 添加tournamentId（优先选择器）
+        competitionId: this.matchType, // 传入 competitionId
+        tournamentId: this.scheduleForm.tournamentId || (this.tournaments.length > 0 ? this.tournaments[0].id : 1) // 默认值改为1，避免None
       };
       
+      console.log('[ScheduleInput] Submitting matchData:', matchData, 'this.matchType:', this.matchType);
+
       // 处理日期格式
       if (matchData.matchTime instanceof Date) {
         const pad = n => n < 10 ? '0' + n : n;
@@ -317,35 +298,47 @@ export default {
     
     // 根据比赛类型获取赛事ID
     getTournamentIdByMatchType(matchType) {
-      // 这里需要根据实际业务逻辑返回对应的tournamentId
-      // 暂时返回默认值1，后续可以根据需要从props或其他地方获取
-      const tournamentMap = {
-        'champions-cup': 1,
-        'womens-cup': 2, 
-        'eight-a-side': 3
-      };
-      return tournamentMap[matchType] || 1;
+      // 如果是数字ID，直接返回
+      if (typeof matchType === 'number' || !isNaN(Number(matchType))) {
+        return Number(matchType);
+      }
+      // 尝试从已加载的赛事列表中查找
+      if (this.tournaments && this.tournaments.length > 0) {
+        const comp = this.tournaments.find(t => t.name === matchType);
+        if (comp) return comp.id;
+      }
+      return 1; // 默认回退
     },
     getMatchTypeLabel() {
-      const labels = {
-        'champions-cup': '冠军杯',
-        'womens-cup': '巾帼杯',
-        'eight-a-side': '八人制比赛'
-      };
-      return labels[this.matchType] || '';
+      if (!this.matchType) return '';
+      // 尝试通过ID查找名称
+      if (this.tournaments && this.tournaments.length > 0) {
+        const comp = this.tournaments.find(t => t.id == this.matchType);
+        if (comp) return comp.name;
+      }
+      // 如果找不到或matchType本身就是名称，直接返回
+      return String(this.matchType);
     },
     async loadTournaments(){
       this.tournamentsLoading = true
       try{
         const { ok, data, error } = await fetchTournaments({ force:true })
-        if(ok){ this.tournaments = Array.isArray(data)? data : [] }
+        if(ok){ 
+          const all = Array.isArray(data)? data : [] 
+          // 如果传入了 matchType (competitionId)，则进行过滤
+          if(this.matchType) {
+            this.tournaments = all.filter(t => t.competitionId == this.matchType)
+            // 如果只有一个选项，自动选中
+            if(this.tournaments.length === 1 && !this.scheduleForm.tournamentId) {
+              this.scheduleForm.tournamentId = this.tournaments[0].id
+            }
+          } else {
+            this.tournaments = all
+          }
+        }
         else { this.$message.info(error?.message || '无法加载赛事实例列表'); this.tournaments = [] }
       }catch{ this.tournaments = [] }
       finally{ this.tournamentsLoading = false }
-    },
-    disabledDate(time) {
-      // 禁用过去的日期
-      return time.getTime() < Date.now() - 8.64e7; // 24小时前
     },
     formatDate(date) {
       if (!date) return '';

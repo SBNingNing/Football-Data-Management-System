@@ -12,6 +12,4 @@
 <script setup>
 import { Box } from '@element-plus/icons-vue'
 </script>
-<style scoped>
-.empty-state { }
-</style>
+<!-- 无需局部样式：使用全局样式或组件默认样式即可 -->

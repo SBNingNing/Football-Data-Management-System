@@ -46,6 +46,55 @@
 .pagination-wrapper { margin-top:30px; display:flex; justify-content:center; }
 .manage-card { margin-bottom:20px; }
 
+/* ========== DataInput 页面样式（合并自 input-management.css） ========== */
+.data-input-container { max-width:1200px; margin:0 auto; padding:0 0 100px 0; }
+.page-header { margin-bottom:32px; padding:32px 0; }
+.header-content { display:flex; justify-content:space-between; align-items:flex-start; gap:24px; min-height:80px; }
+.header-main { flex:1; min-width:0; }
+.header-actions { display:flex; gap:12px; flex-shrink:0; align-items:flex-start; padding-top:8px; }
+.refresh-button { min-width:120px; white-space:nowrap; font-weight:600; }
+.steps-container { margin-bottom:32px; background:#fff; padding:24px; border-radius:16px; border:1px solid var(--adm-color-border); box-shadow: var(--adm-shadow-card); }
+.match-type-card { margin-bottom:32px; border:1px solid var(--adm-color-border); border-radius:16px; overflow:hidden; transition: var(--adm-transition-base); scroll-margin-top:100px; }
+.match-type-card:hover { border-color: var(--adm-color-accent-blue); box-shadow: var(--adm-shadow-accent-blue); transform: translateY(-2px); }
+.card-header { display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:16px; }
+.header-right { display:flex; align-items:center; gap:12px; flex-shrink:0; }
+.card-title { display:flex; align-items:center; font-size:18px; font-weight:600; color: var(--adm-color-text-primary); }
+.card-title .el-icon { margin-right:10px; color: var(--adm-color-accent-amber); font-size:20px; }
+.current-type-tag { font-weight:600; box-shadow:0 2px 8px rgba(0,0,0,.1); white-space:nowrap; }
+.header-refresh-btn { box-shadow:0 2px 8px rgba(59,130,246,.2); transition: var(--adm-transition-base); }
+.header-refresh-btn:hover { transform:translateY(-1px); box-shadow:0 4px 12px rgba(59,130,246,.3); }
+.match-type-content { padding:8px 0; }
+.type-selector-wrapper { padding:16px 0; }
+/* element-plus 包装器细节（全局选择器替代 :deep）*/
+.type-selector .el-select__wrapper { min-height:48px; border-radius:12px; border:2px solid var(--adm-color-border); transition: var(--adm-transition-base); box-shadow:0 2px 8px rgba(0,0,0,.05); }
+.type-selector .el-select__wrapper:hover { border-color: var(--adm-color-accent-blue); box-shadow:0 4px 12px rgba(59,130,246,.1); }
+.type-selector .el-select__wrapper.is-focused { border-color: var(--adm-color-accent-blue); box-shadow:0 0 0 3px rgba(59,130,246,.1); }
+.type-selector .el-select__selected-item { font-weight:500; color: var(--adm-color-text-primary); }
+.option-content { display:flex; align-items:center; gap:12px; padding:4px 0; width:100%; }
+.option-icon { font-size:18px; width:24px; text-align:center; flex-shrink:0; }
+.option-info { flex:1; min-width:0; }
+.option-name { font-weight:500; color: var(--adm-color-text-primary); font-size:14px; line-height:1.2; }
+.option-desc { font-size:12px; color: var(--adm-color-text-secondary); margin-top:2px; line-height:1.2; }
+.match-type-dropdown .el-select-dropdown__item { padding:12px 16px; border-radius:8px; margin:4px 8px; transition: all .2s ease; min-height:48px; display:flex; align-items:center; }
+.match-type-dropdown .el-select-dropdown__item:hover { background: rgba(59,130,246,.05); }
+.match-type-dropdown .el-select-dropdown__item.is-selected { background: rgba(59,130,246,.1); color: var(--adm-color-accent-blue); font-weight:600; }
+.match-type-info { padding:16px 0; }
+.info-header { margin-bottom:16px; }
+.info-title { margin:0; font-size:16px; font-weight:600; color: var(--adm-color-text-primary); }
+.info-grid { display:grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap:16px; }
+.no-match-type { padding:40px; text-align:center; }
+.empty-illustration { display:flex; flex-direction:column; align-items:center; gap:16px; }
+.empty-icon { font-size:48px; color: var(--adm-color-accent-amber); }
+.empty-text { color: var(--adm-color-text-secondary); font-size:16px; }
+.input-type-selection { margin-bottom:32px; scroll-margin-top:120px; position:relative; }
+.selection-card { border:1px solid var(--adm-color-border); border-radius:16px; overflow:hidden; }
+.type-cards-container { display:grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap:24px; padding:8px 0; }
+.input-form-container { margin-bottom:80px; scroll-margin-top:100px; }
+.input-form-container::after { content:''; display:block; height:20px; background: linear-gradient(to bottom, transparent, rgba(59,130,246,.05)); border-radius:0 0 16px 16px; margin-top:20px; }
+@media (max-width:768px) { .input-form-container { scroll-margin-top:100px; } .form-card { margin-top:20px; } }
+@media (max-width:576px) { .input-form-container { scroll-margin-top:80px; } }
+.type-card:focus { outline:2px solid var(--adm-color-accent-blue); outline-offset:2px; }
+
 /* ========== DataInput 通用卡片 & 选择 ========== */
 .info-card { display:flex; align-items:center; gap:12px; padding:20px; background:#fff; border-radius:12px; border:1px solid var(--adm-color-border); transition: var(--adm-transition-base); position:relative; overflow:hidden; }
 .info-card::before { content:''; position:absolute; top:0; left:0; right:0; height:3px; background: linear-gradient(90deg, var(--card-color), var(--card-color-light)); }
@@ -185,26 +234,49 @@ html { scroll-behavior: smooth; }
 .team-input-wrapper .submit-btn:hover:not(:disabled) { transform:translateY(-1px); box-shadow:0 4px 12px rgba(34,197,94,.3); }
 .team-input-wrapper .submit-btn:disabled { opacity:.6; cursor:not-allowed; }
 .team-input-wrapper .player-selector-dialog :deep(.el-dialog__body) { padding:20px; }
-.team-input-wrapper .player-selector-content { max-height:500px; display:flex; flex-direction:column; }
-.team-input-wrapper .search-bar { margin-bottom:20px; display:flex; gap:12px; align-items:center; }
-.team-input-wrapper .search-input { flex:1; }
-.team-input-wrapper .refresh-btn { border-radius:8px; min-width:100px; }
-.team-input-wrapper .player-note { color:#f56c6c; font-size:12px; background:#fef0f0; padding:2px 6px; border-radius:4px; }
-.team-input-wrapper .existing-players-list { flex:1; max-height:400px; overflow-y:auto; border:1px solid var(--adm-color-border); border-radius:8px; position:relative; }
-.team-input-wrapper .existing-player-item { display:flex; justify-content:space-between; align-items:center; padding:16px; border-bottom:1px solid #f3f4f6; cursor:pointer; transition: var(--adm-transition-base); }
-.team-input-wrapper .existing-player-item:hover { background:#f8fafc; }
-.team-input-wrapper .existing-player-item.selected { background:#ecfdf5; border-color:#22c55e; }
-.team-input-wrapper .player-info { flex:1; }
-.team-input-wrapper .player-name { font-weight:600; color: var(--adm-color-text-primary); margin-bottom:4px; }
-.team-input-wrapper .player-details { display:flex; gap:12px; font-size:13px; color: var(--adm-color-text-secondary); }
-.team-input-wrapper .player-student-id { color:#4b5563; }
-.team-input-wrapper .selection-indicator { width:24px; height:24px; display:flex; align-items:center; justify-content:center; }
-.team-input-wrapper .no-players { padding:40px; text-align:center; }
+.player-selector-dialog .player-selector-content { max-height:500px; display:flex; flex-direction:column; }
+.player-selector-dialog .search-bar { margin-bottom:20px; display:flex; gap:12px; align-items:center; }
+.player-selector-dialog .search-input { flex:1; }
+.player-selector-dialog .refresh-btn { border-radius:8px; min-width:100px; }
+.player-selector-dialog .existing-players-list { flex:1; max-height:500px; overflow-y:auto; border:1px solid var(--adm-color-border); border-radius:8px; position:relative; padding: 16px; background-color: #f8fafc; }
+.player-selector-dialog .players-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 16px; }
+.player-selector-dialog .player-card-item { 
+  background: #fff; 
+  border: 1px solid var(--adm-color-border); 
+  border-radius: 8px; 
+  cursor: pointer; 
+  transition: all 0.2s ease; 
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+.player-selector-dialog .player-card-item:hover { transform: translateY(-2px); box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); border-color: var(--adm-color-primary); }
+.player-selector-dialog .player-card-item.selected { 
+  border-color: var(--adm-color-success); 
+  background-color: #ecfdf5; 
+  transform: translateY(-4px); 
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  z-index: 1;
+}
+.player-selector-dialog .card-header { 
+  padding: 12px; 
+  border-bottom: 1px solid #f3f4f6; 
+  display: flex; 
+  justify-content: space-between; 
+  align-items: center; 
+  font-weight: 600;
+  color: var(--adm-color-text-primary);
+}
+.player-selector-dialog .check-icon { color: var(--adm-color-success); font-weight: bold; }
+.player-selector-dialog .card-body { padding: 12px; display: flex; flex-direction: column; gap: 8px; }
+.player-selector-dialog .info-row { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--adm-color-text-secondary); }
+.player-selector-dialog .status-row { margin-top: 4px; }
+.player-selector-dialog .no-players { padding:40px; text-align:center; }
 /* 过渡 */
-.team-input-wrapper .player-list-enter-active, .team-input-wrapper .player-list-leave-active { transition: var(--adm-transition-base); }
-.team-input-wrapper .player-list-enter-from { opacity:0; transform:translateY(20px) scale(.9); }
-.team-input-wrapper .player-list-leave-to { opacity:0; transform:translateY(-20px) scale(.9); }
-.team-input-wrapper .player-list-move { transition: transform .3s ease; }
+.player-selector-dialog .player-list-enter-active, .player-selector-dialog .player-list-leave-active { transition: var(--adm-transition-base); }
+.player-selector-dialog .player-list-enter-from { opacity:0; transform:translateY(20px) scale(.9); }
+.player-selector-dialog .player-list-leave-to { opacity:0; transform:translateY(-20px) scale(.9); }
+.player-selector-dialog .player-list-move { transition: transform .3s ease; }
 /* 响应式 */
 @media (max-width:768px) {
   .team-input-wrapper .player-header { flex-direction:column; gap:16px; align-items:stretch; }

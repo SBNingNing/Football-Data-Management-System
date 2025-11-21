@@ -7,64 +7,59 @@ import cache from '@/domain/common/cache'
 import http from '@/utils/httpClient'
 import { serviceWrap, buildError } from '@/utils/error'
 
-// 原始历史数据加载（可被真实 API 替换）
-async function fetchRawPlayerHistory(playerId, { loader }) {
-  if (loader) {
-    return loader(playerId)
-  }
-  throw new Error('缺少 loader，尚未接入真实 API')
-}
-
 // 获取球员聚合历史视图
-export async function fetchPlayerAggregate(playerId, { force = false, loader, cacheTTL = 20000 } = {}) {
-  if (!playerId && playerId !== 0) throw buildError('缺少 playerId', 'PLAYER_ID_MISSING')
-  const cacheKey = `player:${playerId}`
+export async function fetchPlayerAggregate(playerId, { force = false, cacheTTL = 20000 } = {}) {
+  if (!playerId && playerId !== 0) throw buildError('缺少 playerId', 'PLAYER_ID_MISSING');
+  const cacheKey = `player:${playerId}`;
+  
   if (!force) {
-    const hit = cache.getCache?.(cacheKey)
-    if (hit) return hit
+    const hit = cache.getCache?.(cacheKey);
+    if (hit) return hit;
   }
-  const res = await fetchRawPlayerHistory(playerId, { loader })
-  // 兼容 axios client 返回体结构 r.data 可能已是 {status:'success',data:{...}} 或直接 {...}
-  let dataPayload = res
-  if (res && res.data) dataPayload = res.data
-  const ok = (dataPayload && (dataPayload.success === true || dataPayload.status === 'success')) || !!dataPayload?.player_info || Array.isArray(dataPayload?.seasons)
-  const dataObj = dataPayload?.data && (dataPayload.success === true || dataPayload.status === 'success') ? dataPayload.data : dataPayload
-  if (!ok || !dataObj) {
-    throw buildError(dataPayload?.message || '获取球员历史失败', 'PLAYER_HISTORY_FETCH_FAILED', dataPayload)
-  }
-  const vm = toPlayerHistoryViewModel(dataObj, playerId)
-  try {
-    const seasonCount = vm.seasons?.length || 0
-    const tournamentSet = new Set()
-    vm.seasons?.forEach(s => {
-      Object.values(s.tournaments || {}).forEach(t => tournamentSet.add(t.tournament_name))
-    })
-    vm.meta = { seasonCount, tournamentCount: tournamentSet.size }
-  } catch (e) {
-    logger.warn('[playerService] 计算附加统计失败', e)
-  }
-  const result = {
-    player: vm,
-    stats: {
-      totalGoals: vm.totalGoals,
-      totalYellowCards: vm.totalYellowCards,
-      totalRedCards: vm.totalRedCards,
-      seasons: vm.seasons?.length || 0,
-      tournaments: vm.meta?.tournamentCount || 0
-    },
-    seasons: vm.seasons || [],
-    teamHistories: vm.teamHistories || []
-  }
-  cache.setCache?.(cacheKey, result, cacheTTL)
-  logger.debug?.('[playerService] fetchPlayerAggregate success', { playerId, seasons: result.seasons.length })
-  return result
-}
 
-// 安全包装：提供与其他 service 一致的 { ok,data,error } 形式 (可供组件直接调用)
-export function fetchPlayerAggregateSafe(playerId, opts) {
-  return serviceWrap(async () => fetchPlayerAggregate(playerId, opts))
-}
+  const res = await http.get(`/player-history/${playerId}/complete`);
+  logger.debug(`[playerService] fetchPlayerAggregate raw response for playerId ${playerId}:`, res);
 
+  // 首先检查 httpClient 返回的 'ok' 或 'success' 标志
+  if (res.ok === false) {
+    // 如果请求不成功，抛出一个标准的错误对象
+    throw res.error || buildError('API 请求失败', 'API_REQUEST_FAILED', res);
+  }
+
+  // 如果请求成功，res.data 应该包含我们需要的核心数据
+  const data = res.data;
+
+  // 验证响应是否包含有效数据
+  if (!data || !data.player_info || !Array.isArray(data.seasons)) {
+    logger.error('[playerService] Invalid data structure from API', data);
+    throw buildError('获取球员历史失败：数据结构无效', 'PLAYER_HISTORY_FETCH_FAILED', data);
+  }
+
+  // 从 seasons 中手动生成 teamHistories 以兼容旧组件
+  const teamHistories = data.seasons.flatMap(season => 
+    (season.teams ?? []).map(team => ({
+      season_name: season.season_name || '未知赛季',
+      team_name: team.team_name || '未知队伍',
+      tournament_name: team.tournament_info?.name || '未知赛事',
+      player_number: team.player_number ?? null,
+      goals_scored: team.goals_scored ?? 0,
+      yellow_cards: team.yellow_cards ?? 0,
+      red_cards: team.red_cards ?? 0,
+    }))
+  );
+
+  // 转换数据为视图模型
+  const viewModel = toPlayerHistoryViewModel(data);
+  logger.debug(`[playerService] ViewModel after mapping:`, viewModel);
+
+  // 为视图模型附加我们手动生成的 teamHistories
+  viewModel.teamHistories = teamHistories;
+  
+  // 缓存处理
+  cache.setCache?.(cacheKey, viewModel, cacheTTL);
+  
+  return viewModel;
+}
 // ------------------ 单个球员 ------------------
 export function fetchPlayer(playerId) {
   return serviceWrap(async () => {

@@ -1,0 +1,245 @@
+.team-detail-dialog {
+  .loading-container,
+  .error-container {
+    min-height: 300px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .team-detail-content {
+    .team-summary-card {
+      margin-bottom: 20px;
+    }
+
+    .players-card,
+    .seasons-card {
+      margin-bottom: 20px;
+    }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+
+      .header-icon {
+        font-size: 18px;
+        color: var(--el-color-primary);
+      }
+
+      .header-title {
+        font-weight: 600;
+        font-size: 16px;
+      }
+    }
+
+    .stat-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px;
+      border-radius: 8px;
+      background: var(--el-bg-color-page);
+      transition: all 0.3s ease;
+
+      &:hover {
+        background: var(--el-fill-color-light);
+        transform: translateY(-2px);
+      }
+
+      .stat-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 18px;
+        color: white;
+
+        &.goals { background: linear-gradient(135deg, #67c23a, #85ce61); }
+        &.points { background: linear-gradient(135deg, #e6a23c, #f0a020); }
+        &.rank { background: linear-gradient(135deg, #409eff, #66b1ff); }
+        &.conceded { background: linear-gradient(135deg, #f56c6c, #f78989); }
+        &.difference { background: linear-gradient(135deg, #909399, #a6a9ad); }
+        &.yellow { background: linear-gradient(135deg, #e6a23c, #f0a020); }
+        &.red { background: linear-gradient(135deg, #f56c6c, #f78989); }
+        &.own-goals { background: linear-gradient(135deg, #9c27b0, #ba68c8); }
+      }
+
+      .stat-content {
+        .stat-number {
+          font-size: 24px;
+          font-weight: 700;
+          color: var(--el-text-color-primary);
+          line-height: 1;
+        }
+
+        .stat-label {
+          font-size: 12px;
+          color: var(--el-text-color-regular);
+          margin-top: 4px;
+        }
+      }
+    }
+
+    .players-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 16px;
+
+      .player-item {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 12px;
+        border-radius: 8px;
+        background: var(--el-bg-color-page);
+        transition: all 0.3s ease;
+
+        &:hover {
+          background: var(--el-fill-color-light);
+          transform: translateY(-2px);
+        }
+
+        .player-avatar {
+          position: relative;
+          width: 40px;
+          height: 40px;
+          border-radius: 50%;
+          background: var(--el-color-primary);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: white;
+
+          .player-number {
+            position: absolute;
+            bottom: -4px;
+            right: -4px;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: var(--el-color-warning);
+            font-size: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+          }
+        }
+
+        .player-info {
+          flex: 1;
+
+          .player-name {
+            font-weight: 600;
+            color: var(--el-text-color-primary);
+            margin-bottom: 4px;
+          }
+
+          .player-stats {
+            display: flex;
+            gap: 8px;
+
+            .stat {
+              font-size: 12px;
+              padding: 2px 6px;
+              border-radius: 4px;
+              background: var(--el-fill-color);
+              color: var(--el-text-color-regular);
+
+              &.yellow {
+                background: var(--el-color-warning-light-9);
+                color: var(--el-color-warning);
+              }
+
+              &.red {
+                background: var(--el-color-danger-light-9);
+                color: var(--el-color-danger);
+              }
+
+              &.own-goals {
+                background: var(--el-color-info-light-9);
+                color: var(--el-color-info);
+              }
+            }
+          }
+        }
+      }
+    }
+
+    .seasons-list {
+      .season-item {
+        margin-bottom: 20px;
+        padding: 16px;
+        border-radius: 8px;
+        background: var(--el-bg-color-page);
+
+        &:last-child {
+          margin-bottom: 0;
+        }
+
+        .season-header {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          margin-bottom: 12px;
+
+          h4 {
+            margin: 0;
+            color: var(--el-text-color-primary);
+          }
+        }
+
+        .season-stats {
+          display: flex;
+          gap: 16px;
+          margin-bottom: 12px;
+
+          .stat-item {
+            font-size: 14px;
+            color: var(--el-text-color-regular);
+          }
+        }
+
+        .tournaments-list {
+          .tournament-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 8px 12px;
+            border-radius: 6px;
+            background: var(--el-fill-color-light);
+            margin-bottom: 8px;
+
+            &:last-child {
+              margin-bottom: 0;
+            }
+
+            .tournament-name {
+              font-weight: 600;
+              color: var(--el-text-color-primary);
+            }
+
+            .tournament-ranking {
+              color: var(--el-color-primary);
+              font-weight: 600;
+            }
+
+            .tournament-stats {
+              display: flex;
+              gap: 8px;
+              font-size: 12px;
+              color: var(--el-text-color-regular);
+            }
+          }
+        }
+      }
+    }
+  }
+
+  .dialog-footer {
+    text-align: right;
+  }
+}

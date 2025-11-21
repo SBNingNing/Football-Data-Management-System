@@ -21,20 +21,25 @@
               </el-input>
             </el-col>
             <el-col :span="6">
-              <el-select :model-value="manageMatchType" placeholder="请选择比赛类型" @update:model-value="$emit('filter-change', $event)" style="width: 100%;">
+              <el-select 
+                v-model="manageMatchType" 
+                placeholder="请选择比赛类型" 
+                style="width: 100%;"
+              >
                 <el-option label="全部" value="" />
-                <el-option label="冠军杯" value="champions-cup" />
-                <el-option label="巾帼杯" value="womens-cup" />
-                <el-option label="八人制比赛" value="eight-a-side" />
+                <el-option v-for="opt in competitionOptions" :key="opt.value" :label="opt.label" :value="opt.value" />
               </el-select>
             </el-col>
-            <el-col :span="6">
-              <el-select v-model="matchStatusFilter" placeholder="比赛状态" clearable style="width: 100%;">
-                <el-option label="未开始" value="pending" />
-                <el-option label="进行中" value="ongoing" />
-                <el-option label="已完赛" value="completed" />
-              </el-select>
-            </el-col>
+              <el-col :span="5">
+                <el-select 
+                  v-model="matchStatusFilter" 
+                  placeholder="选择比赛状态" 
+                  clearable
+                >
+                  <el-option label="未开始" value="P" />
+                  <el-option label="已完赛" value="F" />
+                </el-select>
+              </el-col>
             <el-col :span="4">
               <el-button type="primary" @click="$emit('refresh')" :icon="RefreshIcon" style="width: 100%;">刷新</el-button>
             </el-col>
@@ -60,7 +65,7 @@
             <div class="card-actions">
               <el-button size="small" type="primary" @click="$emit('edit-match', match)">编辑</el-button>
               <el-button size="small" type="danger" @click="$emit('delete-match', match.id || match.matchId)">删除</el-button>
-              <el-button v-if="match.status !== 'completed' && match.status !== '已完赛'" size="small" type="success" @click="$emit('complete-match', match.id || match.matchId)">完赛</el-button>
+              <el-button v-if="['P', 'pending', '待开始', '未开始'].includes(match.status)" size="small" type="success" @click="$emit('complete-match', match.id || match.matchId)">完赛</el-button>
             </div>
           </el-card>
         </template>
@@ -88,11 +93,13 @@
               </el-input>
             </el-col>
             <el-col :span="6">
-              <el-select :model-value="manageMatchType" placeholder="请选择比赛类型" @update:model-value="$emit('filter-change', $event)" style="width: 100%;">
+              <el-select 
+                v-model="manageMatchType" 
+                placeholder="请选择赛事类型" 
+                style="width: 100%;"
+              >
                 <el-option label="全部" value="" />
-                <el-option label="冠军杯" value="champions-cup" />
-                <el-option label="巾帼杯" value="womens-cup" />
-                <el-option label="八人制比赛" value="eight-a-side" />
+                <el-option v-for="opt in competitionOptions" :key="opt.value" :label="opt.label" :value="opt.value" />
               </el-select>
             </el-col>
             <el-col :span="6">
@@ -147,11 +154,13 @@
               </el-input>
             </el-col>
             <el-col :span="6">
-              <el-select :model-value="manageMatchType" placeholder="请选择比赛类型" @update:model-value="$emit('filter-change', $event)" style="width: 100%;">
+              <el-select 
+                v-model="manageMatchType" 
+                placeholder="请选择比赛类型" 
+                style="width: 100%;"
+              >
                 <el-option label="全部" value="" />
-                <el-option label="冠军杯" value="champions-cup" />
-                <el-option label="巾帼杯" value="womens-cup" />
-                <el-option label="八人制比赛" value="eight-a-side" />
+                <el-option v-for="opt in competitionOptions" :key="opt.value" :label="opt.label" :value="opt.value" />
               </el-select>
             </el-col>
             <el-col :span="6">
@@ -167,25 +176,33 @@
         <template #card="{ entity: player }">
           <el-card shadow="hover" class="player-card">
             <div class="player-info">
-              <div class="player-avatar"><el-icon class="avatar-icon"><User /></el-icon></div>
+              <div class="player-avatar">
+                <el-icon class="avatar-icon"><User /></el-icon>
+              </div>
               <div class="player-details">
                 <div class="player-name">{{ player.name || '未知球员' }}</div>
                 <div class="player-meta">
-                  <div class="meta-item"><el-icon><CreditCard /></el-icon><span>{{ player.studentId || player.id || '未知' }}</span></div>
-                  <div class="meta-item"><el-icon><Tickets /></el-icon><span>{{ player.number || player.jerseyNumber || '未知' }}号</span></div>
-                  <div class="meta-item"><el-icon><Trophy /></el-icon><span>{{ player.teamName || player.team || '未知球队' }}</span></div>
-                  <div class="meta-item"><el-icon><Collection /></el-icon><span>{{ getMatchTypeLabel(player.matchType || player.type) }}</span></div>
+                  <div class="meta-item"><el-icon><CreditCard /></el-icon><span>{{ player.studentId || player.id || '无学号' }}</span></div>
+                  <div class="meta-item"><el-icon><Football /></el-icon><span>{{ player.teamName || player.team || '无球队' }}</span></div>
+                  <div class="meta-item"><el-icon><Trophy /></el-icon><span>{{ getMatchTypeLabel(player.matchType || player.type) }}</span></div>
+                  <div class="meta-item"><el-icon><Tickets /></el-icon><span>号码: {{ player.number || player.jerseyNumber || '?' }}</span></div>
                 </div>
                 <div class="player-stats">
-                  <span class="stat-badge goals"><el-icon><Football /></el-icon>{{ getPlayerGoals(player.name) }}球</span>
-                  <span class="stat-badge yellow-cards"><el-icon><Warning /></el-icon>{{ getPlayerCards(player.name, '黄牌') }}黄</span>
-                  <span class="stat-badge red-cards"><el-icon><CircleClose /></el-icon>{{ getPlayerCards(player.name, '红牌') }}红</span>
+                  <span class="stat-badge goals" v-if="getPlayerGoals(player.id) > 0">
+                    <el-icon><Football /></el-icon> {{ getPlayerGoals(player.id) }}
+                  </span>
+                  <span class="stat-badge yellow-cards" v-if="getPlayerCards(player.id).yellow > 0">
+                    <div style="width:10px;height:14px;background:#f59e0b;border-radius:2px;margin-right:2px;"></div> {{ getPlayerCards(player.id).yellow }}
+                  </span>
+                  <span class="stat-badge red-cards" v-if="getPlayerCards(player.id).red > 0">
+                    <div style="width:10px;height:14px;background:#ef4444;border-radius:2px;margin-right:2px;"></div> {{ getPlayerCards(player.id).red }}
+                  </span>
                 </div>
               </div>
             </div>
             <div class="card-actions">
               <el-button size="small" type="primary" @click="$emit('edit-player', player)">编辑</el-button>
-              <el-button size="small" type="danger" @click="$emit('delete-player', player.id || player.studentId)">删除</el-button>
+              <el-button size="small" type="danger" @click="$emit('delete-player', player.id || player.playerId)">删除</el-button>
             </div>
           </el-card>
         </template>
@@ -213,11 +230,13 @@
               </el-input>
             </el-col>
             <el-col :span="6">
-              <el-select :model-value="manageMatchType" placeholder="请选择比赛类型" @update:model-value="$emit('filter-change', $event)" style="width: 100%;">
+              <el-select 
+                v-model="manageMatchType" 
+                placeholder="请选择比赛类型" 
+                style="width: 100%;"
+              >
                 <el-option label="全部" value="" />
-                <el-option label="冠军杯" value="champions-cup" />
-                <el-option label="巾帼杯" value="womens-cup" />
-                <el-option label="八人制比赛" value="eight-a-side" />
+                <el-option v-for="opt in competitionOptions" :key="opt.value" :label="opt.label" :value="opt.value" />
               </el-select>
             </el-col>
             <el-col :span="6">
@@ -261,8 +280,9 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import EntityTab from './data-management/EntityTab.vue'
+import SearchSection from './SearchSection.vue'
 import usePlayerStats from '@/composables/admin/usePlayerStats'
 import useManagementFilters from '@/composables/admin/useManagementFilters'
 import useManagementLabels from '@/composables/admin/useManagementLabels'
@@ -282,8 +302,15 @@ import {
   CircleClose,
   Collection
 } from '@element-plus/icons-vue'
+import useCompetitions from '@/composables/admin/useCompetitions'
 
 const RefreshIcon = Refresh
+
+const { competitionOptions, fetchCompetitions, getCompetitionLabel } = useCompetitions()
+
+onMounted(() => {
+  fetchCompetitions()
+})
 
 const props = defineProps({
   teams: { type: Array, default: () => [] },
@@ -293,9 +320,12 @@ const props = defineProps({
   manageMatchType: { type: String, default: '' }
 })
 
+// 事件声明
 const emit = defineEmits(['filter-change', 'refresh', 'edit-team', 'delete-team', 'edit-match', 'delete-match', 'edit-event', 'delete-event', 'edit-player', 'delete-player', 'complete-match'])
 
 const activeTab = ref('matches')
+
+const manageMatchType = defineModel('manageMatchType')
 
 const {
   matchSearchKeyword, eventSearchKeyword, playerSearchKeyword, teamSearchKeyword,
@@ -305,7 +335,12 @@ const {
   filteredMatches, filteredEvents, filteredPlayers, filteredTeams,
   paginatedMatches, paginatedEvents, paginatedPlayers, paginatedTeams,
   handleMatchSearch, handleEventSearch, handlePlayerSearch, handleTeamSearch
-} = useManagementFilters(props, () => props.manageMatchType)
+} = useManagementFilters(props, () => manageMatchType.value)
+
+// 监听筛选条件变化，触发后端筛选
+watch([matchStatusFilter, manageMatchType], ([newStatus, newType]) => {
+  emit('filter-change', { status: newStatus, type: newType })
+})
 
 // 球员队伍选项
 const playerTeamOptions = computed(() => {
@@ -320,13 +355,15 @@ const playerTeamOptions = computed(() => {
 
 // 标签与映射（抽离）
 const { 
-  getMatchTypeLabel,
   getEventTypeLabel,
   getEventTagType,
   getMatchTypeTagType,
   getStatusTagType,
   getStatusLabel
 } = useManagementLabels()
+
+// Use dynamic label function from useCompetitions
+const getMatchTypeLabel = getCompetitionLabel
 
 // 统计逻辑抽离
 const { getPlayerGoals, getPlayerCards } = usePlayerStats(computed(() => props.events))
@@ -337,6 +374,13 @@ const { getPlayerGoals, getPlayerCards } = usePlayerStats(computed(() => props.e
 </script>
 
 <style scoped>
-.card-header { display:flex; justify-content:space-between; align-items:center; }
-.header-stats { color:#909399; font-size:14px; }
+.card-header { 
+  display: flex; 
+  justify-content: space-between; 
+  align-items: center; 
+}
+.header-stats { 
+  color: var(--color-neutral-600); 
+  font-size: 14px; 
+}
 </style>

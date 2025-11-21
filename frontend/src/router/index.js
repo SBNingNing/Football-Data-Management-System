@@ -8,6 +8,7 @@ import TeamHistory from '../views/team/team_history.vue'
 import TournamentHistory from '../views/tournament/tournament_history.vue'
 import MatchDetail from '../views/match/match_detail.vue'
 import { useAuthGuard } from '@/composables/auth'
+import { useAuthStore } from '@/store/modules/auth'
 
 const routes = [
   {
@@ -21,8 +22,13 @@ const routes = [
   },
   {
     path: '/register',
-    name: 'Register',
-    component: Register
+    name: 'AdminRegister', 
+    component: Register,
+    meta: { 
+      title: '管理员注册',
+      // 后续游客登录状态判断逻辑：游客状态下隐藏此路由
+      // adminOnly: true 
+    }
   },
   {
     path: '/home',
@@ -70,7 +76,9 @@ const routes = [
   },
   {
     path: '/tournament',
-    redirect: '/home'
+    name: 'Tournament',
+    component: () => import('../views/tournament/index.vue'),
+    meta: { requiresAuth: true }
   },
   {
     path: '/tournament/:tournamentName',
@@ -106,7 +114,18 @@ const router = createRouter({
 })
 
 // 全局前置守卫
-router.beforeEach((to, from, next) => {
+router.beforeEach(async (to, from, next) => {
+  const authStore = useAuthStore()
+  
+  // 页面刷新时，如果存在token但没有用户信息，尝试获取用户信息
+  if (authStore.token && !authStore.user) {
+    try {
+      await authStore.fetchMe()
+    } catch (error) {
+      console.error('路由守卫获取用户信息失败:', error)
+    }
+  }
+
   const { check } = useAuthGuard()
   const r = check(to)
   if (r.allow) return next()

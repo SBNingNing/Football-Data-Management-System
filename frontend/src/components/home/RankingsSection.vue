@@ -3,11 +3,30 @@
     <template #header>
       <div class="clearfix">
         <span>赛事排行</span>
-        <el-select v-model="selectedCompetition" placeholder="选择赛事" style="float: right; width: 150px;" @change="onCompetitionChange">
-          <el-option label="冠军杯" value="championsCup"></el-option>
-          <el-option label="巾帼杯" value="womensCup"></el-option>
-          <el-option label="八人制" value="eightASide"></el-option>
-        </el-select>
+        <div style="float: right;">
+          <el-select 
+            v-model="selectedSeason" 
+            placeholder="选择赛季" 
+            style="width: 150px; margin-right: 10px;" 
+            @change="onSeasonChange" 
+            clearable
+          >
+            <el-option 
+              v-for="season in seasons" 
+              :key="season.season_id" 
+              :label="season.name" 
+              :value="season.season_id"
+            ></el-option>
+          </el-select>
+          <el-select v-model="selectedCompetition" placeholder="选择赛事" style="width: 150px;" @change="onCompetitionChange">
+            <el-option 
+              v-for="comp in competitions" 
+              :key="comp.competition_id" 
+              :label="comp.name" 
+              :value="comp.competition_id"
+            ></el-option>
+          </el-select>
+        </div>
       </div>
     </template>
 
@@ -37,7 +56,7 @@
                     <span 
                       class="clickable-player" 
                       @click="navigateToPlayer(row)"
-                      :title="点击查看球员详情"
+                      title="点击查看详情"
                     >
                       <el-icon class="player-icon"><User /></el-icon>
                       {{ row.name }}
@@ -51,7 +70,7 @@
                     <span 
                       class="clickable-team" 
                       @click="navigateToTeamFromPlayer(row)"
-                      :title="点击查看球队详情"
+                      title="点击查看球队详情"
                     >
                       <el-icon class="team-icon"><Trophy /></el-icon>
                       {{ row.team }}
@@ -63,7 +82,7 @@
             </el-table>
           </el-col>
           <el-col :span="12">
-            <h3>球队射手榜</h3>
+            <h3>球队排行榜</h3>
             <el-table :data="currentRankings.topScorers.teams" style="width: 100%" v-loading="loading">
               <el-table-column label="球队">
                 <template #default="{ row }">
@@ -71,7 +90,7 @@
                     <span 
                       class="clickable-team" 
                       @click="navigateToTeam(row)"
-                      :title="点击查看球队详情"
+                      title="点击查看球队详情"
                     >
                       <el-icon class="team-icon"><Trophy /></el-icon>
                       {{ row.team }}
@@ -80,6 +99,8 @@
                 </template>
               </el-table-column>
               <el-table-column prop="goals" label="进球数"></el-table-column>
+              <el-table-column prop="goalsConceded" label="失球数"></el-table-column>
+              <el-table-column prop="goalDifference" label="净胜球"></el-table-column>
             </el-table>
           </el-col>
         </el-row>
@@ -97,7 +118,7 @@
                     <span 
                       class="clickable-player" 
                       @click="navigateToPlayer(row)"
-                      :title="点击查看球员详情"
+                      title="点击查看球员详情"
                     >
                       <el-icon class="player-icon"><User /></el-icon>
                       {{ row.name }}
@@ -111,7 +132,7 @@
                     <span 
                       class="clickable-team" 
                       @click="navigateToTeamFromPlayer(row)"
-                      :title="点击查看球队详情"
+                      title="点击查看球队详情"
                     >
                       <el-icon class="team-icon"><Trophy /></el-icon>
                       {{ row.team }}
@@ -132,7 +153,7 @@
                     <span 
                       class="clickable-team" 
                       @click="navigateToTeam(row)"
-                      :title="点击查看球队详情"
+                      title="点击查看球队详情"
                     >
                       <el-icon class="team-icon"><Trophy /></el-icon>
                       {{ row.team }}
@@ -155,35 +176,8 @@
         </el-select>
         
         <div v-if="currentRankingsTab === '常规赛'">
-          <div v-if="selectedCompetition === 'eightASide'">
-            <div v-for="group in sortedGroupRankings" :key="group.name" style="margin-bottom: 30px;">
-              <h3>{{ group.name }}</h3>
-              <el-table :data="group.teams" style="width: 100%" v-loading="loading">
-                <el-table-column label="球队" prop="teamName" min-width="120">
-                  <template #default="scope">
-                    <div class="team-cell">
-                      <span class="team-name" @click="viewTeamDetails(scope.row)">
-                        {{ scope.row.teamName || '未知队伍' }}
-                      </span>
-                    </div>
-                  </template>
-                </el-table-column>
-                <el-table-column prop="matchesPlayed" label="比赛场次" width="100"></el-table-column>
-                <el-table-column prop="wins" label="胜" width="60"></el-table-column>
-                <el-table-column prop="draws" label="平" width="60"></el-table-column>
-                <el-table-column prop="losses" label="负" width="60"></el-table-column>
-                <el-table-column prop="goalsFor" label="进球" width="70"></el-table-column>
-                <el-table-column prop="goalsAgainst" label="失球" width="70"></el-table-column>
-                <el-table-column label="净胜" width="70">
-                  <template #default="{ row }">
-                    {{ row.goalsFor - row.goalsAgainst }}
-                  </template>
-                </el-table-column>
-                <el-table-column prop="points" label="积分" width="70"></el-table-column>
-              </el-table>
-            </div>
-          </div>
-          <div v-else>
+          <!-- 动态小组排名暂未实现，直接显示积分榜 -->
+          <div>
             <el-table :data="currentRankings.points" style="width: 100%" v-loading="loading">
               <el-table-column label="球队">
                 <template #default="{ row }">
@@ -191,7 +185,7 @@
                     <span 
                       class="clickable-team" 
                       @click="navigateToTeam(row)"
-                      :title="点击查看球队详情"
+                      title="点击查看球队详情"
                     >
                       <el-icon class="team-icon"><Trophy /></el-icon>
                       {{ row.team }}
@@ -236,6 +230,18 @@ export default {
       type: Object,
       default: () => ({})
     },
+    competitions: {
+      type: Array,
+      default: () => []
+    },
+    seasons: {
+      type: Array,
+      default: () => []
+    },
+    initialSeasonId: {
+      type: [Number, String],
+      default: null
+    },
     playoffBracket: {
       type: Object,
       default: () => ({})
@@ -249,59 +255,64 @@ export default {
       default: false
     }
   },
-  emits: ['competition-change', 'rankings-tab-change'],
+  emits: ['competition-change', 'rankings-tab-change', 'season-change'],
   data() {
     return {
-      selectedCompetition: 'championsCup',
+      selectedCompetition: null,
+      selectedSeason: this.initialSeasonId,
       activeRankingTab: 'scorers',
       currentRankingsTab: '常规赛'
     };
   },
+  watch: {
+    competitions: {
+      immediate: true,
+      handler(newVal) {
+        if (newVal && newVal.length > 0 && !this.selectedCompetition) {
+          this.selectedCompetition = newVal[0].competition_id;
+        }
+      }
+    },
+    initialSeasonId: {
+      immediate: true,
+      handler(newVal) {
+        if (newVal) {
+          this.selectedSeason = newVal;
+        }
+      }
+    }
+  },
   computed: {
     currentRankings() {
-      const rankings = this.rankings[this.selectedCompetition] || {
+      const key = `comp_${this.selectedCompetition}`
+      const rankings = this.rankings[key] || {
         topScorers: { players: [], teams: [] },
         cards: { players: [], teams: [] },
         points: []
       };
-  logger.debug(`当前赛事 ${this.selectedCompetition} 的排行数据:`, rankings);
+      logger.debug(`当前赛事 ${this.selectedCompetition} 的排行数据:`, rankings);
       return rankings;
     },
     currentPlayoffBracket() {
-      return this.playoffBracket[this.selectedCompetition] || [];
+      // 暂不支持动态淘汰赛对阵图，需后端配合
+      return [];
     },
     sortedGroupRankings() {
-      if (this.selectedCompetition !== 'eightASide' || !this.groupRankings.eightASide) {
-        return [];
-      }
-      return this.groupRankings.eightASide.groups.map(group => ({
-        ...group,
-        teams: group.teams.slice().sort((a, b) => {
-          if (b.points !== a.points) {
-            return b.points - a.points;
-          }
-          const aDiff = a.goalsFor - a.goalsAgainst;
-          const bDiff = b.goalsFor - b.goalsAgainst;
-          if (bDiff !== aDiff) {
-            return bDiff - aDiff;
-          }
-          return b.goalsFor - a.goalsFor;
-        })
-      }));
+      // 暂不支持动态小组排名，需后端配合
+      return [];
     },
     hasData() {
       const current = this.currentRankings;
       return (
         (current.topScorers && (current.topScorers.players.length > 0 || current.topScorers.teams.length > 0)) ||
         (current.cards && (current.cards.players.length > 0 || current.cards.teams.length > 0)) ||
-        (current.points && current.points.length > 0) ||
-        (this.selectedCompetition === 'eightASide' && this.sortedGroupRankings.length > 0)
+        (current.points && current.points.length > 0)
       );
     }
   },
   methods: {
     onCompetitionChange() {
-  logger.info('赛事类型切换到:', this.selectedCompetition);
+      logger.info('赛事类型切换到:', this.selectedCompetition);
       this.currentRankingsTab = '常规赛';
       this.activeRankingTab = 'scorers';
       
@@ -310,23 +321,23 @@ export default {
       
       // 添加延迟确保数据获取完成后再检查
       this.$nextTick(() => {
-  logger.debug('切换后的排行数据:', this.currentRankings);
+        logger.debug('切换后的排行数据:', this.currentRankings);
       });
+    },
+    onSeasonChange() {
+      logger.info('赛季切换到:', this.selectedSeason);
+      this.$emit('season-change', this.selectedSeason);
     },
     onRankingsTabChange() {
   logger.info('排行榜标签切换到:', this.currentRankingsTab);
       this.$emit('rankings-tab-change', this.currentRankingsTab);
     },
-    getCompetitionName(competition) {
-      const nameMap = {
-        championsCup: '冠军杯',
-        womensCup: '巾帼杯',
-        eightASide: '八人制'
-      };
-      return nameMap[competition] || '未知赛事';
+    getCompetitionName(id) {
+      const comp = this.competitions.find(c => c.competition_id === id)
+      return comp ? comp.name : '未知赛事'
     },
     navigateToPlayer(player) {
-  logger.debug('点击了球员:', player) // 调试用
+  logger.debug('点击了球员:', player)
       
       // 确保有ID数据再跳转
       const playerId = player.id || player.studentId || player.playerId

@@ -64,10 +64,29 @@ export default {
 .entity-header--blue { background: linear-gradient(135deg,#1e88e5 0%,#1976d2 100%); }
 .entity-header--green { background: linear-gradient(135deg,#2ecc71 0%,#27ae60 100%); }
 .entity-header--orange { background: linear-gradient(135deg,#fb8c00 0%,#ef6c00 100%); }
+.entity-header--light { 
+  background: #ffffff; 
+  color: #303133; 
+  /* border: 1px solid #e4e7ed; Removed to avoid double border with el-card */
+  box-shadow: none; /* Removed to avoid double shadow */
+}
 
 .entity-header__back { position: absolute; top: 20px; left: 20px; }
-.entity-header__back-btn { background-color: rgba(255,255,255,0.12); border-color: rgba(255,255,255,0.3); }
+.entity-header__back-btn { background-color: rgba(255,255,255,0.12); border-color: rgba(255,255,255,0.3); color: #fff; }
 .entity-header__back-btn:hover { background-color: rgba(255,255,255,0.22); }
+
+/* Light theme overrides */
+.entity-header--light .entity-header__title { text-shadow: none; }
+.entity-header--light .entity-header__back-btn { 
+  color: #606266; 
+  border-color: #dcdfe6; 
+  background-color: #fff; 
+}
+.entity-header--light .entity-header__back-btn:hover { 
+  color: #409eff; 
+  border-color: #c6e2ff; 
+  background-color: #ecf5ff; 
+}
 
 .entity-header__title { margin: 0 0 18px; font-size: 36px; font-weight: 700; text-shadow: 0 2px 4px rgba(0,0,0,0.25); }
 /* 元信息区：可换行 */

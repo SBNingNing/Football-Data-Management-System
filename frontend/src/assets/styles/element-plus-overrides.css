@@ -1,0 +1,244 @@
+/* =====================================================================
+ * 文件: element-plus-overrides.css (Element Plus 组件样式覆盖)
+ * 作用: 统一 Element Plus 组件的样式覆盖，避免在多个文件中重复定义
+ * 依赖: variables.css
+ * ===================================================================== */
+
+/* ========== 表格样式 ========== */
+:deep(.el-table) {
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  border: 1px solid var(--color-neutral-300);
+  box-shadow: var(--shadow-card);
+}
+
+:deep(.el-table__header) {
+  background: linear-gradient(135deg, var(--color-neutral-200) 0%, var(--color-neutral-100) 100%);
+}
+
+:deep(.el-table th) {
+  background: linear-gradient(135deg, var(--color-neutral-200) 0%, var(--color-neutral-100) 100%);
+  color: var(--color-neutral-800);
+  font-weight: 600;
+  border-bottom: 2px solid var(--color-neutral-400);
+  padding: 16px 12px;
+}
+
+:deep(.el-table td) {
+  border-bottom: 1px solid var(--color-neutral-300);
+  padding: 16px 12px;
+}
+
+:deep(.el-table tbody tr:hover) {
+  background: linear-gradient(135deg, rgba(30, 136, 229, 0.04), rgba(30, 136, 229, 0.02));
+}
+
+/* ========== 按钮样式 ========== */
+:deep(.el-button) {
+  border-radius: var(--radius-md);
+  font-weight: 500;
+  transition: var(--transition-base);
+  box-shadow: var(--shadow-card);
+  padding: 8px 16px;
+}
+
+:deep(.el-button:hover) {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-card-hover);
+}
+
+:deep(.el-button--primary) {
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-gradient-end) 100%);
+  border: none;
+}
+
+:deep(.el-button--primary:hover) {
+  background: linear-gradient(135deg, #2563eb, #1e40af);
+}
+
+:deep(.el-button--danger) {
+  background: linear-gradient(135deg, var(--color-danger), #dc2626);
+  border: none;
+}
+
+:deep(.el-button--danger:hover) {
+  background: linear-gradient(135deg, #dc2626, #b91c1c);
+}
+
+:deep(.el-button--success) {
+  background: linear-gradient(135deg, var(--color-success), #059669);
+  border: none;
+}
+
+:deep(.el-button--success:hover) {
+  background: linear-gradient(135deg, #059669, #047857);
+}
+
+/* ========== 表单样式 ========== */
+:deep(.el-form-item) {
+  margin-bottom: 24px;
+}
+
+:deep(.el-form-item__label) {
+  font-weight: 600;
+  color: var(--color-neutral-800);
+  line-height: 1.5;
+  font-size: 16px;
+}
+
+/* ========== 输入框样式 ========== */
+:deep(.el-input__wrapper) {
+  border-radius: var(--radius-md);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  transition: var(--transition-base);
+  border: 1px solid var(--color-neutral-400);
+  font-size: 16px;
+}
+
+:deep(.el-input__inner) {
+  font-size: 16px;
+}
+
+:deep(.el-input__placeholder) {
+  font-size: 16px;
+}
+
+:deep(.el-input__wrapper:hover) {
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  border-color: var(--color-neutral-500);
+}
+
+:deep(.el-input__wrapper.is-focus) {
+  box-shadow: 0 0 0 2px rgba(30, 136, 229, 0.2);
+  border-color: var(--color-primary);
+}
+
+/* ========== 选择框样式 ========== */
+:deep(.el-select .el-input__wrapper) {
+  border-radius: var(--radius-md);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  transition: var(--transition-base);
+  border: 1px solid var(--color-neutral-400);
+  font-size: 16px;
+}
+
+:deep(.el-select .el-input__inner) {
+  font-size: 16px;
+}
+
+:deep(.el-select .el-input__placeholder) {
+  font-size: 16px;
+}
+
+/* ========== 卡片样式 ========== */
+:deep(.el-card) {
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-neutral-400);
+  box-shadow: var(--shadow-card);
+  transition: var(--transition-base);
+  margin-bottom: 24px;
+  overflow: hidden;
+}
+
+:deep(.el-card:hover) {
+  box-shadow: var(--shadow-card-hover);
+  transform: translateY(-2px);
+}
+
+:deep(.el-card__header) {
+  border-bottom: 1px solid var(--color-neutral-300);
+  background: linear-gradient(135deg, var(--color-neutral-200) 0%, var(--color-neutral-100) 100%);
+  padding: 20px 24px;
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+}
+
+:deep(.el-card__body) {
+  padding: 24px;
+  background: var(--color-neutral-100);
+}
+
+/* ========== 标签页样式 ========== */
+:deep(.el-tabs__header) {
+  margin: 0;
+  background: linear-gradient(135deg, var(--color-neutral-100) 0%, var(--color-neutral-200) 100%);
+  border-bottom: 1px solid var(--color-neutral-400);
+  padding: 12px 0;
+}
+
+:deep(.el-tabs__nav-wrap) {
+  padding: 0 32px;
+}
+
+:deep(.el-tabs__item) {
+  height: 60px;
+  line-height: 60px;
+  padding: 0 32px;
+  font-size: 16px;
+  color: var(--color-neutral-600);
+  border: none;
+  position: relative;
+  transition: var(--transition-base);
+  border-radius: var(--radius-lg);
+  margin: 0 6px;
+  font-weight: 500;
+}
+
+:deep(.el-tabs__item:hover) {
+  color: var(--color-primary);
+  background: linear-gradient(135deg, rgba(30, 136, 229, 0.08), rgba(30, 136, 229, 0.05));
+  transform: translateY(-1px);
+}
+
+:deep(.el-tabs__item.is-active) {
+  color: var(--color-primary);
+  font-weight: 600;
+  background: linear-gradient(135deg, rgba(30, 136, 229, 0.15), rgba(30, 136, 229, 0.1));
+  box-shadow: 0 4px 12px rgba(30, 136, 229, 0.2);
+  transform: translateY(-1px);
+}
+
+:deep(.el-tabs__active-bar) {
+  height: 4px;
+  background: linear-gradient(90deg, var(--color-primary), var(--color-primary-gradient-end));
+  border-radius: 2px;
+  bottom: 8px;
+}
+
+:deep(.el-tabs__content) {
+  padding: 0;
+}
+
+:deep(.el-tab-pane) {
+  padding: 0;
+}
+
+/* ========== 分割线样式 ========== */
+:deep(.el-divider) {
+  border-color: var(--color-neutral-300);
+  margin: 24px 0;
+}
+
+:deep(.el-divider--horizontal) {
+  border-top: 1px solid var(--color-neutral-300);
+}
+
+/* ========== 滚动条样式 ========== */
+:deep(::-webkit-scrollbar) {
+  width: 8px;
+  height: 8px;
+}
+
+:deep(::-webkit-scrollbar-track) {
+  background: var(--color-neutral-200);
+  border-radius: var(--radius-sm);
+}
+
+:deep(::-webkit-scrollbar-thumb) {
+  background: linear-gradient(135deg, var(--color-neutral-500), var(--color-neutral-600));
+  border-radius: var(--radius-sm);
+  transition: background 0.3s ease;
+}
+
+:deep(::-webkit-scrollbar-thumb:hover) {
+  background: linear-gradient(135deg, var(--color-neutral-600), var(--color-neutral-700));
+}

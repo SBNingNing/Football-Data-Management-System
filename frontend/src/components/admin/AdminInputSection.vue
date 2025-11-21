@@ -7,10 +7,10 @@
       </div>
     </div>
     <MetaDataSection />
-    <DataInput
+    <DataInput 
       ref="dataInputRef"
-      :teams="teams"
-      :matches="matches"
+      :teams="teams" 
+      :matches="matches" 
       :events="events"
       @team-submit="$emit('team-submit', $event)"
       @schedule-submit="$emit('schedule-submit', $event)"

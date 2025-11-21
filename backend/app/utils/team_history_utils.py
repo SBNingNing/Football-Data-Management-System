@@ -170,6 +170,9 @@ class TeamHistoryUtils:
         rankings = []
         total_players = 0
         total_goals = 0
+        total_goals_conceded = 0
+        total_goal_difference = 0
+        total_points = 0
         total_yellow_cards = 0
         total_red_cards = 0
         
@@ -182,15 +185,20 @@ class TeamHistoryUtils:
                 if hasattr(participation, 'final_ranking') and participation.final_ranking:
                     rankings.append(participation.final_ranking)
                 
-                tournament_stats = TeamHistoryUtils.calculate_tournament_player_stats(
-                    participation.team_id,
-                    participation.tournament_id if hasattr(participation, 'tournament_id') else None
-                )
+                # 直接使用 participation 中的统计数据
+                p_goals = participation.tournament_goals if participation.tournament_goals is not None else 0
+                p_conceded = participation.tournament_goals_conceded if participation.tournament_goals_conceded is not None else 0
+                p_diff = participation.tournament_goal_difference if participation.tournament_goal_difference is not None else 0
+                p_points = participation.tournament_points if participation.tournament_points is not None else 0
+                p_yellow = participation.tournament_yellow_cards if participation.tournament_yellow_cards is not None else 0
+                p_red = participation.tournament_red_cards if participation.tournament_red_cards is not None else 0
                 
-                total_players += tournament_stats['players_count']
-                total_goals += tournament_stats['total_goals']
-                total_yellow_cards += tournament_stats['total_yellow_cards']
-                total_red_cards += tournament_stats['total_red_cards']
+                total_goals += p_goals
+                total_goals_conceded += p_conceded
+                total_goal_difference += p_diff
+                total_points += p_points
+                total_yellow_cards += p_yellow
+                total_red_cards += p_red
                 
             except AttributeError:
                 continue
@@ -198,8 +206,11 @@ class TeamHistoryUtils:
         return {
             'total_tournaments': len(tournaments),
             'total_seasons': len(seasons),
-            'total_players_used': total_players,
+            'total_players_used': total_players, 
             'total_goals_scored': total_goals,
+            'total_goals_conceded': total_goals_conceded,
+            'total_goal_difference': total_goal_difference,
+            'total_points': total_points,
             'total_yellow_cards': total_yellow_cards,
             'total_red_cards': total_red_cards,
             'best_ranking': min(rankings) if rankings else None,

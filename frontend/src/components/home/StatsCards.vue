@@ -1,7 +1,7 @@
 <template>
   <el-row :gutter="20" class="stats-section">
     <el-col :span="8">
-      <el-card shadow="hover" class="stats-card">
+      <el-card shadow="hover" class="stats-card" style="background-color: #fff;">
         <div class="stats-card-inner">
           <i class="el-icon-data-line stats-icon"></i>
           <div class="stats-info">
@@ -13,7 +13,7 @@
     </el-col>
 
     <el-col :span="8">
-      <el-card shadow="hover" class="stats-card">
+      <el-card shadow="hover" class="stats-card" style="background-color: #fff;">
         <div class="stats-card-inner">
           <i class="el-icon-timer stats-icon"></i>
           <div class="stats-info">
@@ -25,12 +25,12 @@
     </el-col>
 
     <el-col :span="8">
-      <el-card shadow="hover" class="stats-card">
+      <el-card shadow="hover" class="stats-card" style="background-color: #fff;">
         <div class="stats-card-inner">
           <i class="el-icon-finished stats-icon"></i>
           <div class="stats-info">
             <div class="stats-number">{{ statsData.completedMatches }}</div>
-            <div class="stats-label">已完成赛事</div>
+            <div class="stats-label">已完成比赛</div>
           </div>
         </div>
       </el-card>

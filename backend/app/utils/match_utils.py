@@ -14,33 +14,26 @@ logger = get_logger(__name__)
 class MatchUtils:
     """比赛工具类"""
     
-    # 比赛类型到赛事ID的映射
-    MATCH_TYPE_TO_TOURNAMENT = {
-        'champions-cup': 1,
-        'womens-cup': 2,
-        'eight-a-side': 3
-    }
-    
     # 状态映射
     STATUS_MAP = {
-        'P': '待开始',
-        'O': '进行中', 
+        'P': '未开始',
         'F': '已完赛'
     }
     
-    # 反向状态映射
+    # 反向状态映射（支持多种前端格式）
     REVERSE_STATUS_MAP = {
-        '待开始': 'P',
-        '进行中': 'O',
-        '已完赛': 'F'
+        '未开始': 'P',
+        '已完赛': 'F',
+        # 兼容英文状态值
+        'pending': 'P',
+        'completed': 'F',
+        # 兼容其他可能的状态值
+        '待进行': 'P',
+        'P': 'P',
+        'F': 'F'
     }
     
-    # 比赛类型映射
-    TOURNAMENT_MAP = {
-        'championsCup': 1,
-        'womensCup': 2,
-        'eightASide': 3
-    }
+
 
     @staticmethod
     def parse_date_from_frontend(date_input: Any) -> Optional[datetime]:
@@ -106,18 +99,13 @@ class MatchUtils:
     @staticmethod
     def determine_match_type(tournament) -> str:
         """根据赛事名称确定matchType"""
+        if tournament and tournament.competition:
+            return tournament.competition.name
+            
         if tournament:
-            tournament_name = tournament.name.lower()
-            if '冠军杯' in tournament_name or 'champions' in tournament_name:
-                return 'champions-cup'
-            elif '巾帼杯' in tournament_name or 'womens' in tournament_name:
-                return 'womens-cup'
-            elif '八人制' in tournament_name or 'eight' in tournament_name:
-                return 'eight-a-side'
-            else:
-                return 'champions-cup'
+            return tournament.name
         else:
-            return 'champions-cup'
+            return '未知赛事'
 
     @staticmethod
     def format_match_time(match_time: Optional[datetime]) -> Optional[str]:
@@ -132,12 +120,14 @@ class MatchUtils:
     @staticmethod
     def get_tournament_id_by_type(match_type: str) -> int:
         """根据比赛类型获取赛事ID"""
-        return MatchUtils.MATCH_TYPE_TO_TOURNAMENT.get(match_type, 1)
+        # 已废弃，不再使用硬编码映射
+        raise NotImplementedError("get_tournament_id_by_type is deprecated. Use dynamic lookup instead.")
 
     @staticmethod
     def get_tournament_id_by_frontend_type(match_type: str) -> Optional[int]:
         """根据前端比赛类型获取赛事ID"""
-        return MatchUtils.TOURNAMENT_MAP.get(match_type)
+        # 已废弃
+        return None
 
     @staticmethod
     def get_status_text(status: str) -> str:
@@ -187,10 +177,25 @@ class MatchUtils:
         """验证比赛数据"""
         errors = []
         
-        required_fields = ['matchName', 'team1', 'team2', 'date', 'location']
-        for field in required_fields:
-            if field not in data or not data[field]:
-                errors.append(f'缺少必要字段: {field}')
+        # 验证比赛名称
+        if not data.get('matchName'):
+            errors.append('缺少必要字段: matchName')
+
+        # 验证主队 (兼容 team1 和 homeTeamId)
+        if not (data.get('team1') or data.get('homeTeamId')):
+            errors.append('缺少必要字段: homeTeamId')
+
+        # 验证客队 (兼容 team2 和 awayTeamId)
+        if not (data.get('team2') or data.get('awayTeamId')):
+            errors.append('缺少必要字段: awayTeamId')
+
+        # 验证时间 (兼容 date 和 matchTime)
+        if not (data.get('date') or data.get('matchTime')):
+            errors.append('缺少必要字段: matchTime')
+
+        # 验证地点
+        if not data.get('location'):
+            errors.append('缺少必要字段: location')
         
         return errors
 

@@ -298,7 +298,26 @@ def preprocess_season_data(f):
                         data[time_field] = data[time_field].strip()
                 
                 # 将处理后的数据重新设置到request中
-                request._cached_json = data
+                # Flask/Werkzeug 的 _cached_json 是一个元组 (data, cache_key)
+                # 直接赋值 data 会导致 get_json() 内部逻辑出错
+                # 正确的做法是清除缓存，让下一次 get_json() 重新解析，或者模拟 Werkzeug 的缓存结构
+                # 但最简单且安全的方法是不要直接修改私有属性 _cached_json
+                # 而是修改 request.json (如果它是可写的) 或者在后续使用 data 变量
+                
+                # 尝试清除缓存，强制重新解析（如果 body 没变，解析结果一样）
+                # 但我们修改了 data 内容，所以需要一种方式传递修改后的数据
+                
+                # 更好的做法：不修改 request 对象，而是将处理后的数据作为参数传递给视图函数
+                # 但为了兼容现有装饰器模式，我们可以尝试正确设置 _cached_json
+                # 在 Werkzeug 2.x+ 中，_cached_json 可能是一个元组
+                
+                # 修复方案：直接修改 request.json 属性通常不可行（它是 property）
+                # 我们采用一种更稳妥的方式：手动覆盖 get_json 方法，或者正确构造 _cached_json
+                
+                # 针对 Werkzeug 的特定修复：
+                # Werkzeug 的 get_json 使用 _cached_json[silent] 来获取缓存
+                # 我们将其设置为元组 (data, data)，这样无论是 [False] (index 0) 还是 [True] (index 1) 都能获取到处理后的数据
+                request._cached_json = (data, data)
                 
                 logger.debug("赛季数据预处理完成")
             

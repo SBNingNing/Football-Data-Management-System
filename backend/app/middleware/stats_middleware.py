@@ -88,10 +88,10 @@ def validate_stats_query_params(f):
                 }), 400
             
             # 验证排序参数
-            sort_by = request.args.get('sort_by', 'points')
+            sort_by = request.args.get('sort_by')
             valid_sort_fields = ['points', 'goals', 'matches', 'goal_difference']
             
-            if sort_by not in valid_sort_fields:
+            if sort_by and sort_by not in valid_sort_fields:
                 return jsonify({
                     'status': 'error',
                     'message': f'排序字段必须是: {", ".join(valid_sort_fields)}'

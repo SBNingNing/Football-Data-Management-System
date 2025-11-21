@@ -70,20 +70,25 @@ class SeasonService:
             db.session.add(season)
             db.session.commit()
             
-            logger.info(f"成功创建赛季: {season.name} (ID: {season.id})")
+            # 直接获取ID，SQLAlchemy通常会在commit后自动回填
+            season_id = season.season_id
+            logger.info(f"成功创建赛季: {season.name} (ID: {season_id})")
             return season.to_dict(), '赛季创建成功'
             
         except IntegrityError:
             db.session.rollback()
             logger.warning(f"赛季名称已存在: {season_data.get('name', 'Unknown')}")
-            raise IntegrityError('赛季名称已存在', None, None)
+            raise ValueError('赛季名称已存在')
         except ValueError as e:
             logger.warning(f"赛季数据验证失败: {str(e)}")
             raise
         except Exception as e:
             db.session.rollback()
-            logger.error(f"创建赛季失败: {str(e)}")
-            raise
+            import traceback
+            error_details = traceback.format_exc()
+            logger.error(f"创建赛季失败: {str(e)}\n详细堆栈: {error_details}")
+            # 抛出包含更多信息的错误，以便前端能看到
+            raise Exception(f"{str(e)} (Type: {type(e).__name__})")
     
     @staticmethod
     def update_season(season_id: int, update_data: Dict[str, Any]) -> Tuple[Dict[str, Any], str]:

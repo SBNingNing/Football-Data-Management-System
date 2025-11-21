@@ -47,7 +47,8 @@ class Event(db.Model):
                 'playerId': self.player_id,
                 'eventTime': self.event_time,
                 'playerName': self.player.name if self.player else None,
-                'teamName': self.team_participation.team_base.name if self.team_participation and self.team_participation.team_base else None
+                'teamName': self.team_participation.team_base.name if self.team_participation and self.team_participation.team_base else None,
+                'competitionId': self.match.tournament.competition_id if self.match and self.match.tournament else None
             }
         except Exception as e:
             # 返回基本信息，避免因关联数据问题导致整个请求失败

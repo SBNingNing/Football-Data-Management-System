@@ -57,7 +57,7 @@ export function toMatchViewModel(raw = {}) {
     homeScore: raw.home_score || 0,
     awayScore: raw.away_score || 0,
     matchDate: raw.match_date || null,
-    tournament: raw.tournament_name || '',
+    tournament: raw.competition_name || raw.tournament_name || '',
     season: raw.season_name || '',
     status: raw.status,
     totalGoals: raw.total_goals || 0,

@@ -34,7 +34,7 @@
           <el-button @click="$emit('back')" text><el-icon><Close /></el-icon>返回选择</el-button>
         </div>
       </template>
-      <EventInput :match-type="matchType" :matches="matches" :teams="teams" @submit="$emit('event-submit', $event)" class="input-component" />
+      <EventInput :match-type="matchType" :matches="matches" :teams="teams" @submit="$emit('event-submit', $event)" @refresh-data="$emit('refresh-data')" class="input-component" />
     </el-card>
   </transition>
 </template>
@@ -45,9 +45,9 @@ import ScheduleInput from '../../tournament/ScheduleInput.vue'
 import EventInput from '../../Events/EventInput.vue'
 defineProps({
   type: { type: String, default: '' },
-  matchType: { type: String, default: '' },
+  matchType: { type: [String, Number], default: '' },
   teams: { type: Array, default: () => [] },
   matches: { type: Array, default: () => [] }
 })
-defineEmits(['back','team-submit','schedule-submit','event-submit'])
+defineEmits(['back','team-submit','schedule-submit','event-submit','refresh-data'])
 </script>

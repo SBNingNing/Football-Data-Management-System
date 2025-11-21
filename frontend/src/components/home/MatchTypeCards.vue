@@ -1,31 +1,11 @@
 <template>
   <el-row :gutter="20" class="match-types">
-    <el-col :span="8">
-      <el-card shadow="hover" @click="navigateToTournament('冠军杯')" class="clickable-card">
+    <el-col :span="8" v-for="comp in competitions" :key="comp.competition_id">
+      <el-card shadow="hover" @click="navigateToTournament(comp.competition_id)" class="clickable-card">
         <div class="match-type-card">
           <el-icon class="card-icon"><Trophy /></el-icon>
-          <h3>冠军杯</h3>
-          <p>查看冠军杯赛事信息</p>
-        </div>
-      </el-card>
-    </el-col>
-
-    <el-col :span="8">
-      <el-card shadow="hover" @click="navigateToTournament('巾帼杯')" class="clickable-card">
-        <div class="match-type-card">
-          <el-icon class="card-icon"><Female /></el-icon>
-          <h3>巾帼杯</h3>
-          <p>查看巾帼杯赛事信息</p>
-        </div>
-      </el-card>
-    </el-col>
-
-    <el-col :span="8">
-      <el-card shadow="hover" @click="navigateToTournament('八人制比赛')" class="clickable-card">
-        <div class="match-type-card">
-          <el-icon class="card-icon"><Football /></el-icon>
-          <h3>八人制比赛</h3>
-          <p>查看八人制赛事信息</p>
+          <h3>{{ comp.name }}</h3>
+          <p>查看{{ comp.name }}详情</p>
         </div>
       </el-card>
     </el-col>
@@ -34,15 +14,23 @@
 
 <script setup>
 import { useRouter } from 'vue-router'
-import { Trophy, Female, Football } from '@element-plus/icons-vue'
+import { Trophy } from '@element-plus/icons-vue'
 import logger from '@/utils/logger';
+
+const props = defineProps({
+  competitions: {
+    type: Array,
+    default: () => []
+  }
+})
 
 const router = useRouter()
 
-const navigateToTournament = (tournamentName) => {
-  logger.debug('点击赛事类型卡片:', tournamentName) // 调试用
+const navigateToTournament = (competitionId) => {
+  logger.debug('点击赛事类型卡片', competitionId)
   router.push({
-    path: `/tournament/${encodeURIComponent(tournamentName)}`
+    path: '/tournament',
+    query: { competitionId }
   })
 }
 </script>

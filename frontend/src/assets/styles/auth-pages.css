@@ -1,0 +1,171 @@
+/* =====================================================================
+ * 文件: auth-pages.css (认证页面统一样式)
+ * 作用: 登录和注册页面的统一样式，避免重复定义
+ * ===================================================================== */
+
+/* 认证页面容器基础样式 */
+.auth-page-container,
+.login-container,
+.register-container {
+  height: 100vh;
+  background: linear-gradient(135deg, #f0f8ff 0%, #e6f7ff 100%);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 24px;
+  box-sizing: border-box;
+}
+
+/* 认证卡片统一样式 */
+.auth-container {
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 15px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+  backdrop-filter: blur(10px);
+  animation: fadeIn 0.5s ease;
+  max-width: 450px;
+  width: 100%;
+}
+
+/* 登录页面的auth-container */
+.login-container .auth-container {
+  padding: 40px;
+}
+
+/* 注册页面的auth-container */
+.register-container .auth-container {
+  padding: 40px 42px 32px;
+}
+
+/* 认证标题统一样式 */
+.auth-title {
+  text-align: center;
+  color: var(--color-neutral-800);
+  margin-bottom: 30px;
+  font-size: 24px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+}
+
+/* 表单页脚统一样式 */
+.form-footer {
+  text-align: center;
+  margin-top: 20px;
+  color: var(--color-neutral-600);
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.form-footer a {
+  color: var(--color-primary);
+  text-decoration: none;
+}
+
+.form-footer a:hover {
+  text-decoration: underline;
+}
+
+/* 登录页面特有样式 */
+.login-tabs {
+  margin-bottom: 20px;
+}
+
+.guest-content {
+  text-align: center;
+  padding: 20px 0;
+}
+
+.guest-icon {
+  color: var(--color-primary);
+  margin-bottom: 20px;
+}
+
+.guest-description {
+  color: var(--color-neutral-600);
+  margin-bottom: 30px;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+/* 注册页面特有样式 */
+.admin-notice {
+  display: flex;
+  align-items: center;
+  margin-bottom: 20px;
+  padding: 12px;
+  background-color: #f0f9ff;
+  border: 1px solid var(--color-primary);
+  border-radius: var(--radius-md);
+  color: #0369a1;
+  font-size: 14px;
+}
+
+.notice-icon {
+  margin-right: 8px;
+  color: var(--color-primary);
+}
+
+.register-form :deep(.el-form-item) {
+  margin-bottom: 18px;
+}
+
+/* 登录页面特有的Element Plus样式覆盖 */
+.login-container :deep(.el-tabs__header) {
+  margin-bottom: 20px;
+}
+
+.login-container :deep(.el-tabs__item) {
+  font-weight: 500;
+  color: var(--color-neutral-600);
+}
+
+.login-container :deep(.el-tabs__item.is-active) {
+  color: var(--color-primary);
+  font-weight: 600;
+}
+
+.login-container :deep(.el-form-item__label) {
+  color: var(--color-neutral-800);
+  font-weight: 500;
+}
+
+.login-container :deep(.el-input__wrapper) {
+  border-radius: var(--radius-md);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.login-container :deep(.el-button--primary) {
+  border-radius: var(--radius-md);
+  font-weight: 600;
+}
+
+.login-container :deep(.el-button--danger) {
+  border-radius: var(--radius-md);
+  font-weight: 600;
+  background: linear-gradient(45deg, #f56565, #ed8936);
+  border: none;
+}
+
+/* 淡入动画 */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* 响应式设计 */
+@media (max-width: 520px) {
+  .auth-container {
+    width: 100%;
+    padding: 32px 28px 28px !important;
+  }
+  
+  .auth-title {
+    font-size: 22px;
+  }
+}

@@ -12,7 +12,7 @@
             :matches="matches"
             :events="events"
             :players="players"
-            :manage-match-type="manageMatchType"
+            v-model:manage-match-type="manageMatchType"
             :loading="loading"
             @refresh="loadAllData"
             @filter-change="handleFilterChange"
@@ -32,14 +32,15 @@
             <span class="tab-label"><el-icon><EditPen /></el-icon>信息录入</span>
           </template>
           <AdminInputSection
-            :teams="teams"
-            :matches="matches"
-            :events="events"
-            @team-submit="handleTeamSubmit"
-            @schedule-submit="handleScheduleSubmit"
-            @event-submit="handleEventSubmit"
-            @refresh-data="loadAllData"
-          />
+          ref="inputSectionRef"
+          :teams="teams"
+          :matches="matches"
+          :events="events"
+          @team-submit="handleTeamSubmit"
+          @schedule-submit="handleScheduleSubmit"
+          @event-submit="handleEventSubmit"
+          @refresh-data="loadAllData"
+        />
         </el-tab-pane>
       </el-tabs>
     </div>

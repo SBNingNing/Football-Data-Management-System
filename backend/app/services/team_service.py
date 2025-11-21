@@ -124,8 +124,12 @@ class TeamService:
             valid_ranks = [record.tournament_rank for record in team_records if record.tournament_rank and record.tournament_rank > 0]
             best_rank = min(valid_ranks) if valid_ranks else None
             
+            # 获取第一个记录的team_base_id（所有记录应该有相同的team_base_id）
+            team_base_id = team_records[0].team_base_id if team_records else None
+            
             team_info = {
                 'teamName': team_name,
+                'teamBaseId': team_base_id,  # 添加 team_base_id 字段
                 'totalGoals': total_goals,
                 'totalGoalsConceded': total_goals_conceded,
                 'totalGoalDifference': total_goal_difference,
@@ -172,7 +176,9 @@ class TeamService:
                     'yellowCards': record.tournament_yellow_cards,
                     'points': record.tournament_points,
                     'tournamentId': record.tournament_id,
-                    'tournamentName': record.tournament.name if record.tournament else None
+                    'tournamentName': record.tournament.name if record.tournament else None,
+                    'seasonId': record.tournament.season_id if record.tournament else None,
+                    'seasonName': record.tournament.season.name if record.tournament and record.tournament.season else None
                 })
                 
                 team_info['records'].append(record_dict)
@@ -203,7 +209,9 @@ class TeamService:
                             'totalYellowCards': 0,
                             'totalPoints': 0,
                             'bestRank': None,
-                            'tournaments': []
+                            'tournaments': [],
+                            'seasonId': team.tournament.season_id if team.tournament else None, # 添加 seasonId
+                            'seasonName': team.tournament.season.name if team.tournament and team.tournament.season else None # 添加 seasonName
                         }
                     
                     teams_grouped[team_name]['totalGoals'] += team.tournament_goals
@@ -253,6 +261,10 @@ class TeamService:
                         'name': team.name,
                         'tournamentId': team.tournament_id,
                         'tournamentName': team.tournament.name if team.tournament else None,
+                        'seasonId': team.tournament.season_id if team.tournament else None,
+                        'seasonName': team.tournament.season.name if team.tournament and team.tournament.season else None,
+                        'competitionId': team.tournament.competition_id if team.tournament else None,
+                        'competitionName': team.tournament.competition.name if team.tournament and team.tournament.competition else None,
                         'groupId': team.group_id,
                         'rank': team.tournament_rank,
                         'goals': team.tournament_goals,
@@ -294,16 +306,24 @@ class TeamService:
 
             # 2. 检查是否已有该赛事 active participation
             existing_participation = TeamTournamentParticipation.query.filter_by(team_base_id=team_base.id, tournament_id=tournament_id).first()
+            
+            is_new_team = False
             if existing_participation:
-                return None, '该球队已报名此赛事'
-
-            participation = TeamTournamentParticipation(
-                team_base_id=team_base.id,
-                tournament_id=tournament_id,
-                group_id=data.get('groupId')
-            )
-            db.session.add(participation)
-            db.session.flush()
+                # 如果已存在，复用该参赛记录
+                participation = existing_participation
+                # 如果有传入 group_id，更新它
+                if data.get('groupId'):
+                    participation.group_id = data.get('groupId')
+            else:
+                is_new_team = True
+                # 如果不存在，创建新的参赛记录
+                participation = TeamTournamentParticipation(
+                    team_base_id=team_base.id,
+                    tournament_id=tournament_id,
+                    group_id=data.get('groupId')
+                )
+                db.session.add(participation)
+                db.session.flush()
 
             # 3. 处理球员
             players_data = data.get('players', []) or []
@@ -312,17 +332,40 @@ class TeamService:
                 pname = p.get('name')
                 if not pid or not pname:
                     continue
+                
+                # 确保球员存在
                 player = Player.query.get(pid)
                 if not player:
                     player = Player(id=pid, name=pname)
                     db.session.add(player)
                 else:
                     player.name = pname
+                
                 number = int(p.get('number') or 0) if str(p.get('number')).isdigit() else 0
-                db.session.add(PlayerTeamHistory(player_id=pid, player_number=number, team_id=participation.id, tournament_id=tournament_id))
+                
+                # 检查该球员是否已在该参赛队伍中
+                existing_history = PlayerTeamHistory.query.filter_by(
+                    player_id=pid,
+                    team_id=participation.id,
+                    tournament_id=tournament_id
+                ).first()
+                
+                if existing_history:
+                    # 如果已存在，更新号码
+                    existing_history.player_number = number
+                else:
+                    # 如果不存在，添加新记录
+                    db.session.add(PlayerTeamHistory(
+                        player_id=pid, 
+                        player_number=number, 
+                        team_id=participation.id, 
+                        tournament_id=tournament_id
+                    ))
 
             db.session.commit()
-            return TeamService._build_participation_response(participation), None
+            result = TeamService._build_participation_response(participation)
+            result['is_new'] = is_new_team
+            return result, None
         except Exception as e:
             db.session.rollback()
             logger.error(f'Error creating team (dynamic tournament): {e}')
@@ -456,6 +499,7 @@ class TeamService:
             'teamName': team_base.name if team_base else None,
             'tournamentId': participation.tournament_id,
             'tournamentName': tournament.name if tournament else None,
+            'competitionId': tournament.competition_id if tournament else None,
             'groupId': participation.group_id,
             'rank': participation.tournament_rank,
             'goals': participation.tournament_goals,
@@ -482,6 +526,19 @@ class TeamService:
         if 'tournamentId' in data and data['tournamentId']:
             t = Tournament.query.get(data['tournamentId'])
             return (t.id, None) if t else (None, '指定 tournamentId 不存在')
+
+        # 新增: 支持 competitionId (自动查找最新赛季)
+        if 'competitionId' in data and data['competitionId']:
+            comp_id = data['competitionId']
+            # 查找该赛事下最新的 tournament (按 season_id 倒序? 或 season.start_time 倒序)
+            # 这里简单按 season_id 倒序
+            latest_t = Tournament.query.filter_by(competition_id=comp_id)\
+                .join(Season).order_by(Season.start_time.desc()).first()
+            
+            if latest_t:
+                return latest_t.id, None
+            else:
+                return None, '该赛事下暂无赛季记录，请先创建赛季赛事'
 
         comp_name = data.get('competitionName')
         season_name = data.get('seasonName')

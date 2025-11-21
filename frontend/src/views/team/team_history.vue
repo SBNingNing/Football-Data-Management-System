@@ -1,16 +1,26 @@
 <template>
-  <div class="team-info">
-    <PanelSkeleton v-if="loading" height="400px" />
-    <ErrorBanner v-else-if="error" :error="error" @retry="handleRetry" />
-    <template v-else>
-      <TeamBasicInfo :team="team" @back="goToHomePage" />
-      <TeamKeyStats :team="team" :refreshing="refreshing" @refresh="refreshTeamData" />
-      <TeamSeasonRecords
-        :records="records"
-        v-model:active-season="activeSeason"
-        @view-player="navigateToPlayer"
-      />
-    </template>
+  <div class="team-history-page">
+    <div class="team-history-container">
+      <PanelSkeleton v-if="loading" height="400px" />
+      <ErrorBanner v-else-if="error" :error="error" @retry="handleRetry" />
+      <template v-else-if="team">
+        <div class="module-section basic-info-section">
+          <TeamBasicInfo :team="team" @back="goToHomePage" />
+        </div>
+        
+        <div class="module-section stats-section">
+          <TeamKeyStats :team="team" :refreshing="refreshing" @refresh="refreshTeamData" />
+        </div>
+        
+        <div class="module-section records-section">
+          <TeamSeasonRecords
+            :records="records"
+            v-model:active-season="activeSeason"
+            @view-player="navigateToPlayer"
+          />
+        </div>
+      </template>
+    </div>
   </div>
 </template>
 

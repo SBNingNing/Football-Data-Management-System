@@ -22,14 +22,30 @@ class EventService:
         """创建事件"""
         try:
             # 查找比赛
-            match = EventService._find_match(event_data['matchName'])
+            match = None
+            if event_data.get('matchId'):
+                match = Match.query.get(event_data['matchId'])
+            
+            if not match and event_data.get('matchName'):
+                match = EventService._find_match(event_data['matchName'])
+                
             if not match:
-                raise ValueError(f'比赛不存在: {event_data["matchName"]}')
+                raise ValueError(f'比赛不存在: {event_data.get("matchName") or event_data.get("matchId")}')
+            
+            # 检查比赛状态
+            if match.status == 'F':
+                raise ValueError('比赛已结束，不允许添加新事件')
             
             # 查找球员
-            player = Player.query.filter_by(name=event_data['playerName']).first()
+            player = None
+            if event_data.get('playerId'):
+                player = Player.query.get(event_data['playerId'])
+                
+            if not player and event_data.get('playerName'):
+                player = Player.query.filter_by(name=event_data['playerName']).first()
+                
             if not player:
-                raise ValueError(f'球员不存在: {event_data["playerName"]}')
+                raise ValueError(f'球员不存在: {event_data.get("playerName") or event_data.get("playerId")}')
             
             # 获取主队和客队信息
             home_team = Team.query.get(match.home_team_id)
@@ -171,13 +187,19 @@ class EventService:
         try:
             logger.info(f"查找比赛: {match_name}")
             
-            # 首先尝试根据比赛名称查找
+            # 首先尝试根据比赛ID查找 (String ID)
+            match = Match.query.filter_by(id=match_name).first()
+            if match:
+                logger.info(f"通过ID(String)找到比赛: {match.id}")
+                return match
+
+            # 其次尝试根据比赛名称查找
             match = Match.query.filter_by(match_name=match_name).first()
             if match:
                 logger.info(f"通过比赛名称找到比赛: {match.id}")
                 return match
             
-            # 如果没找到，尝试直接匹配比赛ID（如果传入的是ID格式）
+            # 如果没找到，尝试直接匹配比赛ID（如果传入的是ID格式，且ID是数字的情况）
             try:
                 match_id = int(match_name)
                 match = Match.query.filter_by(id=match_id).first()
@@ -273,9 +295,12 @@ class EventService:
             
             tournament = Tournament.query.get(match.tournament_id)
             event_dict['matchType'] = determine_match_type(tournament)
+            if tournament:
+                event_dict['competitionId'] = tournament.competition_id
         else:
             event_dict['matchName'] = '未知比赛'
-            event_dict['matchType'] = 'champions-cup'
+            event_dict['matchType'] = '未知赛事'
+            event_dict['competitionId'] = None
         
         return event_dict
     
@@ -292,5 +317,6 @@ class EventService:
             'playerName': None,
             'teamName': None,
             'matchName': '数据异常',
-            'matchType': 'champions-cup'
+            'matchType': '未知赛事',
+            'competitionId': None
         }

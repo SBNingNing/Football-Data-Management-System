@@ -1,6 +1,3 @@
-"""
-Team History 模块 Schemas：请求与响应模型，贴合现有服务返回结构。
-"""
 from typing import List, Optional, Dict, Any, Union
 from .base import SchemaBase
 
@@ -37,6 +34,7 @@ class TournamentRecord(SchemaBase):
     final_ranking: Optional[int] = None
     remarks: Optional[str] = None
     stats: TournamentStats
+    players: Optional[List[Dict[str, Any]]] = None # 添加球员列表字段
 
 
 # 赛季聚合（complete 接口使用）

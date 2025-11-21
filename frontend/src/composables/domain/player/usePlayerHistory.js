@@ -1,9 +1,98 @@
-/** usePlayerHistory (inlined) */
+/**
+ * 球员历史组合函数
+ * 提供球员详情、统计数据、赛季信息和球队历史的加载和管理
+ */
 import { ref } from 'vue'
 import { fetchPlayerAggregate } from '@/domain/player/playerService'
 import logger from '@/utils/logger'
-export function usePlayerHistory({ loader } = {}) {
-	const player = ref(null); const stats = ref(null); const seasons = ref([]); const teamHistories = ref([]); const loading = ref(false); const error = ref(null)
-	async function load(playerId,{force=false}={}){ if(!playerId){ error.value = new Error('缺少 playerId'); return } loading.value=true; error.value=null; try { const agg = await fetchPlayerAggregate(playerId,{ force, loader }); player.value=agg.player; stats.value=agg.stats; seasons.value=agg.seasons; teamHistories.value=agg.teamHistories } catch(e){ error.value=e; logger.error('[usePlayerHistory] 加载失败:', e) } finally { loading.value=false } }
-	return { player, stats, seasons, teamHistories, loading, error, load }
+
+/**
+ * 球员历史组合函数
+ * @param {Object} options - 配置选项
+ * @param {Function} options.loader - 自定义加载器函数
+ * @returns {Object} 球员历史相关的响应式数据和方法
+ */
+export function usePlayerHistory() {
+
+  // 球员基本信息
+  const player = ref(null)
+  
+  // 球员统计数据
+  const stats = ref(null)
+  
+  // 球员参与的赛季列表
+  const seasons = ref([])
+  
+  // 球员的球队历史
+  const teamHistories = ref([])
+  
+  // 加载状态
+  const loading = ref(false)
+  
+  // 错误信息
+  const error = ref(null)
+
+  // =========================
+  // 数据加载方法
+  // =========================
+
+  /**
+   * 加载球员历史数据
+   * @param {string} playerId - 球员ID
+   * @param {Object} options - 加载选项
+   * @param {boolean} options.force - 是否强制刷新
+   */
+  async function load(playerId, { force = false } = {}) {
+    // 参数验证
+    if (!playerId) {
+      error.value = new Error('缺少 playerId')
+      return
+    }
+
+    // 设置加载状态
+    loading.value = true
+    error.value = null
+
+    try {
+      // 获取球员聚合数据
+      const aggregateData = await fetchPlayerAggregate(playerId, { 
+        force
+      })
+      logger.debug(`[usePlayerHistory] Received aggregateData:`, aggregateData);
+
+      // 更新各项数据
+      // aggregateData 本身就是完整的视图模型对象
+      player.value = aggregateData;
+      stats.value = aggregateData; // 统计信息也包含在主对象中
+      seasons.value = aggregateData.seasons;
+      teamHistories.value = aggregateData.teamHistories;
+      
+    } catch (err) {
+      // 处理错误
+      const errorMessage = err.message || '未知错误';
+      const errorDetails = err.details || {};
+      error.value = err;
+      logger.error(`[usePlayerHistory] 加载失败: ${errorMessage}`, { error: err, details: errorDetails });
+    } finally {
+      // 清除加载状态
+      loading.value = false
+    }
+  }
+
+  // =========================
+  // 返回值
+  // =========================
+
+  return {
+    // 响应式数据
+    player,
+    stats,
+    seasons,
+    teamHistories,
+    loading,
+    error,
+    
+    // 方法
+    load
+  }
 }

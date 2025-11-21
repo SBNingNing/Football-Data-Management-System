@@ -49,9 +49,12 @@
             clearable
             class="match-type-select"
           >
-            <el-option label="冠军杯" value="champions-cup" />
-            <el-option label="巾帼杯" value="womens-cup" />
-            <el-option label="八人制" value="eight-a-side" />
+            <el-option 
+              v-for="comp in availableCompetitions" 
+              :key="comp.competition_id" 
+              :label="comp.name" 
+              :value="comp.name" 
+            />
           </el-select>
         </el-col>
         <el-col :span="4">
@@ -180,7 +183,7 @@ import {
   Collection
 } from '@element-plus/icons-vue';
 import logger from '@/utils/logger.js'
-import axios from 'axios';
+import http from '@/utils/httpClient';
 
 export default {
   name: 'PlayerSearch',
@@ -195,6 +198,12 @@ export default {
     CircleClose,
   IconView,
     Collection
+  },
+  props: {
+    competitions: {
+      type: Array,
+      default: () => []
+    }
   },
   data() {
     return {
@@ -216,6 +225,10 @@ export default {
       const start = (this.currentPage - 1) * this.pageSize;
       const end = start + this.pageSize;
       return this.filteredPlayers.slice(start, end);
+    },
+    // 直接使用传入的赛事列表，避免过滤导致为空
+    availableCompetitions() {
+      return this.competitions;
     }
   },
   async mounted() {
@@ -225,42 +238,88 @@ export default {
     async fetchPlayers() {
       try {
         this.loading = true;
-        const response = await axios.get('/api/players');
-        const body = response.data;
-        // 兼容旧 {status:'success', data:[...]} 与 新 {success:true,data:[...]} 已被 httpClient 的自动解包之外的 axios 直接调用，这里手动解包
-        if ((body?.success === true || body?.status === 'success')) {
-          const arr = Array.isArray(body.data) ? body.data : Array.isArray(body.records) ? body.records : body.data;
-          this.players = Array.isArray(arr)?arr:[];
-          logger.info('players fetched', this.players.length);
+        const result = await http.get('/players', {
+          retry: {
+            times: 2,
+            delay: (attempt) => attempt * 1000, // 1s, 2s 延迟
+            onRetry: (error, attempt, delay) => {
+              logger.warn(`球员数据获取失败，第${attempt}次重试 (${delay}ms后):`, error.message)
+            }
+          }
+        });
+        
+        // 检查http客户端返回的结果
+        if (!result.ok) {
+          // 处理请求失败情况
+          logger.error('API请求失败:', result.error);
+          let errorMessage = '获取球员列表失败';
           
-          // 处理球员数据，确保字段一致性
-          this.players = this.players.map(player => ({
-            ...player,
-            studentId: player.studentId || player.id,
-            career_goals: player.career_goals || 0,
-            career_yellow_cards: player.career_yellow_cards || 0,
-            career_red_cards: player.career_red_cards || 0,
-            teamName: player.teamName || null,
-            number: player.number || null,
-            matchType: player.matchType || 'champions-cup',
-            all_teams: player.all_teams || []
-          }));
+          if (result.error?.status === 500) {
+            errorMessage = '服务器内部错误，请稍后重试';
+          } else if (result.error?.status === 404) {
+            errorMessage = '球员接口不存在，请检查后端服务';
+          } else if (result.error?.type === 'network') {
+            errorMessage = '网络连接失败，请检查网络设置';
+          } else if (result.error?.message) {
+            errorMessage = result.error.message;
+          }
           
-          // 提取队伍选项（包含所有队伍）
-          this.extractTeamOptions();
-          // 初始化过滤
-          this.filterPlayers();
-          
-        } else if (Array.isArray(body)) {
-          this.players = body;
-          this.extractTeamOptions();
-          this.filterPlayers();
-        } else {
-          logger.warn('unexpected players response format', body);
+          this.$message.error(errorMessage);
           this.players = [];
+          return;
         }
+        
+        // 处理成功的响应数据
+        const response = result.data;
+        let playersData = [];
+        
+        // 处理不同的响应格式
+        if (Array.isArray(response)) {
+          // 直接是数组格式
+          playersData = response;
+        } else if (response && typeof response === 'object') {
+          // 对象格式，可能包含data、records等字段
+          if (Array.isArray(response.data)) {
+            playersData = response.data;
+          } else if (Array.isArray(response.records)) {
+            playersData = response.records;
+          } else if (Array.isArray(response.players)) {
+            playersData = response.players;
+          } else {
+            logger.warn('unexpected players response format', response);
+            playersData = [];
+          }
+        } else {
+          logger.warn('unexpected players response format', response);
+          playersData = [];
+        }
+        
+        // 确保 playersData 是数组
+        this.players = Array.isArray(playersData) ? playersData : [];
+        
+        logger.info('players fetched', this.players.length);
+        
+        // 处理球员数据，确保字段一致性
+        this.players = this.players.map(player => ({
+          ...player,
+          studentId: player.studentId || player.id,
+          career_goals: player.career_goals || 0,
+          career_yellow_cards: player.career_yellow_cards || 0,
+          career_red_cards: player.career_red_cards || 0,
+          // 兼容多种字段名
+          teamName: player.teamName || player.team_name || (player.team ? player.team.name : null),
+          number: player.number || player.player_number || null,
+          matchType: player.matchType || '',
+          all_teams: player.all_teams || player.team_histories || []
+        }));
+        
+        // 提取队伍选项（包含所有队伍）
+        this.extractTeamOptions();
+        // 初始化过滤
+        this.filterPlayers();
+        
       } catch (error) {
-  logger.error('fetch players failed', error);
+        logger.error('fetch players failed', error);
         
         let errorMessage = '获取球员列表失败';
         if (error.response?.status === 404) {
@@ -281,7 +340,11 @@ export default {
     extractTeamOptions() {
       const teams = new Set();
       this.players.forEach(player => {
-        // 只添加所有历史队伍
+        // 添加当前队伍
+        if (player.teamName) {
+          teams.add(player.teamName);
+        }
+        // 添加所有历史队伍
         if (player.all_teams && Array.isArray(player.all_teams)) {
           player.all_teams.forEach(team => {
             if (team.team_name) {
@@ -290,8 +353,37 @@ export default {
           });
         }
       });
-      this.teamOptions = Array.from(teams).sort();
-  logger.debug('team options', this.teamOptions);
+      
+      // 如果从球员中提取不到队伍，尝试从后端获取所有队伍作为补充
+      // 这可以解决部分球员数据不完整导致下拉框为空的问题
+      if (teams.size === 0) {
+        this.fetchTeamsFallback();
+      } else {
+        this.teamOptions = Array.from(teams).sort();
+        logger.debug('team options', this.teamOptions);
+      }
+    },
+    
+    async fetchTeamsFallback() {
+      try {
+        const result = await http.get('/teams');
+        if (result.ok) {
+          const data = result.data;
+          let teams = [];
+          if (Array.isArray(data)) {
+            teams = data;
+          } else if (data && Array.isArray(data.data)) {
+            teams = data.data;
+          } else if (data && Array.isArray(data.teams)) {
+            teams = data.teams;
+          }
+          
+          this.teamOptions = teams.map(t => t.name).filter(Boolean).sort();
+          logger.info('Teams loaded from fallback:', this.teamOptions.length);
+        }
+      } catch (e) {
+        logger.error('Failed to load teams fallback', e);
+      }
     },
 
     handleSearch() {
@@ -313,8 +405,13 @@ export default {
     },
 
     filterPlayers() {
-      let filtered = [...this.players];
+      // --- 诊断日志开始 ---
+      logger.debug('--- [PlayerSearch] Filtering Started ---');
+      logger.debug(`Keyword: "${this.searchKeyword}", Team: "${this.selectedTeam}", Match Type: "${this.selectedMatchType}"`);
       
+      let filtered = [...this.players];
+      logger.debug(`Initial players to filter: ${filtered.length}`);
+
       // 按关键词过滤
       if (this.searchKeyword.trim()) {
         const keyword = this.searchKeyword.trim().toLowerCase();
@@ -325,25 +422,49 @@ export default {
         );
       }
       
-      // 按队伍过滤（只检查所有历史队伍）
+      // 按队伍过滤
       if (this.selectedTeam) {
+        const selectedTeamLower = this.selectedTeam.toLowerCase().trim();
         filtered = filtered.filter(player => {
-          // 检查所有历史队伍
-          if (player.all_teams && Array.isArray(player.all_teams)) {
-            return player.all_teams.some(team => team.team_name === this.selectedTeam);
-          }
-          return false;
+          const hasTeam = (
+            (player.teamName && player.teamName.toLowerCase().trim() === selectedTeamLower) ||
+            (player.all_teams && player.all_teams.some(team => team.team_name && team.team_name.toLowerCase().trim() === selectedTeamLower))
+          );
+          return hasTeam;
         });
       }
       
-      // 按赛事类型过滤（只检查所有历史赛事）
+      // 按赛事类型过滤
       if (this.selectedMatchType) {
-        filtered = filtered.filter(player => {
-          // 检查所有历史赛事类型
-          if (player.all_teams && Array.isArray(player.all_teams)) {
-            return player.all_teams.some(team => team.match_type === this.selectedMatchType);
+        const selectedType = this.selectedMatchType.toLowerCase().trim();
+        const selectedTypeSlug = selectedType.replace(/\s+/g, '-');
+        
+        const checkType = (type, tournamentName) => {
+          if (type) {
+            const t = type.toLowerCase().trim();
+            if (t.includes(selectedType) || t.includes(selectedTypeSlug) || selectedType.includes(t)) return true;
+          }
+          if (tournamentName) {
+            const tn = tournamentName.toLowerCase().trim();
+            if (tn.includes(selectedType) || selectedType.includes(tn)) return true;
           }
           return false;
+        };
+
+        filtered = filtered.filter(player => {
+          const hasType = (
+            checkType(player.matchType, player.tournament_name) ||
+            (player.all_teams && player.all_teams.some(team => checkType(team.match_type, team.tournament_name)))
+          );
+          // 诊断日志
+          if (!hasType && (player.matchType || player.all_teams?.length > 0)) {
+            logger.log(`[Debug Type Filter] Player ${player.name} DID NOT MATCH type "${this.selectedMatchType}". Player's types:`, {
+              currentType: player.matchType,
+              currentTournament: player.tournament_name,
+              history: player.all_teams?.map(t => ({ type: t.match_type, tournament: t.tournament_name }))
+            });
+          }
+          return hasType;
         });
       }
       
@@ -351,20 +472,18 @@ export default {
       this.totalPlayers = filtered.length;
       this.currentPage = 1;
       
-  logger.debug('players filtered count', this.filteredPlayers.length);
+      logger.debug(`Final filtered player count: ${this.filteredPlayers.length}`);
+      logger.debug('--- [PlayerSearch] Filtering Finished ---');
     },
 
     getTagType(matchType) {
-      switch (matchType) {
-        case 'champions-cup':
-          return 'primary';
-        case 'womens-cup':
-          return 'success';
-        case 'eight-a-side':
-          return 'warning';
-        default:
-          return 'info';
-      }
+      if (!matchType) return 'info';
+      // 尝试根据名称关键字匹配颜色 (软匹配，非硬编码特定ID)
+      const str = String(matchType);
+      if (str.includes('冠军')) return 'primary';
+      if (str.includes('巾帼')) return 'success';
+      if (str.includes('八人')) return 'warning';
+      return 'info';
     },
 
     navigateToPlayerHistory(player) {
@@ -544,13 +663,14 @@ export default {
   flex-wrap: wrap;
 }
 
+/* 使用原始的徽章样式，保持视觉效果不变 */
 .stat-badge {
   display: inline-flex;
   align-items: center;
   gap: 2px;
-  padding: 2px 6px;
+  padding: 4px 8px;
   border-radius: 12px;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 500;
 }
 

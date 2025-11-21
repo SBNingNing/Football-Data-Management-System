@@ -1,6 +1,6 @@
 """
-球队历史路由模块 - 重构版
-采用四层架构: 路由层仅处理HTTP请求响应，业务逻辑交由服务层和中间件层处理
+球队历史路由模块
+路由层仅处理HTTP请求响应，业务逻辑交由服务层和中间件层处理
 """
 
 from flask import Blueprint, jsonify, request
@@ -29,7 +29,10 @@ def get_team_complete_history(team_base_id: str):
     result = TeamHistoryService.get_team_complete_history(team_base_id)
     # 通过 Schema 构造做轻量校验，保持原有响应结构
     out = TH_TeamCompleteHistoryOut(**result)
-    return jsonify(out.model_dump(by_alias=True)), 200
+    return jsonify({
+        "status": "success",
+        "data": out.model_dump(by_alias=True)
+    }), 200
 
 
 @team_history_bp.route('/<team_base_id>/season/<int:season_id>', methods=['GET'])
@@ -38,7 +41,10 @@ def get_team_season_performance(team_base_id: str, season_id: int):
     """获取球队在指定赛季的表现"""
     result = TeamHistoryService.get_team_season_performance(team_base_id, season_id)
     out = TH_TeamSeasonPerformanceOut(**result)
-    return jsonify(out.model_dump(by_alias=True)), 200
+    return jsonify({
+        "status": "success",
+        "data": out.model_dump(by_alias=True)
+    }), 200
 
 
 @team_history_bp.route('/compare', methods=['POST'])
@@ -50,7 +56,10 @@ def compare_teams_across_seasons():
     season_ids = payload.season_ids or []
     
     result = TeamHistoryService.compare_teams_across_seasons(team_base_ids, season_ids)
-    return jsonify(result), 200
+    return jsonify({
+        "status": "success",
+        "data": result
+    }), 200
 
 
 @team_history_bp.route('/tournament-history/<team_base_id>', methods=['GET'])
@@ -59,4 +68,7 @@ def get_team_tournament_history(team_base_id: str):
     """获取球队参赛历史"""
     result = TeamHistoryService.get_team_tournament_history(team_base_id)
     out = TH_TeamTournamentHistoryOut(**result)
-    return jsonify(out.model_dump(by_alias=True)), 200
+    return jsonify({
+        "status": "success",
+        "data": out.model_dump(by_alias=True)
+    }), 200

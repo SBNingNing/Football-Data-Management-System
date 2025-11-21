@@ -1,0 +1,252 @@
+/* =====================================================================
+ * 文件: input-components.css (通用输入组件样式)
+ * 作用: 所有输入组件的通用样式，避免重复定义
+ * 包含: 通用卡片样式、表单样式、输入框样式、按钮样式、响应式设计
+ * ===================================================================== */
+
+/* 通用输入卡片样式基类 */
+.input-component-card {
+  border: 1px solid var(--color-neutral-400);
+  border-radius: var(--radius-lg);
+  background: var(--color-neutral-100);
+  box-shadow: var(--shadow-card);
+  transition: all var(--transition-base);
+  overflow: hidden;
+}
+
+.input-component-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-card-hover);
+}
+
+/* 特定类型输入卡片 */
+.competition-input-card {
+  border: 1px solid var(--color-success);
+  border-radius: var(--radius-lg);
+  background: var(--color-neutral-100);
+  box-shadow: var(--shadow-card);
+  transition: all var(--transition-base);
+  overflow: hidden;
+}
+
+.competition-input-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-card-hover);
+  border-color: var(--color-success);
+}
+
+.season-input-card {
+  border: 1px solid var(--color-primary);
+  border-radius: var(--radius-lg);
+  background: var(--color-neutral-100);
+  box-shadow: var(--shadow-card);
+  transition: all var(--transition-base);
+  overflow: hidden;
+}
+
+.season-input-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-card-hover);
+  border-color: var(--color-primary);
+}
+
+.tournament-quick-input-card {
+  border: 1px solid var(--color-neutral-400);
+  border-radius: var(--radius-lg);
+  background: var(--color-neutral-100);
+  box-shadow: var(--shadow-card);
+  transition: all var(--transition-base);
+  overflow: hidden;
+}
+
+.tournament-quick-input-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-card-hover);
+}
+
+/* 通用卡片头部样式 */
+.input-card-header,
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  background: linear-gradient(135deg, var(--color-neutral-200) 0%, var(--color-neutral-100) 100%);
+  border-bottom: 1px solid var(--color-neutral-400);
+}
+
+.input-card-title,
+.card-title {
+  font-weight: 600;
+  font-size: 18px;
+  color: var(--color-neutral-800);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  letter-spacing: 0.5px;
+}
+
+/* 卡片标题前的彩色标记 */
+.card-title::before {
+  content: '';
+  width: 4px;
+  height: 16px;
+  border-radius: 2px;
+}
+
+.competition-input-card .card-title::before {
+  background: var(--color-success);
+}
+
+.season-input-card .card-title::before {
+  background: var(--color-primary);
+}
+
+/* 通用表单样式 */
+:deep(.input-component-form) {
+  padding: 20px;
+}
+
+:deep(.input-component-form-item) {
+  margin-bottom: 20px;
+}
+
+:deep(.input-component-form-item__label) {
+  font-weight: 500;
+  color: var(--color-neutral-700);
+  font-size: 16px;
+  line-height: 1.5;
+}
+
+/* 通用输入框样式（已在element-plus-overrides.css中定义，这里保留备用） */
+.input-wrapper-base {
+  border-radius: var(--radius-md);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  transition: all var(--transition-base);
+  border: 1px solid var(--color-neutral-400);
+  font-size: 16px;
+}
+
+.input-wrapper-base:hover {
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.input-wrapper-base.is-focus {
+  box-shadow: 0 0 0 2px rgba(103, 194, 58, 0.2);
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+  .input-card-header,
+  .card-header {
+    padding: 12px 16px;
+  }
+  
+  .input-card-title,
+  .card-title {
+    font-size: 16px;
+  }
+  
+  :deep(.input-component-form) {
+    padding: 16px;
+  }
+}
+
+:deep(.input-component-select .input-component-input__placeholder) {
+  font-size: 16px;
+}
+
+:deep(.input-component-select .input-component-input__wrapper:hover) {
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* 通用文本域样式 */
+:deep(.input-component-textarea__inner) {
+  border-radius: var(--radius-md);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  transition: all var(--transition-base);
+  border: 1px solid var(--color-neutral-400);
+  font-family: var(--font-family-base);
+}
+
+:deep(.input-component-textarea__inner:hover) {
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+:deep(.input-component-textarea__inner:focus) {
+  box-shadow: 0 0 0 2px rgba(103, 194, 58, 0.2);
+}
+
+/* 通用按钮样式 */
+:deep(.input-component-button) {
+  border-radius: var(--radius-md);
+  font-weight: 500;
+  transition: all var(--transition-base);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  border: none;
+  color: var(--color-neutral-100);
+  padding: 12px 20px;
+  font-size: 14px;
+}
+
+:deep(.input-component-button:hover) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(103, 194, 58, 0.3);
+}
+
+:deep(.input-component-button:active) {
+  transform: translateY(0);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+:deep(.input-component-button .el-icon) {
+  margin-right: 6px;
+  font-size: 16px;
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+  .input-component-card {
+    border-radius: var(--radius-md);
+    margin-bottom: 16px;
+  }
+  
+  .input-card-header {
+    padding: 12px 16px;
+  }
+  
+  .input-card-title {
+    font-size: 14px;
+  }
+  
+  :deep(.input-component-form) {
+    padding: 16px;
+  }
+  
+  :deep(.input-component-form-item) {
+    margin-bottom: 16px;
+  }
+  
+  :deep(.input-component-button) {
+    padding: 10px 16px;
+    font-size: 13px;
+  }
+}
+
+@media (max-width: 480px) {
+  .input-component-card {
+    border-radius: var(--radius-sm);
+  }
+  
+  .input-card-header {
+    padding: 8px 10px;
+  }
+  
+  :deep(.input-component-form-item) {
+    margin-bottom: 12px;
+  }
+}
+
+.form-actions .el-form-item__content {
+  justify-content: flex-end;
+}

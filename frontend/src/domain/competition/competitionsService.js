@@ -15,7 +15,7 @@ import { COMPETITION_KEYS } from '@/domain/cacheKeys'
 function normalizeCompetition(raw){
   if(!raw) return null
   return {
-    id: raw.id,
+    id: raw.id || raw.competition_id,
     name: raw.name,
     createdAt: raw.created_at || raw.createdAt,
     updatedAt: raw.updated_at || raw.updatedAt,

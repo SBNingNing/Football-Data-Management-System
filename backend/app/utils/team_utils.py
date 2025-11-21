@@ -12,55 +12,37 @@ class TeamUtils:
     """球队工具函数集合。"""
 
     # 比赛类型英文规范列表
-    VALID_MATCH_TYPES = ['champions-cup', 'womens-cup', 'eight-a-side']
+    VALID_MATCH_TYPES = []
     # 中英文 & 变体别名映射到规范英文
-    MATCH_TYPE_ALIAS_MAP = {
-        # 冠军/校园杯
-        '冠军杯': 'champions-cup', '校园杯': 'champions-cup',
-        # 巾帼 / 女子 杯
-        '巾帼杯': 'womens-cup', '女子杯': 'womens-cup', '女足杯': 'womens-cup',
-        # 八人制
-        '八人制': 'eight-a-side', '八人赛': 'eight-a-side', '8人制': 'eight-a-side',
-    }
+    MATCH_TYPE_ALIAS_MAP = {}
 
     @staticmethod
     def normalize_match_type(raw: str) -> tuple[str | None, str | None]:
         """比赛类型别名 -> 规范英文; 返回 (canonical, error)。"""
         if not raw:
-            return 'champions-cup', None  # 默认
+            return None, None  # 默认
         raw = str(raw).strip()
-        canonical = TeamUtils.MATCH_TYPE_ALIAS_MAP.get(raw, raw)
-        if canonical not in TeamUtils.VALID_MATCH_TYPES:
-            valid_cn = '冠军杯/校园杯, 巾帼杯/女子杯/女足杯, 八人制/八人赛/8人制'
-            valid_en = ', '.join(TeamUtils.VALID_MATCH_TYPES)
-            return None, f'无效的比赛类型({raw})。有效英文: {valid_en} | 中文: {valid_cn}'
-        return canonical, None
+        # 直接返回原始值，不再进行硬编码校验
+        return raw, None
     
     @staticmethod
     def determine_match_type(tournament) -> str:
         """从赛事名称推断 matchType。"""
+        if tournament and tournament.competition:
+            return tournament.competition.name
         if tournament:
-            tournament_name = tournament.name.lower()
-            if '冠军杯' in tournament_name or '校园杯' in tournament_name or 'champions' in tournament_name:
-                return 'champions-cup'
-            elif '巾帼杯' in tournament_name or '女子杯' in tournament_name or '女足杯' in tournament_name or 'womens' in tournament_name:
-                return 'womens-cup'
-            elif '八人制' in tournament_name or 'eight' in tournament_name:
-                return 'eight-a-side'
-            else:
-                return 'champions-cup'
-        else:
-            return 'champions-cup'
+            return tournament.name
+        return '未知赛事'
     
     @staticmethod
     def get_tournament_id_by_match_type(match_type: str) -> int:
         """比赛类型 -> 固定 tournamentId 映射。"""
-        match_type_to_tournament = {
-            'champions-cup': 1,  # 冠军杯
-            'womens-cup': 2,     # 巾帼杯
-            'eight-a-side': 3    # 八人制比赛
-        }
-        return match_type_to_tournament.get(match_type, 1)
+        # 尝试将 match_type 转换为整数 ID
+        try:
+            return int(match_type)
+        except (ValueError, TypeError):
+            # 如果不是数字，返回默认值 1
+            return 1
     
     @staticmethod
     def format_team_name(name: str) -> str:

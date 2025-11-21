@@ -63,10 +63,10 @@ def validate_team_data(f):
                 # 验证球员号码
                 try:
                     number = int(player.get('number', 1))
-                    if number < 1 or number > 99:
+                    if number < 0:
                         return jsonify({
                             'status': 'error', 
-                            'message': f'第{i+1}个球员号码必须在1-99之间'
+                            'message': f'第{i+1}个球员号码必须大于等于0'
                         }), 400
                 except (ValueError, TypeError):
                     return jsonify({
@@ -238,8 +238,8 @@ def validate_team_update_data(f):
                 if number is not None:
                     try:
                         num_int = int(number)
-                        if num_int < 1 or num_int > 99:
-                            return jsonify({'status': 'error', 'message': f'第{i+1}个球员号码必须在1-99之间'}), 400
+                        if num_int < 0:
+                            return jsonify({'status': 'error', 'message': f'第{i+1}个球员号码必须大于等于0'}), 400
                     except (ValueError, TypeError):
                         return jsonify({'status': 'error', 'message': f'第{i+1}个球员号码格式错误'}), 400
         return f(*args, **kwargs)

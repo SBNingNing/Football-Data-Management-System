@@ -13,6 +13,7 @@ class PlayerCreate(SchemaBase):
 
 class PlayerUpdate(SchemaBase):
     name: Optional[str] = Field(None, min_length=1, max_length=50)
+    number: Optional[int] = Field(None, ge=0, le=999, description="球衣号码")
 
 
 class PlayerOut(SchemaBase):

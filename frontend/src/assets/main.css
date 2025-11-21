@@ -1,47 +1,26 @@
-:root {
-  --primary-color: #409EFF;
-  --success-color: #67C23A;
-  --warning-color: #E6A23C;
-  --danger-color: #F56C6C;
-  --info-color: #909399;
-  --text-primary: #303133;
-  --text-regular: #606266;
-  --text-secondary: #909399;
-  --border-color: #DCDFE6;
-  --background-color: #F5F7FA;
-}
+/* =====================================================================
+ * 文件: main.css (主样式文件)
+ * 作用: 导入所有样式文件，定义全局应用样式
+ * ===================================================================== */
 
+/* 导入设计令牌和基础样式 */
+@import './styles/variables.css';
+@import './styles/base.css';
+@import './styles/element-plus-overrides.css';
+
+/* 全局样式 */
 * {
   box-sizing: border-box;
 }
 
 a {
-  color: var(--primary-color);
+  color: var(--color-primary);
   text-decoration: none;
 }
 
+/* 容器样式 */
 .container {
-  max-width: 1200px;
+  max-width: var(--layout-max-width);
   margin: 0 auto;
   padding: 20px;
-}
-
-.auth-container {
-  max-width: 400px;
-  margin: 100px auto;
-  padding: 30px;
-  background: white;
-  border-radius: 8px;
-  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
-}
-
-.auth-title {
-  text-align: center;
-  margin-bottom: 30px;
-  color: var(--text-primary);
-}
-
-.form-footer {
-  margin-top: 20px;
-  text-align: center;
 }

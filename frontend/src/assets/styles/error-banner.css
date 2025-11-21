@@ -1,0 +1,32 @@
+/* ErrorBanner.vue 样式 */
+.error-banner {
+  display: flex;
+  align-items: center;
+  padding: 10px 12px;
+  border: 1px solid #fbc4c4;
+  background: #fef0f0;
+  border-radius: 6px;
+  gap: 8px;
+  /* 使用通用样式类 .float-shadow */
+}
+
+.error-banner.is-dense {
+  padding: 6px 8px;
+}
+
+.icon {
+  flex-shrink: 0;
+}
+
+.message {
+  flex: 1;
+  font-size: 13px;
+  color: #c45656;
+  line-height: 1.4;
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}

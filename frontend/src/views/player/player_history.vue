@@ -2,9 +2,9 @@
   <div class="player-career">
     <PanelSkeleton v-if="loading" height="400px" />
     <ErrorBanner v-else-if="error" :error="error" @retry="retry" />
-    <template v-else>
+    <template v-else-if="player">
       <PlayerBasicInfo :player="player" @back="goToHomePage" />
-      <PlayerTeamHistory :team-histories="player.teamHistories" />
+      <PlayerTeamHistory :team-histories="teamHistories" />
       <PlayerCareerStats :player="player" />
       <PlayerSeasonsPerformance
         :player="player"
@@ -30,7 +30,7 @@ import PlayerSeasonsPerformance from '@/components/player/PlayerSeasonsPerforman
 import { usePlayerHistoryPage } from '@/composables/domain/player'
 import '@/assets/styles/player-history.css'
 
-const { player, loading, error, activeSeason, init, refreshPlayer, retry, goToHomePage } = usePlayerHistoryPage()
+const { player, loading, error, activeSeason, seasons, init, refreshPlayer, retry, goToHomePage } = usePlayerHistoryPage()
 onMounted(init)
 defineExpose({ refreshPlayer })
 </script>

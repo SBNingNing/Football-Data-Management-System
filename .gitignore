@@ -4,6 +4,8 @@ node_modules/
 # 构建输出
 /dist
 /build
+frontend/dist/
+frontend/build/
 
 # 日志文件
 npm-debug.log*
@@ -34,6 +36,15 @@ venv/
 env/
 ENV/
 
+# 项目根目录的本地 Python 虚拟环境（不要提交）
+/football_system/
+
 # SQLite 数据库
 *.db
 *.sqlite
+
+# 测试相关
+/tests/
+
+# 日志
+/backend/logs/

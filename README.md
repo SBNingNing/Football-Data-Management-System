@@ -204,6 +204,16 @@
 - WSGI服务器: Gunicorn
 - 反向代理: Nginx
 
+### 管理员账号设置
+系统默认只提供普通用户注册功能。管理员账号需要通过专用脚本创建。
+
+详细操作指南请参考：[管理员账号设置说明](ADMIN_SETUP.md)
+
+快速创建管理员账号：
+```powershell
+python reset_admin.py
+```
+
 ## 开发计划
 1. 需求分析与系统设计
 2. 数据库设计与实现
@@ -211,6 +221,37 @@
 4. 前端页面开发
 5. 系统集成与测试
 6. 部署与上线
+
+## 快速验证
+
+### 启动系统
+1. 后端启动：
+   ```powershell
+   python install_and_run.py
+   ```
+
+2. 前端启动（另开终端）：
+   ```powershell
+   Set-Location frontend
+   npm run dev
+   ```
+
+### API 接口测试
+```powershell
+# 系统统计信息
+curl -UseBasicParsing http://localhost:5000/api/stats
+
+# 排行榜数据
+curl -UseBasicParsing http://localhost:5000/api/rankings
+
+# 健康检查
+curl -UseBasicParsing http://localhost:5000/api/health
+```
+
+### 常见问题排查
+- **统计数据为空**: 检查是否有已结束的比赛数据和球员统计
+- **排行榜显示异常**: 确认球员-球队关联数据完整性
+- **登录权限问题**: 使用 `reset_admin.py` 创建管理员账号
 
 
 ## 前端架构与状态说明
@@ -223,6 +264,15 @@
 3. 比赛/事件常量统一来源
 4. 待落地的组合式规划 (滚动恢复、反馈统一)
 5. 遗留文件清理策略
+
+## 最近修复
+
+### 统计服务修复 (2025年10月)
+- ✅ 修复后端 `StatsService` 查询字段错误，改用正确的模型关联
+- ✅ 修复前端 `statsService` 数据解包错误，避免二次解包导致的空数据
+- ✅ 统一管理员账号创建流程，提供 PowerShell 友好的操作指南
+
+这些修复确保了排行榜、统计数据的正常显示，并改善了管理员账号管理体验。
 
 
 

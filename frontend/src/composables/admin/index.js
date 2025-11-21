@@ -5,7 +5,6 @@ export { default as usePlayerStats } from './usePlayerStats'
 
 // 其他跨目录通用组合（放在 src/composables 根目录）
 export { useScrollHelpers } from '@/composables/scroll/useScrollHelpers.js'
-export { default as useMatchTypeMeta } from '@/composables/domain/match/useMatchTypeMeta.js'
 export { useAdminBoardPage } from './useAdminBoardPage.js'
 
 // 未来新增：领域相关 meta / helpers 可继续在此集中导出

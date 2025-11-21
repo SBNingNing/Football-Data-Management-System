@@ -18,6 +18,7 @@
       :events="events"
       :players="players"
       :manage-match-type="manageMatchType"
+      @update:manageMatchType="$emit('update:manageMatchType', $event)"
       @filter-change="$emit('filter-change', $event)"
       @refresh="$emit('refresh')"
       @edit-team="$emit('edit-team', $event)"
@@ -45,5 +46,5 @@ defineProps({
   loading: { type: Boolean, default: false }
 })
 
-defineEmits(['refresh','filter-change','edit-team','delete-team','edit-match','delete-match','edit-event','delete-event','edit-player','delete-player','complete-match'])
+defineEmits(['refresh','filter-change','edit-team','delete-team','edit-match','delete-match','edit-event','delete-event','edit-player','delete-player','complete-match', 'update:manageMatchType'])
 </script>

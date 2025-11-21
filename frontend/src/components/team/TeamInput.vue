@@ -4,18 +4,23 @@
       <el-row :gutter="24">
         <el-col :span="24">
           <el-form-item label="球队名称" required>
-            <el-input 
-              v-model="teamForm.teamName" 
-              placeholder="请输入球队名称"
+            <el-select
+              v-model="teamForm.teamName"
+              placeholder="请选择或输入球队名称"
               size="large"
               clearable
-              maxlength="50"
-              show-word-limit
+              filterable
+              allow-create
+              default-first-option
+              class="w-full"
             >
-              <template #prefix>
-                <el-icon><UserFilled /></el-icon>
-              </template>
-            </el-input>
+              <el-option
+                v-for="team in availableTeams"
+                :key="team.id"
+                :label="team.name"
+                :value="team.name"
+              />
+            </el-select>
           </el-form-item>
         </el-col>
       </el-row>
@@ -33,14 +38,6 @@
               </span>
             </div>
             <div class="header-actions">
-              <el-button type="success" @click="showPlayerSelector" size="large" class="select-player-btn">
-                <el-icon><IconSearch /></el-icon>
-                选择现有球员
-              </el-button>
-              <el-button type="primary" @click="addPlayer" size="large" class="add-player-btn">
-                <el-icon><Plus /></el-icon>
-                添加新球员
-              </el-button>
             </div>
           </div>
 
@@ -107,6 +104,17 @@
                 </div>
               </div>
             </transition-group>
+            
+            <div class="append-players-actions">
+              <el-button type="success" @click="showPlayerSelector">
+                <el-icon><IconSearch /></el-icon>
+                选择现有球员
+              </el-button>
+              <el-button type="primary" @click="addPlayer">
+                <el-icon><Plus /></el-icon>
+                添加新球员
+              </el-button>
+            </div>
           </div>
 
           <div v-else class="empty-players">
@@ -153,6 +161,7 @@
       title="选择现有球员" 
       width="800px"
       class="player-selector-dialog"
+      append-to-body
     >
       <div class="player-selector-content">
         <div class="search-bar">
@@ -180,24 +189,32 @@
         </div>
         
         <div class="existing-players-list" v-loading="loadingPlayers">
-          <div 
-            v-for="player in filteredExistingPlayers" 
-            :key="player.id"
-            class="existing-player-item"
-            :class="{ 'selected': selectedPlayers.includes(player.id) }"
-            @click="togglePlayerSelection(player)"
-          >
-            <div class="player-info">
-              <div class="player-name">{{ player.name }}</div>
-              <div class="player-details">
-                <span class="player-student-id">学号: {{ player.studentId }}</span>
-                <span class="player-note" v-if="!player.number">球衣号码待分配</span>
+          <div class="players-grid" v-if="filteredExistingPlayers.length > 0">
+            <div 
+              v-for="player in filteredExistingPlayers" 
+              :key="player.id"
+              class="player-card-item"
+              :class="{ 'selected': selectedPlayers.includes(player.id) }"
+              @click="togglePlayerSelection(player)"
+            >
+              <div class="card-header">
+                <span class="player-name">{{ player.name }}</span>
+                <el-icon v-if="selectedPlayers.includes(player.id)" class="check-icon"><Check /></el-icon>
               </div>
-            </div>
-            <div class="selection-indicator">
-              <el-icon v-if="selectedPlayers.includes(player.id)" color="#67c23a">
-                <Check />
-              </el-icon>
+              <div class="card-body">
+                <div class="info-row">
+                  <el-icon><Postcard /></el-icon>
+                  <span class="info-text">{{ player.studentId }}</span>
+                </div>
+                <div class="info-row" v-if="player.teamName">
+                  <el-icon><UserFilled /></el-icon>
+                  <span class="info-text">{{ player.teamName }}</span>
+                </div>
+                <div class="status-row">
+                   <el-tag v-if="!player.number" type="warning" size="small" effect="dark">号码待分配</el-tag>
+                   <el-tag v-else type="success" size="small">{{ player.number }}号</el-tag>
+                </div>
+              </div>
             </div>
           </div>
           
@@ -249,7 +266,7 @@ export default {
   },
   props: {
     matchType: {
-      type: String,
+      type: [String, Number],
       default: ''
     }
   },
@@ -264,6 +281,7 @@ export default {
       searchKeyword: '',
       selectedPlayers: [],
       existingPlayers: [],
+      availableTeams: [], // 新增：可用球队列表
       loadingPlayers: false,
       submitting: false
     }
@@ -284,6 +302,7 @@ export default {
   },
   mounted() {
     this.fetchExistingPlayers();
+    this.fetchAvailableTeams(); // 新增：获取可用球队
   },
   methods: {
     addPlayer() {
@@ -298,7 +317,11 @@ export default {
         this.$message.warning('请填写球队名称并至少添加一名球员');
         return;
       }
-      const payload = { ...this.teamForm };
+      // 构造 payload，包含 competitionId (传入的 matchType 即为 competitionId)
+      const payload = { 
+        ...this.teamForm,
+        competitionId: this.matchType 
+      };
       try {
         this.submitting = true;
         const { ok, data, error } = await createTeam(payload);
@@ -342,7 +365,7 @@ export default {
           number: player.number || '', // 当前球衣号码
           studentId: player.id || player.studentId, // 学号
           teamName: player.teamName || null, // 当前队伍
-          matchType: player.matchType || 'champions-cup' // 赛事类型
+          matchType: player.matchType || '' // 赛事类型
         })).filter(player => player.id && player.name); // 过滤掉无效数据
         
   logger.debug('处理后的球员数据:', this.existingPlayers.length, '名有效球员');
@@ -353,6 +376,26 @@ export default {
         this.existingPlayers = [];
       } finally {
         this.loadingPlayers = false;
+      }
+    },
+    async fetchAvailableTeams() {
+      try {
+        // 假设有一个获取所有基础球队的API，或者复用 fetchTeams 获取所有参赛球队并去重
+        // 这里暂时复用 fetchTeams，实际可能需要专门的 API 获取 TeamBase
+        const { fetchTeams } = await import('@/domain/team/teamService');
+        const { ok, data } = await fetchTeams();
+        if (ok && data) {
+          // 去重逻辑
+          const uniqueTeams = new Map();
+          data.forEach(t => {
+            if (!uniqueTeams.has(t.teamName)) {
+              uniqueTeams.set(t.teamName, { id: t.id, name: t.teamName });
+            }
+          });
+          this.availableTeams = Array.from(uniqueTeams.values());
+        }
+      } catch (e) {
+        logger.error('获取可用球队失败', e);
       }
     },
     async showPlayerSelector() {
@@ -414,5 +457,31 @@ export default {
 </script>
 
 <style scoped>
-/* 样式已迁移至 admin-management.css (.team-input-wrapper...) */
+/* 样式已迁移至 input-management.css */
+.append-players-actions {
+  margin-top: 20px;
+  display: flex;
+  justify-content: center;
+  gap: 15px;
+  padding: 20px;
+  border-top: 1px dashed #dcdfe6;
+}
+
+.player-card {
+  min-height: 280px; /* 增加卡片高度以容纳所有信息 */
+  padding: 15px;
+  display: flex;
+  flex-direction: column;
+}
+
+.player-form {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-around;
+}
+
+.compact-form-item {
+  margin-bottom: 15px;
+}
 </style>

@@ -1,0 +1,164 @@
+/* =====================================================================
+ * 文件: tournament-quick-input.css (锦标赛快速输入组件特有样式)
+ * 作用: 锦标赛快速输入表单的特定样式，通用样式在input-components.css
+ * 依赖: input-components.css
+ * ===================================================================== */
+
+@import './input-components.css';
+
+/* 仅保留tournament-quick-input特有的样式，如果没有特殊样式可以删除此文件 */
+
+:deep(.el-select .el-input__wrapper:hover) {
+  border-color: #c0c4cc;
+}
+
+:deep(.el-select .el-input__wrapper.is-focus) {
+  border-color: var(--el-color-primary, #409eff);
+  box-shadow: 0 0 0 2px rgba(64, 158, 255, 0.1);
+}
+
+:deep(.el-input-number .el-input__wrapper) {
+  border-radius: 6px;
+  border: 1px solid #dcdfe6;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  transition: all var(--transition-base);
+  font-size: 16px;
+}
+
+:deep(.el-input-number .el-input__wrapper:hover) {
+  border-color: #c0c4cc;
+}
+
+:deep(.el-input-number .el-input__wrapper.is-focus) {
+  border-color: var(--el-color-primary, #409eff);
+  box-shadow: 0 0 0 2px rgba(64, 158, 255, 0.1);
+}
+
+:deep(.el-textarea__inner) {
+  border-radius: 6px;
+  border: 1px solid #dcdfe6;
+  resize: vertical;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  transition: all var(--transition-base);
+  font-family: var(--font-family-base);
+}
+
+:deep(.el-textarea__inner:hover) {
+  border-color: #c0c4cc;
+}
+
+:deep(.el-textarea__inner:focus) {
+  border-color: var(--el-color-primary, #409eff);
+  box-shadow: 0 0 0 2px rgba(64, 158, 255, 0.1);
+}
+
+:deep(.el-button) {
+  border-radius: 6px;
+  letter-spacing: 0.5px;
+  background: linear-gradient(135deg, var(--el-color-primary, #409eff) 0%, #66b1ff 100%);
+  font-weight: 500;
+  transition: all var(--transition-base);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  border: none;
+  color: var(--color-neutral-100);
+  padding: 12px 20px;
+  font-size: 14px;
+}
+
+:deep(.el-button:hover) {
+  background: linear-gradient(135deg, #66b1ff 0%, var(--el-color-primary, #409eff) 100%);
+}
+
+:deep(.el-button.is-loading) {
+  opacity: 0.8;
+  cursor: not-allowed;
+}
+
+/* 表单项间距优化 */
+:deep(.el-form-item) {
+  margin-bottom: 18px;
+}
+
+:deep(.el-form-item:last-child) {
+  margin-bottom: 0;
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+  .card-header {
+    padding: 10px 12px;
+  }
+  
+  .card-title {
+    font-size: 13px;
+  }
+  
+  :deep(.el-form-item__label) {
+    font-size: 12px;
+  }
+  
+  :deep(.el-button) {
+    font-size: 13px;
+    padding: 8px 16px;
+  }
+}
+
+@media (max-width: 480px) {
+  .tournament-quick-input-card {
+    border-radius: 6px;
+  }
+  
+  .card-header {
+    padding: 8px 10px;
+  }
+  
+  :deep(.el-form-item) {
+    margin-bottom: 16px;
+  }
+  
+  :deep(.el-button) {
+    font-size: 12px;
+    padding: 6px 12px;
+  }
+}
+
+/* 暗色主题适配 */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --tournament-quick-input-bg: #1a1a1a;
+    --tournament-quick-input-border: #404040;
+    --tournament-quick-input-header-color: #e0e0e0;
+    --tournament-quick-input-label-color: #b0b0b0;
+    --tournament-quick-input-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    --tournament-quick-input-shadow-hover: 0 4px 16px rgba(0, 0, 0, 0.4);
+  }
+  
+  .card-header {
+    background: linear-gradient(135deg, #2a2a2a 0%, #1a1a1a 100%);
+    border-bottom-color: #404040;
+  }
+  
+  :deep(.el-input__wrapper),
+  :deep(.el-select .el-input__wrapper),
+  :deep(.el-input-number .el-input__wrapper),
+  :deep(.el-textarea__inner) {
+    background-color: #2a2a2a;
+    border-color: #404040;
+    color: #e0e0e0;
+  }
+  
+  :deep(.el-input__wrapper:hover),
+  :deep(.el-select .el-input__wrapper:hover),
+  :deep(.el-input-number .el-input__wrapper:hover),
+  :deep(.el-textarea__inner:hover) {
+    border-color: #505050;
+  }
+  
+  :deep(.el-input__wrapper.is-focus),
+  :deep(.el-select .el-input__wrapper.is-focus),
+  :deep(.el-input-number .el-input__wrapper.is-focus),
+  :deep(.el-textarea__inner:focus) {
+    border-color: var(--el-color-primary, #409eff);
+    box-shadow: 0 0 0 2px rgba(64, 158, 255, 0.2);
+  }
+}

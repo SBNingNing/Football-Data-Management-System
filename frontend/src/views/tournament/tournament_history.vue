@@ -53,16 +53,16 @@ const leaderboards = reactive({})
 const mappedMatches = computed(()=> (allMatches?.value || []).map(toMatchViewModel))
 
 onMounted(async () => {
-  const name = route.params.tournamentName
+  const name = route.params.activityName
   if(!name){
-    ElMessage.error('缺少赛事名称参数')
+    ElMessage.error('缺少活动名称参数')
     return
   }
   await load(name)
   if(error.value){
     ElMessage.error(error.value.message || '加载失败')
   }else{
-    ElMessage.success('赛事数据加载成功')
+    ElMessage.success('活动数据加载成功')
   }
 })
 

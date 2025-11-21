@@ -14,13 +14,19 @@ export const MATCH_STATUS = Object.freeze({
 // 状态 -> 展示文本
 export const MATCH_STATUS_TEXT = Object.freeze({
   [MATCH_STATUS.PENDING]: '未开始',
-  [MATCH_STATUS.COMPLETED]: '已完赛'
+  [MATCH_STATUS.COMPLETED]: '已完赛',
+  // 直接映射中文状态
+  '未开始': '未开始',
+  '已完赛': '已完赛'
 })
 
 // 状态 -> 标签 type (Element Plus)
 export const MATCH_STATUS_TAG_TYPE = Object.freeze({
   [MATCH_STATUS.PENDING]: 'info',
-  [MATCH_STATUS.COMPLETED]: 'success'
+  [MATCH_STATUS.COMPLETED]: 'success',
+  // 直接映射中文状态
+  '未开始': 'info',
+  '已完赛': 'success'
 })
 
 // 事件类型（根据后端/现有中文语义，可继续扩展）
@@ -43,6 +49,30 @@ export const MATCH_EVENT_CLASS = Object.freeze({
   [MATCH_EVENT_TYPES.PENALTY]: 'event-penalty'
 })
 
+// 事件 -> 图标映射（Element Plus 图标）
+export const MATCH_EVENT_ICON = Object.freeze({
+  [MATCH_EVENT_TYPES.GOAL]: 'Football',
+  [MATCH_EVENT_TYPES.OWN_GOAL]: 'Football',
+  [MATCH_EVENT_TYPES.YELLOW]: 'Warning',
+  [MATCH_EVENT_TYPES.RED]: 'CircleClose',
+  [MATCH_EVENT_TYPES.SUBSTITUTION]: 'User',
+  [MATCH_EVENT_TYPES.PENALTY]: 'Trophy',
+  // 兼容中文字符串
+  '进球': 'Football',
+  '乌龙球': 'Football',
+  '黄牌': 'Warning',
+  '红牌': 'CircleClose',
+  '换人': 'User',
+  '点球': 'Trophy',
+  // 兼容英文字符串
+  'goal': 'Football',
+  'own_goal': 'Football',
+  'yellow_card': 'Warning',
+  'red_card': 'CircleClose',
+  'substitution': 'User',
+  'penalty': 'Trophy'
+})
+
 // 获取状态展示文本
 export function getMatchStatusText(status){
   return MATCH_STATUS_TEXT[status] || '未开始'
@@ -54,6 +84,11 @@ export function getMatchStatusTagType(status){
 }
 
 // 事件类型 -> class（降级兼容传入中文）
-export function getMatchEventClass(eventType){
+export function getMatchEventClass(eventType) {
   return MATCH_EVENT_CLASS[eventType] || MATCH_EVENT_CLASS[MATCH_EVENT_TYPES.GOAL] || ''
+}
+
+// 事件类型 -> 图标（降级兼容传入中文）
+export function getMatchEventIcon(eventType) {
+  return MATCH_EVENT_ICON[eventType] || 'Clock'
 }

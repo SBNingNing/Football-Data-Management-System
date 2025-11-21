@@ -1,73 +1,117 @@
 <template>
-  <el-card class="form-card season-input-card">
+  <el-card class="season-input-card" shadow="never">
     <template #header>
-      <div class="form-header">
-        <h3 class="form-title">
-          <el-icon class="form-icon"><Calendar /></el-icon>
-          赛季录入
-        </h3>
+      <div class="card-header">
+        <span class="card-title">添加赛季</span>
       </div>
     </template>
-    <el-form :model="form" label-width="100px" class="season-form">
-      <el-form-item label="名称">
-        <el-input v-model="form.name" placeholder="赛季名称，如 2024-2025" />
+    
+    <el-form 
+      ref="seasonFormRef" 
+      :model="seasonForm" 
+      :rules="seasonRules" 
+      label-width="80px"
+      size="small"
+    >
+      <el-form-item label="赛季名称" prop="name">
+        <el-input 
+          v-model="seasonForm.name" 
+          placeholder="请输入赛季名称，如：2024-2025赛季"
+          maxlength="20"
+          show-word-limit
+          style="width: 100%"
+        />
       </el-form-item>
-      <el-form-item label="开始时间">
-        <el-date-picker v-model="form.startDate" type="date" placeholder="选择开始日期" style="width:100%;" />
+
+      <el-form-item label="开始时间" prop="start_time">
+        <el-date-picker
+          v-model="seasonForm.start_time"
+          type="date"
+          placeholder="选择开始日期"
+          style="width: 100%"
+          value-format="YYYY-MM-DD"
+        />
       </el-form-item>
-      <el-form-item label="结束时间">
-        <el-date-picker v-model="form.endDate" type="date" placeholder="选择结束日期" style="width:100%;" />
+
+      <el-form-item label="结束时间" prop="end_time">
+        <el-date-picker
+          v-model="seasonForm.end_time"
+          type="date"
+          placeholder="选择结束日期"
+          style="width: 100%"
+          value-format="YYYY-MM-DD"
+        />
       </el-form-item>
-      <el-form-item class="entity-submit-zone">
-        <el-button type="primary" :disabled="!canSubmit" :loading="submitting" @click="submit">创建赛季</el-button>
+      
+      <el-form-item class="form-actions">
+        <el-button 
+          type="primary" 
+          @click="submitSeason" 
+          :loading="submitting"
+        >
+          <el-icon><Plus /></el-icon>
+          添加赛季
+        </el-button>
       </el-form-item>
     </el-form>
   </el-card>
 </template>
 
 <script setup>
-import { reactive, ref, computed } from 'vue'
-import { Calendar } from '@element-plus/icons-vue'
-import { createSeason, SEASON_CACHE_KEYS } from '@/domain/season/seasonsService'
-import { mutateAndInvalidate } from '@/domain/common/mutation'
-import notify from '@/utils/notify'
+import { Plus } from '@element-plus/icons-vue'
+import { ref, reactive } from 'vue'
+import { ElMessage } from 'element-plus'
+import { createSeason } from '@/domain/season/seasonsService'
+import '@/assets/styles/input-components.css'
 
 const emit = defineEmits(['submit'])
-
-const form = reactive({ name: '', startDate: '', endDate: '' })
+const seasonFormRef = ref()
 const submitting = ref(false)
 
-const canSubmit = computed(()=> !!form.name && !!form.startDate && !!form.endDate && !submitting.value)
+const seasonForm = reactive({
+  name: '',
+  start_time: '',
+  end_time: ''
+})
 
-function normalizeDates(payload){
-  const toISO = (d) => {
-    if(!d) return ''
-    if(typeof d === 'string') return d
-    try { return new Date(d).toISOString().slice(0,10) } catch { return '' }
-  }
-  return { ...payload, startDate: toISO(payload.startDate), endDate: toISO(payload.endDate) }
+const seasonRules = {
+  name: [
+    { required: true, message: '请输入赛季名称', trigger: 'blur' },
+    { min: 2, max: 20, message: '长度在 2 到 20 个字符', trigger: 'blur' }
+  ],
+  start_time: [
+    { required: true, message: '请选择开始时间', trigger: 'change' }
+  ],
+  end_time: [
+    { required: true, message: '请选择结束时间', trigger: 'change' }
+  ]
 }
 
-function reset(){ form.name=''; form.startDate=''; form.endDate='' }
-
-function submit(){
-  if(!canSubmit.value) return
-  submitting.value = true
-  mutateAndInvalidate(
-    () => createSeason(normalizeDates(form)),
-    {
-      invalidate: [SEASON_CACHE_KEYS.LIST],
-      onSuccess: (data) => { notify.success('赛季创建成功'); emit('submit', data); reset() },
-      invalidatePrefixes: ['stats:'],
+const submitSeason = async () => {
+  if (!seasonFormRef.value) return
+  
+  await seasonFormRef.value.validate(async (valid, fields) => {
+    if (valid) {
+      try {
+        submitting.value = true
+        
+        await createSeason(seasonForm)
+        ElMessage.success('赛季添加成功')
+        
+        // 重置表单
+        seasonFormRef.value.resetFields()
+        
+        // 通知父组件刷新数据
+        emit('submit')
+      } catch (error) {
+        console.error('添加赛季失败:', error)
+        ElMessage.error('添加赛季失败：' + (error.message || '未知错误'))
+      } finally {
+        submitting.value = false
+      }
+    } else {
+      console.error('表单验证失败:', fields)
     }
-  ).finally(()=>{ submitting.value=false })
+  })
 }
 </script>
-
-<style scoped>
-.season-input-card { margin-bottom: 16px; }
-.season-form { max-width: 480px; }
-.form-header { display:flex; align-items:center; }
-.form-title { display:flex; align-items:center; font-size:16px; font-weight:600; margin:0; }
-.form-icon { margin-right:6px; color:#409eff; }
-</style>

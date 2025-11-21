@@ -43,9 +43,9 @@ class PlayerTeamHistory(db.Model):
         db.CheckConstraint('赛事黄牌数 >= 0', name='player_team_history_chk_3'),
     )
     
-    # 兼容调用：提供 team 和 team_base 动态属性用于旧代码访问
+    # 兼容调用：提供 team_info 和 team_base 动态属性用于旧代码访问
     @property
-    def team(self):
+    def team_info(self):
         """通过参赛记录反查 Team（如果仍然存在旧 Team 记录）。
         如果 Team 表与新的 participation 模型并存，可尝试根据 team_base_id + tournament_id 查找。"""
         try:

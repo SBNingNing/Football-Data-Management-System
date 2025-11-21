@@ -44,19 +44,22 @@
 import { watch, ref } from 'vue'
 import { User } from '@element-plus/icons-vue'
 
+import useCompetitions from '@/composables/admin/useCompetitions'
+
 const props = defineProps({
   records: { type: Array, default: () => [] },
   activeSeason: { type: [String, Number, null], default: null }
 })
 const emit = defineEmits(['update:activeSeason', 'view-player'])
 
+const { getCompetitionLabel } = useCompetitions()
+
 const localActive = ref(props.activeSeason)
 watch(() => props.activeSeason, v => { if(v !== localActive.value) localActive.value = v })
 watch(localActive, v => emit('update:activeSeason', v))
 
 function getMatchTypeText(matchType){
-  const map = { 'champions-cup':'冠军杯','womens-cup':'巾帼杯','eight-a-side':'八人制比赛' }
-  return map[matchType] || '未知类型'
+  return getCompetitionLabel(matchType) || matchType || '未知类型'
 }
 
 const seasonStatItems = (r) => [

@@ -27,7 +27,7 @@ class PlayerHistoryService:
         # 获取球员所有历史记录，按时间排序
         histories = PlayerTeamHistory.query.filter_by(
             player_id=player_id
-        ).join(Tournament).join(Season).order_by(desc(Season.start_date)).all()
+        ).join(Tournament).join(Season).order_by(desc(Season.start_time)).all()
         
         if not histories:
             return {
@@ -96,10 +96,10 @@ class PlayerHistoryService:
             return {
                 'player_info': PlayerHistoryUtils.format_player_basic_info(player),
                 'season_info': {
-                    'id': season.id,
+                    'id': season.season_id,
                     'name': season.name,
-                    'start_date': PlayerHistoryUtils.safe_date_format(season.start_date),
-                    'end_date': PlayerHistoryUtils.safe_date_format(season.end_date)
+                    'start_date': PlayerHistoryUtils.safe_date_format(season.start_time),
+                    'end_date': PlayerHistoryUtils.safe_date_format(season.end_time)
                 },
                 'performance': [],
                 'season_totals': PlayerHistoryUtils.get_empty_season_totals()
@@ -123,10 +123,10 @@ class PlayerHistoryService:
         return {
             'player_info': PlayerHistoryUtils.format_player_basic_info(player),
             'season_info': {
-                'id': season.id,
+                'id': season.season_id,
                 'name': season.name,
-                'start_date': PlayerHistoryUtils.safe_date_format(season.start_date),
-                'end_date': PlayerHistoryUtils.safe_date_format(season.end_date)
+                'start_date': PlayerHistoryUtils.safe_date_format(season.start_time),
+                'end_date': PlayerHistoryUtils.safe_date_format(season.end_time)
             },
             'performance': performance_data,
             'season_totals': season_totals
@@ -176,7 +176,7 @@ class PlayerHistoryService:
         # 获取球员所有历史记录，按时间排序
         histories = PlayerTeamHistory.query.filter_by(
             player_id=player_id
-        ).join(Tournament).join(Season).order_by(Season.start_date, Tournament.id).all()
+        ).join(Tournament).join(Season).order_by(Season.start_time, Tournament.id).all()
         
         if not histories:
             return {

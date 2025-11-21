@@ -22,18 +22,30 @@ const axiosInstance = axios.create({ baseURL: '/api', timeout: 15000 });
 export function setAuthToken(token) {
   if (token) {
     axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-    try { localStorage.setItem('token', token); } catch { /* ignore storage set error */ }
+    try { 
+      localStorage.setItem('token', token); 
+    } catch(e) { 
+      logger.warn('Token 存储失败:', e.message); 
+    }
   } else {
     delete axiosInstance.defaults.headers.common['Authorization'];
-    try { localStorage.removeItem('token'); } catch { /* ignore storage remove error */ }
+    try { 
+      localStorage.removeItem('token'); 
+    } catch(e) { 
+      logger.warn('Token 删除失败:', e.message); 
+    }
   }
 }
 
 // 初始化：若本地已有 token 自动恢复
 try {
   const existing = localStorage.getItem('token');
-  if (existing) setAuthToken(existing);
-} catch { /* ignore restore token error (SSR / privacy mode) */ }
+  if (existing) {
+    setAuthToken(existing);
+  }
+} catch(e) { 
+  logger.warn('Token 恢复失败:', e.message); 
+}
 
 // 缓存逻辑委托给 domain/common/cache 模块
 function getCache(key) { return extGet(key); }
@@ -58,9 +70,9 @@ function normalizeError(err) {
   return { __normalized: true, code, type, status, message, raw: err };
 }
 
-// 默认重试判断：仅网络类
+// 默认重试判断：网络错误和5xx服务器错误
 function defaultRetryWhen(error) {
-  return error.type === 'network';
+  return error.type === 'network' || (error.status >= 500 && error.status < 600);
 }
 
 async function core(method, url, options = {}) {
@@ -93,30 +105,54 @@ async function core(method, url, options = {}) {
   while (true) {
     attempts++;
     try {
+      logger.debug(`[http-core] Attempting ${upperMethod} ${url}`); // 新增
       const resp = await axiosInstance.request({ method, url, data, params, headers, signal, timeout });
+      logger.debug(`[http-core] SUCCESS for ${url}`, resp); // 新增
       let payload = resp.data;
+      
       // 统一响应自动解包：若为 { success:true, data:... } 结构则展开
       if(payload && typeof payload === 'object' && payload.success === true && Object.prototype.hasOwnProperty.call(payload,'data')){
-        payload = { __raw: resp.data, ...payload.data };
+        // 如果 data 是数组，直接返回数组，不要展开
+        if (Array.isArray(payload.data)) {
+          payload = payload.data;
+        } else {
+          payload = { __raw: resp.data, ...payload.data };
+        }
+      } else if (payload && typeof payload === 'object' && payload.success === false) {
+        // 如果响应体是 { success: false, ... }，这可能是一个业务逻辑上的失败响应。
+        // 我们将其视为一个错误，并抛出，以便进入下面的 catch 块进行统一处理。
+        throw new Error(payload.message || 'Request failed with success:false in payload');
       }
+      
+      // 应用数据转换
+      logger.debug('[http-core] Transform functions:', transform);
       for (const fn of transform) {
         payload = await fn(payload);
       }
+      
+      // 缓存结果
       if (cacheKey) setCache(cacheKey, payload, cache.ttl);
+      
       const duration = Math.round(perf.now() - started);
-      logger?.debug?.(`[http] ${upperMethod} ${url} ${resp.status} ${duration}ms`);
+      
       return { ok: true, data: payload, status: resp.status, headers: resp.headers, meta: { duration, attempts, cache: cacheKey ? 'miss' : undefined } };
+      
     } catch (e) {
+      logger.error(`[http-core] CATCH block for ${url}`, e); // 新增
       const error = normalizeError(e);
       const shouldRetry = attempts <= maxRetries && (retry?.when ? retry.when(error) : defaultRetryWhen(error));
+      
       if (shouldRetry) {
         const delay = retry?.delay ? retry.delay(attempts) : 300 * attempts;
         retry?.onRetry?.(error, attempts, delay);
+        logger?.warn?.(`[http] ${upperMethod} ${url} 重试 ${attempts}/${maxRetries} (${delay}ms后)`);
         await new Promise(r => setTimeout(r, delay));
         continue;
       }
+      
       const duration = Math.round(perf.now() - started);
-      logger?.warn?.(`[http] ${upperMethod} ${url} ERROR ${error.code} ${duration}ms`);
+      logger?.warn?.(`[http] ${upperMethod} ${url} ERROR ${error.code} ${duration}ms (attempts: ${attempts})`);
+      
       if (throwOnError) throw error;
       return { ok: false, error, status: error.status, meta: { duration, attempts } };
     }

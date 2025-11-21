@@ -8,6 +8,7 @@ from app.database import db
 from app.models.match import Match
 from app.models.team import Team
 from app.models.tournament import Tournament
+from app.models.competition import Competition
 from app.models.event import Event
 from app.models.player import Player
 from app.models.player_team_history import PlayerTeamHistory
@@ -26,31 +27,104 @@ class MatchService:
     def create_match(self, data: Dict[str, Any]) -> Dict[str, Any]:
         """创建比赛"""
         try:
-            # 获取赛事ID和球队
-            tournament_id = MatchUtils.get_tournament_id_by_type(
-                data.get('matchType', 'champions-cup')
-            )
+            logger.info(f"create_match received data: {data}")
+            # 1. 解析比赛时间
+            match_time = MatchUtils.parse_date_from_frontend(data.get('date') or data.get('matchTime'))
+            if match_time is None:
+                from datetime import datetime
+                match_time = datetime.now()
+
+            # 2. 确定赛事ID (Tournament ID)
+            tournament_id = None
             
-            team1 = Team.query.filter_by(
-                name=data['team1'], 
-                tournament_id=tournament_id
-            ).first()
-            team2 = Team.query.filter_by(
-                name=data['team2'], 
-                tournament_id=tournament_id
-            ).first()
+            # 优先使用 competitionId
+            competition_id = data.get('competitionId')
+            
+            # 如果没有 competitionId，尝试从 matchType 解析 (动态查找)
+            if not competition_id and data.get('matchType'):
+                # 尝试通过 matchType 查找 Competition
+                comp = Competition.query.filter(or_(Competition.name == data['matchType'], Competition.name.like(f"%{data['matchType']}%"))).first()
+                if comp:
+                    competition_id = comp.competition_id
+            
+            if not competition_id:
+                 raise ValueError('未提供 competitionId，且无法通过 matchType 找到对应的赛事')
+            
+            # 3. 根据比赛时间和 competitionId 查找对应的 Season 和 Tournament
+            if competition_id:
+                from app.models.season import Season
+                # 查找包含 match_time 的赛季
+                season = Season.query.filter(
+                    Season.start_time <= match_time,
+                    Season.end_time >= match_time
+                ).first()
+                
+                if not season:
+                    # 如果找不到匹配的赛季，尝试查找最近的一个赛季（可选，或者直接报错）
+                    # 用户要求：匹配到的赛季作为新添加的赛程所属的赛季
+                    raise ValueError(f'未找到包含日期 {match_time} 的赛季记录')
+                
+                # 查找对应的 Tournament
+                tournament = Tournament.query.filter_by(
+                    competition_id=competition_id,
+                    season_id=season.season_id
+                ).first()
+                
+                if tournament:
+                    tournament_id = tournament.id
+                else:
+                    raise ValueError(f'在赛季 {season.name} 中未找到该赛事的记录')
+
+            if not tournament_id:
+                 raise ValueError('无法确定赛事信息')
+            
+            # 获取球队信息 (支持 ID 或 名称)
+            team1 = None
+            team2 = None
+
+            if data.get('homeTeamId'):
+                team1 = Team.query.get(data['homeTeamId'])
+            elif data.get('team1'):
+                team1 = Team.query.filter_by(
+                    name=data['team1'], 
+                    tournament_id=tournament_id
+                ).first()
+
+            if data.get('awayTeamId'):
+                team2 = Team.query.get(data['awayTeamId'])
+            elif data.get('team2'):
+                team2 = Team.query.filter_by(
+                    name=data['team2'], 
+                    tournament_id=tournament_id
+                ).first()
             
             if not team1 or not team2:
                 raise ValueError('球队不存在')
             
+            # 验证球队是否属于该赛事
+            if team1.tournament_id != tournament_id or team2.tournament_id != tournament_id:
+                 # 如果是通过ID获取的，可能ID是对的但赛事不对（虽然理论上ID唯一对应一个participation）
+                 # 但如果是跨赛事ID，这里应该拦截
+                 # 不过 Team 视图的 ID 就是 participation ID，它唯一确定了 tournament_id
+                 # 所以如果 team.tournament_id != tournament_id，说明选错了队伍
+                 raise ValueError('所选球队不属于当前计算出的赛事/赛季')
+
             # 生成比赛ID和解析时间
             existing_matches = Match.query.filter_by(tournament_id=tournament_id).count()
             match_id = MatchUtils.generate_match_id(tournament_id, existing_matches)
             
-            match_time = MatchUtils.parse_date_from_frontend(data['date'])
-            if match_time is None:
-                from datetime import datetime
-                match_time = datetime.now()
+            # 自动判断比赛状态
+            from datetime import datetime, timedelta
+            current_time = datetime.now()
+            
+            # 计算比赛结束时间（假设比赛时长为2小时）
+            # 如果 (开始时间 + 2小时) 早于 当前时间，则标记为已完赛
+            match_end_time = match_time + timedelta(hours=2)
+            
+            if match_end_time < current_time:
+                status = 'F' # 已完赛
+            else:
+                status = 'P' # 未开始
             
             # 创建比赛记录
             new_match = Match(
@@ -61,7 +135,7 @@ class MatchService:
                 home_team_id=team1.id,
                 away_team_id=team2.id,
                 tournament_id=tournament_id,
-                status='P'
+                status=status
             )
             
             db.session.add(new_match)
@@ -70,8 +144,8 @@ class MatchService:
             # 构建返回数据
             tournament = Tournament.query.get(tournament_id)
             match_dict = self._build_match_response(new_match, tournament)
-            match_dict['team1'] = data['team1']
-            match_dict['team2'] = data['team2']
+            match_dict['team1'] = team1.name
+            match_dict['team2'] = team2.name
             
             MatchUtils.log_match_operation("创建比赛", match_id, f"赛事: {data['matchName']}")
             
@@ -94,6 +168,11 @@ class MatchService:
         
         if match.status == 'F':
             raise ValueError('比赛已经完赛')
+            
+        # 检查比赛时间是否已到
+        from datetime import datetime
+        if match.match_time and datetime.now() < match.match_time:
+            raise ValueError('该比赛还未开始')
         
         match.status = 'F'
         db.session.commit()
@@ -109,15 +188,48 @@ class MatchService:
             }
         }
 
-    def get_all_matches(self) -> Dict[str, Any]:
+    def get_all_matches(self, status: str = None, match_type: str = None) -> Dict[str, Any]:
         """获取所有比赛"""
-        matches = Match.query.all()
+        query = Match.query
+        
+        if status:
+            query = query.filter(Match.status == status)
+            
+        if match_type:
+            query = query.join(Tournament).join(Competition).filter(Competition.name == match_type)
+            
+        matches = query.all()
         matches_data = []
         
+        # 自动更新比赛状态
+        from datetime import datetime, timedelta
+        current_time = datetime.now()
+        status_updated = False
+
         for match in matches:
+            # 仅对未完赛的比赛进行状态检查
+            # 移除自动更新为进行中(O)的逻辑，保持为未开始(P)直到手动完赛(F)
+            # if match.status != 'F':
+            #     original_status = match.status
+            #     if match.match_time > current_time:
+            #         match.status = 'P'
+            #     else:
+            #         # 只要时间到了，就是进行中，直到手动完赛
+            #         match.status = 'O'
+            #     
+            #     if match.status != original_status:
+            #         status_updated = True
+
             tournament = Tournament.query.get(match.tournament_id)
             match_dict = MatchUtils.build_match_dict_with_type(match, tournament)
             matches_data.append(match_dict)
+        
+        if status_updated:
+            try:
+                db.session.commit()
+            except Exception as e:
+                logger.error(f"自动更新比赛状态失败: {e}")
+                db.session.rollback()
         
         return {
             'status': 'success',
@@ -212,9 +324,9 @@ class MatchService:
 
         # 筛选条件
         if match_type:
-            tournament_id = MatchUtils.get_tournament_id_by_frontend_type(match_type)
-            if tournament_id:
-                query = query.filter(Match.tournament_id == tournament_id)
+            # 动态关联查询：Match -> Tournament -> Competition
+            # 假设 match_type 传递的是赛事名称
+            query = query.join(Tournament).join(Competition).filter(Competition.name == match_type)
 
         if status_filter:
             db_status = MatchUtils.get_status_code(status_filter)
@@ -248,6 +360,8 @@ class MatchService:
             
             tournament = Tournament.query.get(match.tournament_id)
             match_dict['matchType'] = MatchUtils.determine_match_type(tournament)
+            match_dict['competitionId'] = tournament.competition_id if tournament else None
+            match_dict['competitionName'] = tournament.competition.name if tournament and tournament.competition else None
             
             records.append(match_dict)
 
@@ -288,6 +402,8 @@ class MatchService:
         match_dict['matchName'] = match_dict['match_name']
         match_dict['date'] = MatchUtils.format_match_time(match.match_time)
         match_dict['matchType'] = MatchUtils.determine_match_type(tournament)
+        if tournament:
+            match_dict['competitionId'] = tournament.competition_id
         return match_dict
 
     def _build_events_data(self, events: List, tournament_id: int) -> List[Dict[str, Any]]:
@@ -302,16 +418,18 @@ class MatchService:
                 if player:
                     player_name = player.name or '未知球员'
                     # 优先从球员队伍历史记录获取队伍名称
-                    team_history = PlayerTeamHistory.query.filter_by(
-                        player_id=event.player_id,
-                        tournament_id=tournament_id
-                    ).first()
-                    if team_history and team_history.team:
-                        team_name = team_history.team.name
-                    elif player.team:
-                        team_name = player.team.name
-            
-            # 如果事件直接关联了队伍，使用事件的队伍信息
+                team_history = PlayerTeamHistory.query.filter_by(
+                    player_id=event.player_id,
+                    tournament_id=tournament_id
+                ).first()
+                if team_history and team_history.team_info:
+                    # 通过team_base获取球队名称
+                    if hasattr(team_history.team_info, 'team_base') and team_history.team_info.team_base:
+                        team_name = team_history.team_info.team_base.name
+                    else:
+                        team_name = '未知球队'
+                elif hasattr(player, 'team') and player.team:
+                    team_name = player.team.name            # 如果事件直接关联了队伍，使用事件的队伍信息
             if event.team_id:
                 team = Team.query.get(event.team_id)
                 if team:
@@ -423,8 +541,12 @@ class MatchService:
                 
                 if team_history:
                     player_number = team_history.player_number or 0
-                    team_name = team_history.team.name if team_history.team else '未知球队'
-                elif player.team:
+                    # 通过team_base获取球队名称
+                    if team_history.team_info and hasattr(team_history.team_info, 'team_base') and team_history.team_info.team_base:
+                        team_name = team_history.team_info.team_base.name
+                    else:
+                        team_name = '未知球队'
+                elif hasattr(player, 'team') and player.team:
                     team_name = player.team.name
                     player_number = player.number or 0
                 
@@ -455,8 +577,8 @@ class MatchService:
         
         match_data = {
             'id': match.id,
-            'home_team_name': match.home_team.name if match.home_team else '主队',
-            'away_team_name': match.away_team.name if match.away_team else '客队',
+            'home_team_name': match.home_team.team_base.name if match.home_team and match.home_team.team_base else '主队',
+            'away_team_name': match.away_team.team_base.name if match.away_team and match.away_team.team_base else '客队',
             'home_score': match.home_score if match.home_score is not None else statistics['home_score_from_events'],
             'away_score': match.away_score if match.away_score is not None else statistics['away_score_from_events'],
             'match_date': MatchUtils.format_match_date_iso(match.match_time),

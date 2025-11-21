@@ -27,49 +27,61 @@
         </el-col>
         <el-col :span="4">
           <el-select
-            v-model="selectedType"
-            placeholder="选择比赛类型"
+            v-model="localSelectedType"
+            placeholder="选择赛事类型"
             @change="handleFilterChange"
             clearable
             class="type-select"
           >
-            <el-option label="冠军杯" value="championsCup" />
-            <el-option label="巾帼杯" value="womensCup" />
-            <el-option label="八人制" value="eightASide" />
+            <el-option 
+              v-for="comp in competitions" 
+              :key="comp.competition_id" 
+              :label="comp.name" 
+              :value="comp.name"
+            />
           </el-select>
         </el-col>
         <el-col :span="4">
           <el-select
-            v-model="selectedStatus"
+            v-model="localSelectedStatus"
             placeholder="选择比赛状态"
             @change="handleStatusFilter"
             clearable
             class="status-select"
           >
-            <el-option label="待进行" value="pending" />
-            <el-option label="进行中" value="ongoing" />
-            <el-option label="已完赛" value="completed" />
+            <el-option label="未开始" value="P" />
+            <el-option label="已完赛" value="F" />
           </el-select>
         </el-col>
-        <el-col :span="3">
-          <el-button 
-            type="primary" 
-            @click="refreshMatches"
-            :loading="loading"
-            class="refresh-button"
-          >
-            <el-icon><Refresh /></el-icon>
-            刷新
-          </el-button>
+        <el-col :span="4" class="action-buttons">
+          <div class="actions-flex">
+            <el-button 
+              type="primary" 
+              @click="refreshMatches"
+              :loading="isLoading"
+              class="refresh-button"
+            >
+              <el-icon><Refresh /></el-icon>
+              刷新
+            </el-button>
+            <el-button 
+              type="default" 
+              @click="resetFilters"
+              :disabled="!canReset"
+              class="reset-button"
+            >
+              清除筛选
+            </el-button>
+          </div>
         </el-col>
       </el-row>
     </div>
 
     <!-- 比赛列表 -->
-    <div class="matches-section" v-loading="loading" element-loading-text="正在加载比赛数据...">
-      <div v-if="matchRecords.length === 0 && !loading" class="no-matches">
+    <div class="matches-section" v-loading="isLoading" element-loading-text="正在加载比赛数据...">
+      <div v-if="matchRecords.length === 0 && !isLoading" class="no-matches">
         <el-icon class="no-data-icon"><Calendar /></el-icon>
-        <p>{{ searchKeyword || selectedType || selectedStatus ? '未找到符合条件的比赛' : '暂无比赛数据' }}</p>
+  <p>{{ searchKeyword || localSelectedType || localSelectedStatus ? '未找到符合条件的比赛' : '暂无比赛数据' }}</p>
       </div>
       
       <el-row :gutter="20" v-else>
@@ -92,7 +104,7 @@
               </div>
               <div class="match-status">
                 <el-tag :type="match.status_type" size="small">
-                  {{ match.status }}
+                  {{ match.status === 'P' ? '未开始' : match.status === 'F' ? '已完赛' : match.status }}
                 </el-tag>
               </div>
             </div>
@@ -149,6 +161,13 @@
       />
     </div>
   </el-card>
+
+  <!-- 比赛详情对话框 -->
+  <MatchDetailDialog
+    v-model:visible="showMatchDialog"
+    :match-data="selectedMatch"
+    @close="handleMatchDialogClose"
+  />
 </template>
 
 <script>
@@ -161,6 +180,7 @@ import {
   View as IconView 
 } from '@element-plus/icons-vue';
 import logger from '@/utils/logger.js'
+import MatchDetailDialog from '@/components/match/MatchDetailDialog.vue';
 
 export default {
   name: 'MatchRecords',
@@ -170,7 +190,8 @@ export default {
     Calendar,
     Clock,
     LocationFilled,
-  IconView
+  IconView,
+    MatchDetailDialog
   },
   props: {
     matchRecords: {
@@ -180,18 +201,35 @@ export default {
     matchRecordsTotal: {
       type: Number,
       default: 0
+    },
+    selectedType: {
+      type: String,
+      default: ''
+    },
+    selectedStatus: {
+      type: String,
+      default: ''
+    },
+    competitions: {
+      type: Array,
+      default: () => []
+    },
+    isLoading: {
+      type: Boolean,
+      default: false
     }
   },
-  emits: ['filter-change', 'search', 'page-change'],
+  emits: ['filter-change', 'search', 'page-change', 'reset'],
   data() {
     return {
-      selectedType: '',
-      selectedStatus: '',
+      localSelectedType: '',
+      localSelectedStatus: '',
       searchKeyword: '',
       currentPage: 1,
       pageSize: 4,
       searchTimer: null,
-      loading: false
+      showMatchDialog: false,
+      selectedMatch: null
     };
   },
   computed: {
@@ -202,9 +240,28 @@ export default {
         return this.matchRecords.slice(0, this.pageSize);
       }
       return this.matchRecords;
+    },
+    canReset(){
+      return !!(this.localSelectedType || this.localSelectedStatus || this.searchKeyword);
     }
   },
   watch: {
+    selectedType: {
+      handler(val) {
+        if (this.localSelectedType !== val) {
+          this.localSelectedType = val || '';
+        }
+      },
+      immediate: true
+    },
+    selectedStatus: {
+      handler(val) {
+        if (this.localSelectedStatus !== val) {
+          this.localSelectedStatus = val || '';
+        }
+      },
+      immediate: true
+    },
     // 监听props变化，确保数据更新
     matchRecords: {
       handler(newVal) {
@@ -222,16 +279,17 @@ export default {
   // 移除挂载即请求，避免与父级 pending v-if 导致反复卸载/挂载形成刷新循环
   methods: {
     // 统一的数据获取方法
-    emitDataRequest(eventType = 'filter-change') {
+    emitDataRequest(eventType = 'filter-change', force = false) {
       const params = {
-        type: this.selectedType,
-        status: this.selectedStatus,
+        type: this.localSelectedType,
+        status: this.localSelectedStatus,
         keyword: this.searchKeyword,
         page: this.currentPage,
-        pageSize: this.pageSize
+        pageSize: this.pageSize,
+        force: force // 传递强制刷新参数
       };
       
-  logger.info(`${eventType} triggered`, params);
+      logger.info(`${eventType} triggered`, params);
       this.$emit(eventType, params);
     },
 
@@ -267,43 +325,43 @@ export default {
     },
 
     refreshMatches() {
-      logger.info('manual refresh matches');
-      this.loading = true;
-      this.emitDataRequest('filter-change');
-      setTimeout(() => {
-        this.loading = false;
-      }, 1000);
+      logger.info('manual refresh matches - 手动刷新比赛数据');
+      // 重置当前页
+      this.currentPage = 1;
+      // 触发父组件重新加载数据，使用 force 参数强制刷新缓存
+      this.emitDataRequest('filter-change', true);
+    },
+
+    resetFilters() {
+      const hadValues = this.localSelectedType || this.localSelectedStatus || this.searchKeyword;
+      this.localSelectedType = '';
+      this.localSelectedStatus = '';
+      this.searchKeyword = '';
+      this.currentPage = 1;
+      if (hadValues) {
+        this.emitDataRequest('filter-change');
+        this.$emit('reset');
+      }
     },
 
     // 修正比赛类型映射，确保与后端一致
     getMatchTypeLabel(type) {
-      const labels = {
-        'championsCup': '冠军杯',
-        'womensCup': '巾帼杯', 
-        'eightASide': '八人制',
-        'champions-cup': '冠军杯',
-        'womens-cup': '巾帼杯',
-        'eight-a-side': '八人制',
-        '冠军杯': '冠军杯',
-        '巾帼杯': '巾帼杯',
-        '八人制': '八人制'
-      };
-      return labels[type] || type || '未知';
+      // 尝试从 props.competitions 中查找
+      if (this.competitions && this.competitions.length > 0) {
+        const comp = this.competitions.find(c => c.name === type || c.competition_id === type || c.id === type);
+        if (comp) return comp.name;
+      }
+      
+      return type || '未知';
     },
 
     getMatchTypeColor(type) {
-      const colors = {
-        'championsCup': 'warning',
-        'womensCup': 'danger',
-        'eightASide': 'success',
-        'champions-cup': 'warning',
-        'womens-cup': 'danger', 
-        'eight-a-side': 'success',
-        '冠军杯': 'warning',
-        '巾帼杯': 'danger',
-        '八人制': 'success'
-      };
-      return colors[type] || 'info';
+      // 可以根据名称包含的关键字来决定颜色
+      const label = this.getMatchTypeLabel(type);
+      if (label.includes('冠军')) return 'warning';
+      if (label.includes('巾帼')) return 'danger';
+      if (label.includes('八人')) return 'success';
+      return 'info';
     },
 
     getScoreClass(status) {
@@ -359,6 +417,13 @@ export default {
       } else {
         this.$message.error('未找到比赛ID');
       }
+    },
+
+    // 修复：添加缺失的比赛详情对话框关闭处理方法
+    handleMatchDialogClose() {
+      logger.info('比赛详情对话框关闭');
+      this.showMatchDialog = false;
+      this.selectedMatch = null;
     }
   }
 };
@@ -397,6 +462,11 @@ export default {
   width: 100%;
 }
 
+.actions-flex { display:flex; gap:8px; }
+.reset-button { width:100%; }
+
+.action-buttons { display:flex; }
+
 .matches-section {
   min-height: 400px;
 }
@@ -421,8 +491,9 @@ export default {
   cursor: pointer;
   transition: all 0.3s ease;
   position: relative;
-  overflow: hidden;
-  height: 280px;
+  /* overflow: hidden; Removed to allow content to expand */
+  height: auto; /* Changed from fixed height to auto */
+  min-height: 300px; /* Ensure consistent minimum size */
   display: flex;
   flex-direction: column;
   justify-content: space-between;
@@ -456,12 +527,12 @@ export default {
   word-wrap: break-word;
   overflow-wrap: break-word;
   flex-shrink: 0;
-  max-height: 44px;
-  overflow: hidden;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  line-clamp: 2;
-  -webkit-box-orient: vertical;
+  /* max-height: 44px; Removed truncation */
+  /* overflow: hidden; Removed truncation */
+  /* display: -webkit-box; Removed truncation */
+  /* -webkit-line-clamp: 2; Removed truncation */
+  /* line-clamp: 2; Removed truncation */
+  /* -webkit-box-orient: vertical; Removed truncation */
 }
 
 .match-teams {
@@ -499,12 +570,11 @@ export default {
   line-height: 1.3;
   word-wrap: break-word;
   overflow-wrap: break-word;
-  overflow: hidden;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  line-clamp: 2;
-  -webkit-box-orient: vertical;
-  width: 100%;
+  /* overflow: hidden; Removed truncation */
+  /* display: -webkit-box; Removed truncation */
+  /* -webkit-line-clamp: 2; Removed truncation */
+  /* line-clamp: 2; Removed truncation */
+  /* -webkit-box-orient: vertical; Removed truncation */
   width: 100%;
 }
 
@@ -542,9 +612,9 @@ export default {
   min-width: 60px;
   text-align: center;
   white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 80px;
+  /* overflow: hidden; Removed to prevent truncation */
+  /* text-overflow: ellipsis; Removed to prevent truncation */
+  /* max-width: 80px; Removed to allow full score display */
 }
 
 .final-score {

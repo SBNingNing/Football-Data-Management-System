@@ -18,6 +18,7 @@ function normSuccessArray(raw) {
   if (Array.isArray(raw)) return raw
   if (raw.status === 'success' && Array.isArray(raw.data)) return raw.data
   if (Array.isArray(raw.data?.records)) return raw.data.records
+  if (Array.isArray(raw.records)) return raw.records
   return []
 }
 
@@ -105,13 +106,20 @@ export async function fetchMatchAggregate(matchId) {
 // 比赛记录（分页）—— 从 statsService 迁移
 export async function fetchMatchRecords({ token, params = {}, force = false } = {}) {
   const headers = token ? { Authorization: `Bearer ${token}` } : undefined
-  const res = await http.get('/matches/match-records', { params: {
+  const requestParams = {
     type: params.type || '',
     status: params.status || '',
     keyword: params.keyword || '',
     page: params.page || 1,
     pageSize: params.pageSize || 10
-  }, headers, cache: { ttl: 8000, force } })
+  }
+  if (force) {
+    requestParams._ts = Date.now()
+  }
+  
+  logger.info('[matchService] fetchMatchRecords params:', requestParams)
+  
+  const res = await http.get('/matches/match-records', { params: requestParams, headers })
   if (!res.ok) return { ok:false, data:{ records:[], total:0 }, error: res.error }
   const records = normSuccessArray(res.data)
   const total = res.data?.data?.total || records.length
@@ -119,13 +127,14 @@ export async function fetchMatchRecords({ token, params = {}, force = false } = 
     ...item,
     id: item.id || item.match_id || item.matchId || Math.random().toString(36).slice(2,10),
     score: item.score || `${item.home_score || 0} : ${item.away_score || 0}`,
-    status: item.status || '待进行',
+    status: item.status || '未开始',
+    status_type: getMatchStatusTagType(item.status || '未开始'), // 添加状态类型
     name: item.name || item.match_name || `${item.team1 || '队伍1'} vs ${item.team2 || '队伍2'}`,
     team1: item.team1 || item.home_team || '队伍1',
     team2: item.team2 || item.away_team || '队伍2',
     date: item.date || item.match_time || '',
     location: item.location || '待定',
-    type: item.type || 'championsCup'
+    type: item.competition_name || item.tournament_name || ''
   }))
   return { ok:true, data:{ records: mapped, total } }
 }
@@ -133,7 +142,8 @@ export async function fetchMatchRecords({ token, params = {}, force = false } = 
 // 近期比赛（固定取前5条）
 export async function fetchRecentMatches({ token, force = false } = {}) {
   const headers = token ? { Authorization: `Bearer ${token}` } : undefined
-  const res = await http.get('/matches/match-records', { params: { page:1, pageSize:5 }, headers, cache: { ttl: 5000, force } })
+  // 修改为只获取最近3场比赛
+  const res = await http.get('/matches/match-records', { params: { page:1, pageSize:3 }, headers, cache: { ttl: 5000, force } })
   if (!res.ok) return { ok:false, data:[], error: res.error }
   const records = normSuccessArray(res.data)
   return { ok:true, data: records }

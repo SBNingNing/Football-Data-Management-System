@@ -70,5 +70,6 @@ class Team(db.Model):
             'draws': self.draws,
             'losses': self.losses,
             'team_base_id': self.team_base_id,
-            'status': self.status
+            'status': self.status,
+            'competitionId': self.tournament.competition_id if self.tournament else None
         }

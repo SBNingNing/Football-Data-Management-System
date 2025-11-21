@@ -7,14 +7,14 @@
       <div class="status-container">
         <span class="match-status" :class="statusClass">{{ statusText }}</span>
       </div>
-      <h1 class="match-title">{{ match.homeTeam }} VS {{ match.awayTeam }}</h1>
+      <h1 class="match-title">{{ match?.homeTeam || '主队' }} VS {{ match?.awayTeam || '客队' }}</h1>
       <div class="match-meta">
-        <span class="meta-item"><el-icon><Calendar /></el-icon>比赛时间: {{ match.matchDate }}</span>
-        <span class="meta-item"><el-icon><Trophy /></el-icon>赛事: {{ match.tournament }}</span>
-        <span class="meta-item"><el-icon><Location /></el-icon>赛季: {{ match.season }}</span>
+        <span class="meta-item"><el-icon><Calendar /></el-icon>比赛时间: {{ match?.matchDate || '待定' }}</span>
+        <span class="meta-item"><el-icon><Trophy /></el-icon>赛事: {{ match?.tournament }}</span>
+        <span class="meta-item"><el-icon><Location /></el-icon>赛季: {{ match?.season || '未知赛季' }}</span>
       </div>
       <div class="match-score">
-        <span class="score">{{ match.homeScore }} : {{ match.awayScore }}</span>
+        <span class="score">{{ match?.homeScore || 0 }} : {{ match?.awayScore || 0 }}</span>
       </div>
     </div>
   </el-card>
@@ -23,8 +23,16 @@
 import { ArrowLeft, Calendar, Trophy, Location } from '@element-plus/icons-vue'
 defineEmits(['back'])
 defineProps({
-  match: { type: Object, required: true },
-  statusClass: { type: String, required: true },
-  statusText: { type: String, required: true }
+  match: { 
+    type: [Object, null], 
+    required: false,
+    default: () => null,
+    validator: (value) => {
+      // 允许null或包含必要字段的对象
+      return value === null || (typeof value === 'object' && value !== null)
+    }
+  },
+  statusClass: { type: String, required: false, default: 'status-completed' },
+  statusText: { type: String, required: false, default: '未知状态' }
 })
 </script>

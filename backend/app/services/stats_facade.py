@@ -16,9 +16,9 @@ class StatsFacade:
         return StatsService.get_match_statistics()
 
     @staticmethod
-    def all_rankings() -> Dict[str, Any]:
+    def all_rankings(season_id: int = None) -> Dict[str, Any]:
         """所有赛事的多维排行榜（射手 / 牌数 / 积分）"""
-        return StatsService.get_all_rankings()
+        return StatsService.get_all_rankings(season_id)
 
     @staticmethod
     def tournament_points_ranking(tournament_id: int) -> List[Dict[str, Any]]:

@@ -82,6 +82,27 @@ class PlayerService:
         
         if update_data.get('name'):
             player.name = update_data['name']
+            
+        # 更新最新的球衣号码
+        # 注意：前端传来的可能是 'number' (int) 或 'number' (string)
+        # 即使 update_data 中没有 'number'，我们也应该检查是否需要更新
+        # 因为 Pydantic schema 中 number 是 Optional 的
+        if 'number' in update_data:
+            new_number = update_data['number']
+            if new_number is not None:
+                try:
+                    # 获取最近的一条参赛记录
+                    latest_history = PlayerTeamHistory.query.filter_by(
+                        player_id=player_id
+                    ).order_by(PlayerTeamHistory.id.desc()).first()
+                    
+                    if latest_history:
+                        latest_history.player_number = int(new_number)
+                        logger.info(f"更新球员 {player_id} 号码为 {new_number}")
+                    else:
+                        logger.warning(f"球员 {player_id} 没有历史记录，无法更新号码")
+                except (ValueError, TypeError):
+                    logger.warning(f"无效的球衣号码格式: {new_number}")
         
         db.session.commit()
         logger.info(f"成功更新球员: ID={player.id}")
@@ -108,7 +129,7 @@ class PlayerService:
         player_dict.setdefault('teamName', None)
         player_dict.setdefault('team_id', None)
         player_dict.setdefault('number', None)
-        player_dict.setdefault('matchType', 'champions-cup')
+        player_dict.setdefault('matchType', '')
         player_dict.setdefault('studentId', player.id)
         player_dict.setdefault('all_teams', [])
 
@@ -121,15 +142,20 @@ class PlayerService:
             current_team_set = False
             
             for history in all_histories:
-                if history and hasattr(history, 'team') and history.team:
-                    team_info, match_type = PlayerService._get_history_team_info(history)
+                # 检查 history.team_participation 是否存在 (新模型使用 team_participation 而不是 team)
+                # 为了兼容性，我们这里做一些适配
+                team_obj = getattr(history, 'team_participation', None) or getattr(history, 'team', None)
+                
+                if history and team_obj:
+                    team_info, match_type, competition_id = PlayerService._get_history_team_info(history)
                     all_teams.append(team_info)
                     
                     if not current_team_set:
-                        player_dict['teamName'] = history.team.name
-                        player_dict['team_id'] = history.team_id
-                        player_dict['number'] = history.player_number
+                        player_dict['teamName'] = team_info['team_name']
+                        player_dict['team_id'] = team_info['team_id']
+                        player_dict['number'] = team_info['player_number']
                         player_dict['matchType'] = match_type
+                        player_dict['competitionId'] = competition_id
                         player_dict['tournament_name'] = team_info['tournament_name']
                         player_dict['season_name'] = team_info['season_name']
                         current_team_set = True
@@ -156,7 +182,7 @@ class PlayerService:
                 if not history or not hasattr(history, 'team'):
                     continue
                 
-                team_info, match_type = PlayerService._get_history_team_info(history)
+                team_info, match_type, _ = PlayerService._get_history_team_info(history)
                 team_histories.append(team_info)
 
                 tournament = Tournament.query.get(history.tournament_id)
@@ -204,34 +230,41 @@ class PlayerService:
         return player_dict
 
     @staticmethod
-    def _get_history_team_info(history: PlayerTeamHistory) -> Tuple[Dict[str, Any], str]:
+    def _get_history_team_info(history: PlayerTeamHistory) -> Tuple[Dict[str, Any], str, Optional[int]]:
         """从历史记录中提取队伍信息和比赛类型"""
         tournament = Tournament.query.get(history.tournament_id) if history.tournament_id else None
-        match_type = 'champions-cup'
+        match_type = ''
+        competition_id = None
         tournament_name = None
         season_name = None
 
         if tournament:
             tournament_name = tournament.name
             season_name = tournament.season_name
-            name_lower = tournament.name.lower()
-            if '冠军杯' in name_lower or 'champions' in name_lower:
-                match_type = 'champions-cup'
-            elif '巾帼杯' in name_lower or 'womens' in name_lower:
-                match_type = 'womens-cup'
-            elif '八人制' in name_lower or 'eight' in name_lower:
-                match_type = 'eight-a-side'
+            competition_id = tournament.competition_id
+            # 优先使用 competition 关联获取比赛类型名称
+            if tournament.competition:
+                match_type = tournament.competition.name
+            else:
+                match_type = tournament.name
+
+        # 获取队伍名称
+        # 新模型使用 team_participation -> team_base -> name
+        team_name = "Unknown Team"
+        if hasattr(history, 'team_participation') and history.team_participation:
+             if hasattr(history.team_participation, 'team_base') and history.team_participation.team_base:
+                 team_name = history.team_participation.team_base.name
+        # 旧模型可能直接使用 team 属性
+        elif hasattr(history, 'team') and history.team:
+             team_name = history.team.name
 
         team_info = {
-            'team_name': history.team.name,
+            'team_name': team_name,
             'team_id': history.team_id,
             'player_number': history.player_number,
-            'tournament_id': history.tournament_id,
             'tournament_name': tournament_name,
             'season_name': season_name,
-            'match_type': match_type,
-            'tournament_goals': getattr(history, 'tournament_goals', 0),
-            'tournament_yellow_cards': getattr(history, 'tournament_yellow_cards', 0),
-            'tournament_red_cards': getattr(history, 'tournament_red_cards', 0)
+            'competition_id': competition_id
         }
-        return team_info, match_type
+        
+        return team_info, match_type, competition_id

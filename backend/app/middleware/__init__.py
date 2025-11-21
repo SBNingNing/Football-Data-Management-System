@@ -1,6 +1,7 @@
 from .auth_middleware import auth_required, admin_required, guest_allowed
 from .validation_middleware import validate_json, validate_user_data
 from .error_middleware import cors_headers, log_error, log_security_event
+from .security_headers import security_headers
 from .competition_middleware import validate_competition_data, validate_competition_id
 from .event_middleware import validate_event_creation_data, validate_event_update_data, EventValidationMiddleware
 from .player_middleware import validate_player_creation_data, validate_player_id
@@ -21,6 +22,7 @@ __all__ = [
     'cors_headers',
     'log_error',
     'log_security_event',
+    'security_headers',
     'validate_competition_data',
     'validate_competition_id',
     'validate_event_creation_data',

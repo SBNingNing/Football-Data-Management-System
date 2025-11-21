@@ -81,12 +81,25 @@ class AuthService:
             return None, f'登录失败: {str(e)}'
     
     @staticmethod
-    def create_token(user_id):
-        """创建JWT令牌"""
+    def create_token(user_id, token_type='user'):
+        """创建JWT令牌
+        
+        Args:
+            user_id: 用户ID
+            token_type: 令牌类型 ('user', 'admin', 'guest') - 为未来功能分离做准备
+        """
         try:
             # PyJWT 3.x 要求 sub 必须是字符串
-            token = create_access_token(identity=str(user_id))
-            logger.debug(f"Token created for: {user_id}")
+            # 添加额外的声明以支持未来的令牌类型区分
+            additional_claims = {
+                'type': token_type,
+                'user_id': str(user_id)
+            }
+            token = create_access_token(
+                identity=str(user_id),
+                additional_claims=additional_claims
+            )
+            logger.debug(f"Token created for: {user_id}, type: {token_type}")
             return token, None
         except Exception as e:
             log_error(e, f"Token creation failed: {user_id}")
@@ -112,10 +125,37 @@ class AuthService:
             return None, f'获取用户信息失败: {str(e)}'
     
     @staticmethod
+    def guest_login():
+        """处理游客登录，返回游客信息和令牌"""
+        try:
+            guest_user = {
+                'id': 'guest',
+                'username': '游客',
+                'role': 'guest'
+            }
+            
+            token, error = AuthService.create_guest_token()
+            if error:
+                return None, None, error
+            
+            return guest_user, token, None
+            
+        except Exception as e:
+            log_error(e, "Guest login process failed")
+            return None, None, f'游客登录处理失败: {str(e)}'
+
+    @staticmethod
     def create_guest_token():
         """创建游客令牌"""
         try:
-            token = create_access_token(identity='guest')  # already str
+            additional_claims = {
+                'type': 'guest',
+                'user_id': 'guest'
+            }
+            token = create_access_token(
+                identity='guest',
+                additional_claims=additional_claims
+            )
             logger.info("Guest token created")
             log_security_event("GUEST_LOGIN", "Guest access")
             return token, None

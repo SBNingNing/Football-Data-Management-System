@@ -7,18 +7,13 @@ from typing import Optional
 
 def determine_match_type(tournament: Optional[Tournament]) -> str:
     """根据赛事名称确定matchType"""
+    if tournament and tournament.competition:
+        return tournament.competition.name
     if tournament:
-        tournament_name = tournament.name.lower()
-        if '冠军杯' in tournament_name or 'champions' in tournament_name:
-            return 'champions-cup'
-        elif '巾帼杯' in tournament_name or 'womens' in tournament_name:
-            return 'womens-cup'
-        elif '八人制' in tournament_name or 'eight' in tournament_name:
-            return 'eight-a-side'
-        else:
-            return 'champions-cup'
+        # 直接返回赛事名称，不再进行硬编码映射
+        return tournament.name
     else:
-        return 'champions-cup'
+        return '未知赛事'
 
 
 def validate_event_type(event_type: str) -> bool:

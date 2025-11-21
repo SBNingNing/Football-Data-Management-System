@@ -7,19 +7,118 @@
  */
 .match-detail { max-width: 1200px; margin: 0 auto; }
 .match-basic-info, .match-stats, .team-comparison, .player-performances { margin-bottom: 20px; }
-.match-header { background: linear-gradient(135deg,#27ae60 0%,#2ecc71 100%); color:#fff; padding:30px 20px; border-radius:8px; text-align:center; box-shadow:0 4px 12px rgba(39,174,96,.3); position:relative; }
-.status-container { position:absolute; top:20px; right:20px; }
-.match-title { font-size:36px; font-weight:700; margin:0 0 15px; text-shadow:0 2px 4px rgba(0,0,0,.2); }
+/* 添加一些过渡效果和细节优化 */
+.match-header {
+  background: #ffffff; 
+  color: #2c3e50; 
+  padding: 30px 20px; 
+  border-radius: 8px; 
+  text-align: center; 
+  box-shadow: 0 4px 12px rgba(0,0,0,.08); 
+  position: relative; 
+  border: 1px solid #e4e7ed;
+  transition: box-shadow 0.3s ease;
+}
+
+.match-header:hover {
+  box-shadow: 0 6px 16px rgba(0,0,0,.12);
+}
+.status-container { 
+  position: absolute; 
+  top: 20px; 
+  right: 20px; 
+}
+
+.back-button-container {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+}
+
+.back-button {
+  background: #409eff !important;
+  border-color: #409eff !important;
+  color: #ffffff !important;
+}
+
+.back-button:hover {
+  background: #66b1ff !important;
+  border-color: #66b1ff !important;
+}
+.match-title { 
+  font-size: 36px; 
+  font-weight: 700; 
+  margin: 0 0 15px; 
+  text-shadow: none; 
+  color: #2c3e50;
+}
 .match-meta { display:flex; justify-content:center; gap:30px; margin:15px 0; flex-wrap:wrap; }
-.match-meta .meta-item { display:flex; align-items:center; gap:10px; font-size:18px; font-weight:600; background:rgba(255,255,255,.15); padding:8px 16px; border-radius:20px; backdrop-filter:blur(10px); border:1px solid rgba(255,255,255,.2); transition:.3s; }
-.match-meta .meta-item:hover { background:rgba(255,255,255,.25); transform:translateY(-1px); }
-.match-meta .meta-item .el-icon { font-size:20px; color:rgba(255,255,255,.9); }
-.match-score { margin-top:20px; display:flex; justify-content:center; align-items:center; }
-.score { font-size:48px; font-weight:700; }
-.match-status { font-size:16px; padding:8px 16px; border-radius:20px; font-weight:500; }
-.status-completed { background:rgba(255,255,255,.2); }
-.status-ongoing { background:#f39c12; }
-.status-upcoming { background:#3498db; }
+.match-meta .meta-item { 
+  display: flex; 
+  align-items: center; 
+  gap: 10px; 
+  font-size: 18px; 
+  font-weight: 600; 
+  background: #f8f9fa; 
+  color: #606266;
+  padding: 8px 16px; 
+  border-radius: 20px; 
+  border: 1px solid #e4e7ed; 
+  transition: .3s; 
+}
+.match-meta .meta-item:hover { 
+  background: #ecf5ff; 
+  transform: translateY(-1px); 
+  border-color: #409eff;
+}
+.match-meta .meta-item .el-icon { 
+  font-size: 20px; 
+  color: #909399; 
+}
+.match-score { 
+  margin-top: 20px; 
+  display: flex; 
+  justify-content: center; 
+  align-items: center; 
+}
+.score { 
+  font-size: 48px; 
+  font-weight: 700; 
+  color: #409eff;
+  background: linear-gradient(135deg, #409eff 0%, #36a3ff 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  padding: 10px 20px;
+  border-radius: 12px;
+  background-color: #f0f7ff;
+  background-image: none;
+  color: #409eff;
+  border: 2px solid #d9ecff;
+  box-shadow: 0 2px 8px rgba(64, 158, 255, 0.1);
+}
+.match-status { 
+  font-size: 16px; 
+  padding: 8px 16px; 
+  border-radius: 20px; 
+  font-weight: 500; 
+}
+.status-completed { 
+  background: #f0f9ff; 
+  color: #409eff; 
+  border: 1px solid #d9ecff;
+}
+.status-ongoing { 
+  background: #fff7e6; 
+  color: #e6a23c; 
+  border: 1px solid #f5dab1;
+}
+
+.status-upcoming { 
+  background: #f0f9ff; 
+  color: #409eff; 
+  border: 1px solid #d9ecff;
+}
 /* stats cards */
 .match-stats .el-row { margin:0 -10px; }
 .match-stats .el-col { padding:0 10px; }

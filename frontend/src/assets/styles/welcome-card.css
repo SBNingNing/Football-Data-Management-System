@@ -1,0 +1,167 @@
+/* =====================================================================
+ * 文件: welcome-card.css (欢迎卡片组件样式)
+ * 作用: 管理员欢迎卡片的样式定义，包含阴影浮起动画效果
+ * ===================================================================== */
+
+.welcome-card {
+  background: linear-gradient(135deg, #ffffff 0%, #f0f8ff 100%);
+  color: var(--color-text-primary);
+  padding: 24px;
+  border-radius: var(--radius-lg);
+  margin-bottom: 24px;
+  border: 1px solid rgba(59, 130, 246, 0.2);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  /* 使用通用样式类 .float-shadow */
+}
+
+.welcome-card:hover {
+  border-color: rgba(59, 130, 246, 0.3);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
+}
+
+.welcome-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.welcome-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.welcome-title h2 {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.welcome-icon {
+  color: #3b82f6;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+}
+
+.welcome-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.welcome-actions .el-button {
+  border-radius: var(--radius-md);
+  font-weight: 500;
+  /* 使用通用样式类 .btn-hover */
+}
+
+.welcome-content {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.welcome-stats {
+  display: flex;
+  gap: 32px;
+  justify-content: center;
+}
+
+.stat-item {
+  text-align: center;
+  padding: 16px;
+  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.8);
+  border: 1px solid rgba(59, 130, 246, 0.2);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  /* 使用通用样式类 .float-shadow */
+}
+
+.stat-item:hover {
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
+}
+
+.stat-number {
+  font-size: 28px;
+  font-weight: 700;
+  margin-bottom: 4px;
+  color: #3b82f6;
+}
+
+.stat-label {
+  font-size: 14px;
+  color: #6b7280;
+  font-weight: 500;
+}
+
+.welcome-message {
+  text-align: center;
+  line-height: 1.5;
+  padding: 16px;
+  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.8);
+  border: 1px solid rgba(59, 130, 246, 0.2);
+}
+
+.welcome-message p {
+  margin: 0;
+  font-weight: 400;
+  color: #6b7280;
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+  .welcome-header {
+    flex-direction: column;
+    gap: 16px;
+    align-items: flex-start;
+  }
+  
+  .welcome-stats {
+    flex-direction: column;
+    gap: 16px;
+  }
+  
+  .welcome-actions {
+    align-self: stretch;
+    justify-content: center;
+  }
+  
+  .welcome-card {
+    padding: 20px;
+    border-radius: var(--radius-md);
+  }
+  
+  .welcome-title h2 {
+    font-size: 20px;
+  }
+  
+  .stat-number {
+    font-size: 24px;
+  }
+}
+
+@media (max-width: 480px) {
+  .welcome-card {
+    padding: 16px;
+    margin-bottom: 16px;
+  }
+  
+  .welcome-title h2 {
+    font-size: 18px;
+  }
+  
+  .stat-number {
+    font-size: 20px;
+  }
+  
+  .stat-label {
+    font-size: 12px;
+  }
+  
+  .welcome-actions .el-button {
+    padding: 6px 12px;
+    font-size: 12px;
+  }
+}

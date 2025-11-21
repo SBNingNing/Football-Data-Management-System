@@ -7,8 +7,8 @@
           <div class="search-stats">共 {{ filteredPlayers.length }} 名球员</div>
           <el-radio-group v-model="selectedTeamLocal" class="team-filter">
             <el-radio-button label="all">全部</el-radio-button>
-            <el-radio-button :label="match.homeTeam">{{ match.homeTeam }}</el-radio-button>
-            <el-radio-button :label="match.awayTeam">{{ match.awayTeam }}</el-radio-button>
+            <el-radio-button :label="match?.homeTeam">{{ match?.homeTeam || '主队' }}</el-radio-button>
+            <el-radio-button :label="match?.awayTeam">{{ match?.awayTeam || '客队' }}</el-radio-button>
           </el-radio-group>
         </div>
       </div>
@@ -59,11 +59,18 @@
 import { computed, watch, ref } from 'vue'
 import { UserFilled, User, Trophy, Tickets, Football, Warning, CircleClose, View as IconView } from '@element-plus/icons-vue'
 const props = defineProps({
-  match: { type:Object, required:true },
-  players: { type:Array, required:true },
-  selectedTeam: { type:String, required:true },
-  currentPage: { type:Number, required:true },
-  pageSize: { type:Number, required:true }
+  match: { 
+    type: [Object, null], 
+    required: false,
+    default: () => null,
+    validator: (value) => {
+      return value === null || (typeof value === 'object' && value !== null)
+    }
+  },
+  players: { type: Array, required: false, default: () => [] },
+  selectedTeam: { type: String, required: false, default: 'all' },
+  currentPage: { type: Number, required: false, default: 1 },
+  pageSize: { type: Number, required: false, default: 12 }
 })
 const emits = defineEmits(['update:selectedTeam','update:currentPage','update:pageSize','view-player'])
 const selectedTeamLocal = ref(props.selectedTeam)

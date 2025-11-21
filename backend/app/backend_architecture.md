@@ -133,7 +133,7 @@ backend/app/
 ## 最小运行与验证
 - 应用工厂：`__init__.py:create_app`
 - 启动脚本：`backend/run.py`（按环境变量选择配置）
-- 健诊脚本（新增）：`backend/tests/schema_sanity.py`
+- 健诊脚本（新增）：`tests/backend/schema_sanity.py`
   - 覆盖：`SeasonOut` 序列化、`RegisterIn` 邮箱校验、`Rankings` RootModel 解析
   - 运行通过即表明 v2 核心序列化/校验链路可用
 

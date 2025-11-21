@@ -1,75 +1,145 @@
 <template>
-  <el-card class="form-card tournament-quick-input-card">
+  <el-card class="input-component-card" shadow="never">
     <template #header>
-      <div class="form-header">
-        <h3 class="form-title">
-          <el-icon class="form-icon"><Collection /></el-icon>
-          赛事实例快速创建
-        </h3>
+      <div class="card-header">
+        <span class="card-title">创建赛季赛事</span>
       </div>
     </template>
-    <el-form :model="form" label-width="110px" class="tournament-quick-form">
-      <el-form-item label="赛事ID或名称">
-        <el-input v-model="form.competition_id" placeholder="请输入赛事ID或赛事名称" />
+    
+    <el-form 
+      ref="tournamentFormRef" 
+      :model="tournamentForm" 
+      :rules="tournamentRules" 
+      label-width="80px"
+      size="small"
+    >
+      <el-form-item label="赛事名称" prop="competition_id">
+        <el-select 
+          v-model="tournamentForm.competition_id" 
+          placeholder="选择赛事" 
+          style="width: 100%"
+          clearable
+        >
+          <el-option 
+            v-for="comp in competitions" 
+            :key="comp.id" 
+            :label="comp.name" 
+            :value="comp.id"
+          />
+        </el-select>
       </el-form-item>
-      <el-form-item label="赛季ID或名称">
-        <el-input v-model="form.season_id" placeholder="请输入赛季ID或赛季名称(如: 2024-2025)" />
+      
+      <el-form-item label="所属赛季" prop="season_id">
+        <el-select 
+          v-model="tournamentForm.season_id" 
+          placeholder="选择所属赛季" 
+          style="width: 100%"
+          clearable
+        >
+          <el-option 
+            v-for="season in seasons" 
+            :key="season.id" 
+            :label="season.name" 
+            :value="season.id"
+          />
+        </el-select>
       </el-form-item>
-      <el-form-item label="试运行模式">
-        <el-switch v-model="form.dryRun" />
-      </el-form-item>
-      <el-form-item class="entity-submit-zone">
-        <el-button type="primary" :disabled="!canSubmit" :loading="submitting" @click="submit">{{ form.dryRun ? '试运行' : '创建赛事实例' }}</el-button>
+      
+      <el-form-item class="form-actions">
+        <el-button 
+          type="primary" 
+          @click="submitTournament" 
+          :loading="submitting"
+        >
+          <el-icon><Plus /></el-icon>
+          创建赛季赛事
+        </el-button>
       </el-form-item>
     </el-form>
-    <div v-if="response" class="quick-result">
-      <pre class="result-json">{{ response }}</pre>
-    </div>
   </el-card>
 </template>
 
 <script setup>
-import { reactive, ref, computed } from 'vue'
-import { Collection } from '@element-plus/icons-vue'
-import { quickCreateTournamentInstance, TOURNAMENT_CACHE_KEYS } from '@/domain/tournament/tournamentCrudService'
-import { mutateAndInvalidate } from '@/domain/common/mutation'
-import notify from '@/utils/notify'
+import { Plus } from '@element-plus/icons-vue'
+import { ref, reactive, onMounted } from 'vue'
+import { ElMessage } from 'element-plus'
+import { createTournament } from '@/domain/tournament/tournamentCrudService'
+import { fetchSeasons } from '@/domain/season/seasonsService'
+import { fetchCompetitions } from '@/domain/competition/competitionsService'
+import '@/assets/styles/input-components.css'
 
 const emit = defineEmits(['submit'])
-
-const form = reactive({ competition_id: '', season_id: '', dryRun: true })
+const seasons = ref([])
+const competitions = ref([])
 const submitting = ref(false)
-const response = ref(null)
+const tournamentFormRef = ref()
 
-const canSubmit = computed(()=> !!form.competition_id && !!form.season_id && !submitting.value)
+const tournamentForm = reactive({
+  competition_id: '',
+  season_id: ''
+})
 
-function reset(){ form.competition_id=''; form.season_id=''; form.dryRun=true }
-
-function submit(){
-  if(!canSubmit.value) return
-  submitting.value = true
-  mutateAndInvalidate(
-    () => quickCreateTournamentInstance({ ...form }),
-    {
-      invalidate: [TOURNAMENT_CACHE_KEYS.LIST],
-      invalidatePrefixes: ['tournament:','stats:'],
-      onSuccess: (data) => {
-        response.value = JSON.stringify(data, null, 2)
-        notify.success(form.dryRun ? '试运行成功' : '赛事实例创建成功')
-        emit('submit', data)
-        if(!form.dryRun) reset()
-      }
-    }
-  ).finally(()=>{ submitting.value=false })
+const tournamentRules = {
+  competition_id: [
+    { required: true, message: '请选择赛事', trigger: 'change' }
+  ],
+  season_id: [
+    { required: true, message: '请选择所属赛季', trigger: 'change' }
+  ]
 }
-</script>
 
-<style scoped>
-.tournament-quick-input-card { margin-bottom:16px; }
-.tournament-quick-form { max-width:520px; }
-.form-header { display:flex; align-items:center; }
-.form-title { display:flex; align-items:center; font-size:16px; font-weight:600; margin:0; }
-.form-icon { margin-right:6px; color:#67c23a; }
-.quick-result { margin-top:12px; background:#f5f7fa; border:1px solid #e4e7ed; border-radius:4px; padding:8px; }
-.result-json { font-size:12px; line-height:1.4; white-space:pre-wrap; word-break:break-word; margin:0; }
-</style>
+const submitTournament = async () => {
+  if (!tournamentFormRef.value) return
+  
+  await tournamentFormRef.value.validate(async (valid, fields) => {
+    if (valid) {
+      try {
+        submitting.value = true
+        
+        await createTournament(tournamentForm)
+        ElMessage.success('赛季赛事创建成功')
+        
+        // 重置表单
+        tournamentFormRef.value.resetFields()
+        
+        // 通知父组件刷新数据
+        emit('submit')
+      } catch (error) {
+        console.error('创建赛季赛事失败:', error)
+        ElMessage.error('创建赛季赛事失败：' + (error.message || '未知错误'))
+      } finally {
+        submitting.value = false
+      }
+    } else {
+      console.error('表单验证失败:', fields)
+    }
+  })
+}
+
+// 加载赛季列表
+const loadSeasons = async () => {
+  try {
+    const response = await fetchSeasons()
+    seasons.value = response.data || []
+  } catch (error) {
+    console.error('加载赛季列表失败:', error)
+  }
+}
+
+// 加载赛事列表
+const loadCompetitions = async () => {
+  try {
+    const { ok, data } = await fetchCompetitions()
+    if (ok) {
+      competitions.value = data.competitions || []
+    }
+  } catch (error) {
+    console.error('加载赛事列表失败:', error)
+  }
+}
+
+onMounted(() => {
+  loadSeasons()
+  loadCompetitions()
+})
+</script>

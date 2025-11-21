@@ -9,10 +9,41 @@ import cache from '@/domain/common/cache'
 import http from '@/utils/httpClient'
 import { serviceWrap, buildError } from '@/utils/error'
 
+// 首先获取球队基础信息
+async function fetchTeamBasicInfo(teamName) {
+  const response = await fetch(`/api/teams/${teamName}`)
+  if (!response.ok) {
+    throw buildError(`获取球队信息失败: ${response.status}`, 'TEAM_INFO_FETCH_FAILED')
+  }
+  
+  const data = await response.json()
+  // 后端返回格式为 { status: 'success', data: ... }
+  if (data.status !== 'success' || !data.data) {
+    throw buildError('球队信息获取失败', 'TEAM_INFO_INVALID', data)
+  }
+  
+  return data.data
+}
+
 // 适配器：通过传入的 loader (例如 pinia store 的 loadComplete) 获取原始数据
 async function fetchRawTeamHistory(teamName, { loader, force }) {
   if (!loader) throw new Error('缺少 loader 实现')
-  return loader(teamName, { force })
+  
+  // 先获取球队基础信息，包含 teamBaseId
+  const teamInfo = await fetchTeamBasicInfo(teamName)
+  if (!teamInfo.teamBaseId) {
+    throw buildError('球队信息中缺少 teamBaseId', 'TEAM_BASE_ID_MISSING')
+  }
+  
+  // 使用 teamBaseId 调用 loader
+  const result = await loader(teamInfo.teamBaseId, { force })
+  
+  // 将球队基础信息合并到结果中
+  if (result.success && result.data) {
+    result.data.teamInfo = teamInfo
+  }
+  
+  return result
 }
 
 /**
@@ -49,11 +80,6 @@ export async function fetchTeamAggregate(teamName, { force = false, loader, cach
   return result
 }
 
-// 提供一致风格的安全包装
-export function fetchTeamAggregateSafe(teamName, opts) {
-  return serviceWrap(async () => fetchTeamAggregate(teamName, opts))
-}
-
 // ------------------ 球队列表 ------------------
 function normalizeTeamsPayload(raw) {
   if (!raw) return []
@@ -70,6 +96,7 @@ function mapTeam(team) {
     id: team.id || `team_${Math.random().toString(36).slice(2, 10)}`,
     teamName: team.teamName || team.name || '未知球队',
     matchType: team.matchType || 'champions-cup',
+    competitionId: team.competitionId,
     tournamentId: team.tournamentId || team.tournament_id,
     tournamentName: team.tournamentName || team.tournament_name,
     rank: team.rank || team.tournament_rank,

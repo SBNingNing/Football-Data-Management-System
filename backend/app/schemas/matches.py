@@ -11,7 +11,9 @@ class MatchCreate(SchemaBase):
     location: str
     homeTeamId: int
     awayTeamId: int
-    tournamentId: int
+    tournamentId: Optional[int] = None
+    competitionId: Optional[int] = None
+    matchType: Optional[str] = None
     groupId: Optional[str] = None
 
 

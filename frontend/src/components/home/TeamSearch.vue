@@ -33,24 +33,27 @@
             clearable
             class="match-type-select"
           >
-            <el-option label="冠军杯" value="champions-cup" />
-            <el-option label="巾帼杯" value="womens-cup" />
-            <el-option label="八人制" value="eight-a-side" />
+            <el-option 
+              v-for="comp in competitions" 
+              :key="comp.competition_id" 
+              :label="comp.name" 
+              :value="comp.name" 
+            />
           </el-select>
         </el-col>
         <el-col :span="6">
           <el-select
-            v-model="selectedTournament"
-            placeholder="选择赛事"
-            @change="handleTournamentFilter"
+            v-model="selectedSeason"
+            placeholder="选择赛季"
+            @change="handleSeasonFilter"
             clearable
-            class="tournament-select"
+            class="season-select"
           >
             <el-option 
-              v-for="tournament in availableTournaments" 
-              :key="tournament.id" 
-              :label="tournament.name" 
-              :value="tournament.id" 
+              v-for="season in seasons" 
+              :key="season.season_id" 
+              :label="season.name" 
+              :value="season.season_id" 
             />
           </el-select>
         </el-col>
@@ -150,6 +153,13 @@
       />
     </div>
   </el-card>
+
+  <!-- 球队详情对话框 -->
+  <TeamDetailDialog
+    v-model:visible="showTeamDialog"
+    :team-data="selectedTeam"
+    @close="handleDialogClose"
+  />
 </template>
 
 <script>
@@ -169,11 +179,12 @@ import {
 import logger from '@/utils/logger';
 import { fetchTeams as fetchTeamList } from '@/domain/team/teamService';
 import { getMatchTypeLabel } from '@/constants/domain';
+import TeamDetailDialog from '@/components/team/TeamDetailDialog.vue';
 
 export default {
   name: 'TeamSearch',
   components: {
-  IconSearch,
+    IconSearch,
     Refresh,
     User,
     UserFilled,
@@ -182,21 +193,33 @@ export default {
     Calendar,
     Football,
     Medal,
-    Warning
+    Warning,
+    TeamDetailDialog
+  },
+  props: {
+    competitions: {
+      type: Array,
+      default: () => []
+    },
+    seasons: {
+      type: Array,
+      default: () => []
+    }
   },
   data() {
     return {
       teams: [],
       filteredTeams: [],
-      availableTournaments: [],
       searchKeyword: '',
       selectedMatchType: '',
-      selectedTournament: '',
+      selectedSeason: '',
       currentPage: 1,
       pageSize: 12,
       loading: false,
       searchTimer: null,
-      totalTeams: 0
+      totalTeams: 0,
+      showTeamDialog: false,
+      selectedTeam: null
     };
   },
   computed: {
@@ -224,7 +247,6 @@ export default {
         }
         this.teams = data;
         logger.info('成功获取球队数据:', this.teams.length, '支球队');
-        this.extractAvailableTournaments();
         logger.debug('处理后的球队数据:', this.teams);
         this.filterTeams();
       } catch (e) {
@@ -234,21 +256,6 @@ export default {
       } finally {
         this.loading = false;
       }
-    },
-
-    extractAvailableTournaments() {
-      const tournaments = new Map();
-      
-      this.teams.forEach(team => {
-        if (team.tournamentId && team.tournamentName) {
-          tournaments.set(team.tournamentId, {
-            id: team.tournamentId,
-            name: team.tournamentName
-          });
-        }
-      });
-      
-      this.availableTournaments = Array.from(tournaments.values());
     },
 
     handleSearch() {
@@ -265,7 +272,8 @@ export default {
       this.filterTeams();
     },
 
-    handleTournamentFilter() {
+    handleSeasonFilter() {
+      logger.debug('Season filter changed:', this.selectedSeason);
       this.filterTeams();
     },
 
@@ -286,9 +294,9 @@ export default {
         filtered = filtered.filter(team => team.matchType === this.selectedMatchType);
       }
       
-      // 按具体赛事过滤
-      if (this.selectedTournament) {
-        filtered = filtered.filter(team => team.tournamentId === this.selectedTournament);
+      // 按赛季过滤
+      if (this.selectedSeason) {
+        filtered = filtered.filter(team => team.seasonId == this.selectedSeason);
       }
       
       this.filteredTeams = filtered;
@@ -301,16 +309,16 @@ export default {
     getMatchTypeLabel,
 
     navigateToTeamDetail(team) {
-  logger.debug('点击球队:', team);
+      logger.debug('点击球队:', team);
       
       // 确保球队数据完整性
       if (!team.teamName) {
-  logger.error('球队信息不完整:', team);
+        logger.error('球队信息不完整:', team);
         this.$message.error('球队信息不完整，无法查看详情');
         return;
       }
       
-      // 构建传递给team_history的数据
+      // 构建传递给对话框的数据
       const teamData = {
         name: team.teamName,
         teamName: team.teamName,
@@ -324,24 +332,16 @@ export default {
         records: team.records || []
       };
       
-      // 跳转到球队详情页面
-      this.$router.push({
-        name: 'TeamInfo',
-        params: {
-          teamName: team.teamName
-        },
-        query: {
-          teamId: team.id,
-          matchType: team.matchType,
-          tournamentId: team.tournamentId,
-          teamData: JSON.stringify(teamData)
-        }
-      }).then(() => {
-        logger.info('成功跳转到球队详情页');
-      }).catch(err => {
-        logger.error('路由跳转失败:', err);
-        this.$message.error('页面跳转失败，请检查路由配置');
-      });
+      // 设置选中的球队并显示对话框
+      this.selectedTeam = teamData;
+      this.showTeamDialog = true;
+      
+      logger.info('显示球队详情对话框:', teamData.teamName);
+    },
+
+    handleDialogClose() {
+      this.showTeamDialog = false;
+      this.selectedTeam = null;
     },
 
     async refreshTeams() {

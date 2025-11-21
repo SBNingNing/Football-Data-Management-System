@@ -2,8 +2,13 @@
   <div class="match-detail">
     <PanelSkeleton v-if="loading" height="420px" />
     <ErrorBanner v-else-if="error" :error="error" @retry="retry" />
-    <template v-else>
-      <MatchBasicInfo :match="match" :status-class="getMatchStatusClass()" :status-text="getMatchStatusText" @back="goBack" />
+    <template v-else-if="match && typeof match === 'object'">
+      <MatchBasicInfo 
+        :match="match" 
+        :status-class="getMatchStatusClass()" 
+        :status-text="getMatchStatusText()" 
+        @back="goBack" 
+      />
       <MatchStatsOverview :match="match" />
       <TeamComparison :match="match" />
       <PlayerPerformances
@@ -19,6 +24,9 @@
       />
       <MatchEventsTimeline :events="events" />
     </template>
+    <div v-else class="no-data">
+      <el-empty description="暂无比赛数据" />
+    </div>
   </div>
 </template>
 

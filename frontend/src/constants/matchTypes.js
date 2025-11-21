@@ -7,11 +7,7 @@
  * =====================================================================
  */
 // 比赛类型映射（英文 key -> 中文展示）
-export const MATCH_TYPE_TEXT = {
-  'champions-cup': '冠军杯',
-  'womens-cup': '巾帼杯',
-  'eight-a-side': '八人制比赛'
-};
+export const MATCH_TYPE_TEXT = {};
 
 /**
  * 获取比赛类型中文说明
@@ -19,5 +15,5 @@ export const MATCH_TYPE_TEXT = {
  * @returns {string} 中文描述，未知时返回 '未知类型'
  */
 export function getMatchTypeText(type) {
-  return MATCH_TYPE_TEXT[type] || '未知类型';
+  return type || '未知类型';
 }

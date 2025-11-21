@@ -61,10 +61,12 @@ html, body, #app {
 }
 .stat-card:hover { transform: translateY(-2px); }
 
-/* Stat card variants (替代内联背景色) */
-.stat-card--goals { background:#1e88e5; color:#fff; }
-.stat-card--yellow { background:#f39c12; color:#fff; }
-.stat-card--red { background:#e74c3c; color:#fff; }
+/* Stat card variants (保持原始颜色值，确保视觉效果不变) */
+.stat-card--goals { background: #1e88e5; color: #fff; }
+.stat-card--own-goals { background: #ff9800; color: #fff; }
+.stat-card--yellow { background: #f39c12; color: #fff; }
+.stat-card--red { background: #e74c3c; color: #fff; }
+.stat-card--success { background: #27ae60; color: #fff; }
 
 /* Generic badge */
 .badge {
@@ -87,31 +89,58 @@ html, body, #app {
 .timeline-item { position:relative; padding:15px 0 15px 70px; margin-bottom:10px; }
 .timeline-marker { position:absolute; left:20px; top:15px; width:20px; height:20px; border-radius:50%; display:flex; align-items:center; justify-content:center; background:#fff; border:2px solid #e4e7ed; z-index:1; }
 
-@media (max-width: 768px) {
-  .timeline::before { left:15px; }
-  .timeline-item { padding-left:50px; }
-  .timeline-marker { left:5px; }
+/* ========== 通用阴影浮起动画效果 ========== */
+.float-shadow {
+  transition: var(--transition-base);
+  box-shadow: var(--shadow-card);
 }
 
-/* ========== 通用统计卡片样式（从player-history.css、team-history.css、tournament-history.css合并） ========== */
+.float-shadow:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-card-hover);
+}
+
+/* ========== 通用卡片悬停效果 ========== */
+.card-hover {
+  transition: var(--transition-base);
+  box-shadow: var(--shadow-card);
+}
+
+.card-hover:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-card-hover);
+}
+
+/* ========== 通用按钮悬停效果 ========== */
+.btn-hover {
+  transition: var(--transition-base);
+}
+
+.btn-hover:hover {
+  transform: scale(1.05);
+}
+
+/* ========== 通用统计项样式 ========== */
 .stat-item { 
   display: flex; 
   align-items: center; 
   height: 100px; 
   padding: 15px; 
-  border-radius: 8px; 
-  box-shadow: 0 2px 8px rgba(0,0,0,.1); 
-  transition: transform .2s; 
+  border-radius: var(--radius-md); 
+  box-shadow: var(--shadow-card); 
+  transition: var(--transition-base); 
   gap: 16px;
+  background: #fff;
 }
 .stat-item:hover { 
   transform: translateY(-2px); 
-  box-shadow: 0 8px 24px rgba(0,0,0,0.15); 
+  box-shadow: var(--shadow-card-hover); 
 }
 .stat-info { 
   display: flex; 
   flex-direction: column; 
   margin-left: 15px;
+  flex: 1;
 }
 .stat-number { 
   font-size: 28px; 
@@ -124,7 +153,13 @@ html, body, #app {
   opacity: .9;
 }
 
-/* ========== 通用赛季统计样式（从player-history.css、team-history.css、tournament-history.css合并） ========== */
+@media (max-width: 768px) {
+  .timeline::before { left:15px; }
+  .timeline-item { padding-left:50px; }
+  .timeline-marker { left:5px; }
+}
+
+/* ========== 通用赛季统计样式 ========== */
 .season-title { 
   display: flex; 
   align-items: center; 
@@ -135,8 +170,7 @@ html, body, #app {
 }
 .season-info { 
   font-size: 12px; 
-  color: #909399; 
-  margin-left: 20px;
+  color: var(--color-neutral-600); 
 }
 .season-stat { 
   display: flex; 
@@ -158,7 +192,7 @@ html, body, #app {
   color: #303133;
 }
 
-/* ========== 通用元数据项样式（从match-detail.css、tournament-history.css合并） ========== */
+/* ========== 通用元数据项样式 ========== */
 .meta-item { 
   display: flex; 
   align-items: center; 
@@ -171,7 +205,7 @@ html, body, #app {
   font-size: 18px;
 }
 
-/* ========== 通用返回按钮样式（从match-detail.css、tournament-history.css合并） ========== */
+/* ========== 通用返回按钮样式 ========== */
 .back-button-container { 
   position: absolute; 
   top: 20px; 
@@ -188,9 +222,34 @@ html, body, #app {
   color: #fff;
 }
 
-/* ========== Tournament History 特有样式（从tournament-history.css合并） ========== */
-.competition-history { max-width:1200px; margin:0 auto; }
-.competition-basic-info, .competition-history-stats, .competition-seasons { margin-bottom:20px; }
-.competition-name-header { background:linear-gradient(135deg,#1e88e5 0%,#1976d2 100%); color:#fff; padding:30px 20px; border-radius:8px; text-align:center; box-shadow:0 4px 12px rgba(30,136,229,.3); position:relative; }
-.tournament-title { font-size:36px; font-weight:700; margin:0 0 15px; text-shadow:0 2px 4px rgba(0,0,0,.2); }
-.tournament-meta { display:flex; justify-content:center; gap:30px; margin-top:15px; }
+/* ========== 竞赛历史特有样式 ========== */
+.competition-history { 
+  max-width: 1200px; 
+  margin: 0 auto; 
+}
+.competition-basic-info, 
+.competition-history-stats, 
+.competition-seasons { 
+  margin-bottom: 20px; 
+}
+.competition-name-header { 
+  background: linear-gradient(135deg, var(--color-primary-gradient-start) 0%, var(--color-primary-gradient-end) 100%); 
+  color: #fff; 
+  padding: 30px 20px; 
+  border-radius: var(--radius-md); 
+  text-align: center; 
+  box-shadow: 0 4px 12px rgba(30,136,229,.3); 
+  position: relative; 
+}
+.tournament-title { 
+  font-size: 36px; 
+  font-weight: 700; 
+  margin: 0 0 15px; 
+  text-shadow: 0 2px 4px rgba(0,0,0,.2); 
+}
+.tournament-meta { 
+  display: flex; 
+  justify-content: center; 
+  gap: 30px; 
+  margin-top: 15px; 
+}

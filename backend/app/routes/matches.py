@@ -45,7 +45,9 @@ def complete_match(match_id: str):
 @MatchMiddleware.log_match_request
 def get_matches():
     """获取所有比赛"""
-    result = match_service.get_all_matches()
+    status = request.args.get('status')
+    match_type = request.args.get('type')
+    result = match_service.get_all_matches(status=status, match_type=match_type)
     return jsonify(result), 200
 
 
@@ -69,7 +71,6 @@ def delete_match(match_id: str):
 
 
 @matches_bp.route('/match-records', methods=['GET'])
-@jwt_required()
 @validate_search_matches
 def get_match_records(match_type: str = '', status_filter: str = '', 
                      keyword: str = '', page: int = 1, page_size: int = 10):
@@ -93,7 +94,6 @@ def get_match_records(match_type: str = '', status_filter: str = '',
 
 
 @matches_bp.route('/<string:match_id>', methods=['GET'])
-@jwt_required()
 @validate_get_match
 def get_match_detail(match_id: str):
     """获取单个比赛的详细信息"""

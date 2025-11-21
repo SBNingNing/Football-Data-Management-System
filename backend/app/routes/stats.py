@@ -2,7 +2,7 @@
 统计路由层 - 处理HTTP请求和响应
 """
 
-from flask import Blueprint
+from flask import Blueprint, request
 from flask_jwt_extended import jwt_required
 
 from app.services.stats_facade import StatsFacade
@@ -23,7 +23,7 @@ logger = get_logger(__name__)
 stats_bp = Blueprint('stats', __name__)
 
 
-@stats_bp.route('/stats', methods=['GET'])
+@stats_bp.route('', methods=['GET'])
 @handle_stats_errors
 @log_stats_operation('查询')
 @cache_stats_result(300)  # 缓存5分钟
@@ -41,11 +41,12 @@ def get_stats():
 @handle_stats_errors
 @validate_stats_query_params
 @log_stats_operation('排行榜查询')
-@cache_stats_result(600)  # 缓存10分钟
+# @cache_stats_result(600)  # 暂时禁用缓存以便调试，或者需要根据参数生成缓存key
 def get_rankings():
     """获取排行榜数据"""
     try:
-        rankings = StatsFacade.all_rankings()
+        season_id = request.args.get('season_id', type=int)
+        rankings = StatsFacade.all_rankings(season_id)
         return success_response(rankings, message="排行榜获取成功")
     except Exception as e:
         logger.error(f"获取排行榜失败: {str(e)}")

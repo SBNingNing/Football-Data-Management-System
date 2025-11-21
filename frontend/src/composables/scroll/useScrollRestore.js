@@ -67,22 +67,34 @@ export function useScrollRestore(options = {}) {
 	}
 
 	onMounted(() => {
-		const el = targetGetter()
-		if (el) el.addEventListener('scroll', onScroll, { passive: true })
-		restore()
+		try {
+			const el = targetGetter()
+			if (el) el.addEventListener('scroll', onScroll, { passive: true })
+			restore()
+		} catch (error) {
+			console.warn('滚动恢复初始化失败:', error.message)
+		}
 	})
 
 	onBeforeUnmount(() => {
-		const el = targetGetter()
-		if (el) el.removeEventListener('scroll', onScroll)
-		save()
+		try {
+			const el = targetGetter()
+			if (el) el.removeEventListener('scroll', onScroll)
+			save()
+		} catch (error) {
+			console.warn('滚动恢复清理失败:', error.message)
+		}
 	})
 
 	onBeforeRouteLeave(() => { save() })
 
-	// 打断还原的用户交互监听
-	document.addEventListener('wheel', () => { abortRestore = true }, { passive: true })
-	document.addEventListener('touchmove', () => { abortRestore = true }, { passive: true })
+	// 打断还原的用户交互监听 - 使用安全的事件监听器
+	try {
+		document.addEventListener('wheel', () => { abortRestore = true }, { passive: true })
+		document.addEventListener('touchmove', () => { abortRestore = true }, { passive: true })
+	} catch (error) {
+		console.warn('用户交互监听器添加失败:', error.message)
+	}
 
 	return { restoring, save, restore, clear }
 }

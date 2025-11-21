@@ -92,9 +92,12 @@ class MatchMiddleware:
         def decorated_function(*args, **kwargs):
             data = request.get_json()
             
-            if data and data.get('date'):
+            # Check both 'date' and 'matchTime'
+            date_str = data.get('date') or data.get('matchTime')
+            
+            if data and date_str:
                 try:
-                    MatchUtils.parse_date_from_frontend(data['date'])
+                    MatchUtils.parse_date_from_frontend(date_str)
                 except ValueError as e:
                     logger.warning(f"日期格式验证失败: {str(e)}")
                     return jsonify({
@@ -303,12 +306,13 @@ class MatchMiddleware:
             keyword = request.args.get('keyword', '').strip()
             
             # 验证比赛类型
-            if match_type and match_type not in MatchUtils.TOURNAMENT_MAP:
-                logger.warning(f"无效的比赛类型: {match_type}")
-                return jsonify({
-                    'status': 'error', 
-                    'message': f'无效的比赛类型: {match_type}'
-                }), 400
+            # 移除硬编码验证，支持动态赛事名称
+            # if match_type and match_type not in MatchUtils.TOURNAMENT_MAP:
+            #     logger.warning(f"无效的比赛类型: {match_type}")
+            #     return jsonify({
+            #         'status': 'error', 
+            #         'message': f'无效的比赛类型: {match_type}'
+            #     }), 400
             
             # 验证状态
             if status_filter and status_filter not in MatchUtils.REVERSE_STATUS_MAP:

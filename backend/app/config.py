@@ -41,6 +41,7 @@ class Config:
     LOG_LEVEL = os.environ.get('LOG_LEVEL', 'INFO')
     LOG_MAX_BYTES = int(os.environ.get('LOG_MAX_BYTES', 10485760))  # 10MB
     LOG_BACKUP_COUNT = int(os.environ.get('LOG_BACKUP_COUNT', 5))
+    LOG_FILE = os.environ.get('LOG_FILE', os.path.join(tempfile.gettempdir(), 'app.log'))
     
     # 分页配置
     ITEMS_PER_PAGE = int(os.environ.get('ITEMS_PER_PAGE', 20))
@@ -93,9 +94,11 @@ class DevelopmentConfig(Config):
     # 使用backend目录下的logs文件夹记录后端运行状况
     BACKEND_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     LOG_FILE = os.environ.get('LOG_FILE', os.path.join(BACKEND_ROOT, 'logs', 'app.log'))
+    # 仅本机监听，避免暴露到局域网
+    HOST = '127.0.0.1'
     
     # 开发环境使用具体的前端地址，更安全
-    CORS_ORIGINS = ['http://localhost:3000', 'http://localhost:8080', 'http://127.0.0.1:3000']
+    CORS_ORIGINS = ['http://localhost:3000', 'http://127.0.0.1:3000']
 
 
 class ProductionConfig(Config):

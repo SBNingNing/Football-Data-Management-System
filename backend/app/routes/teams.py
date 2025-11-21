@@ -90,7 +90,10 @@ def get_teams():
         # 为每个球队添加matchType（如果没有的话）
         for team in teams_data:
             if not team.get('matchType'):
-                team['matchType'] = TeamUtils.determine_match_type(None)
+                if team.get('competitionName'):
+                    team['matchType'] = team['competitionName']
+                else:
+                    team['matchType'] = TeamUtils.determine_match_type(None)
         
         return jsonify(TeamMiddleware.format_team_response(teams_data)), 200
         
@@ -126,9 +129,11 @@ def create_team():
         if not team_dict.get('matchType'):
             team_dict['matchType'] = TeamUtils.determine_match_type(None)
         
+        message = '球队创建成功' if team_dict.get('is_new', True) else '球队更新成功'
+        
         return jsonify(TeamMiddleware.format_team_response(
             team_dict,
-            '球队创建成功'
+            message
         )), 201
         
     except Exception as e:

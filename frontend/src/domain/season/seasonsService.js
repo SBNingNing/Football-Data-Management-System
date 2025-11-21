@@ -47,6 +47,10 @@ export function createSeason(payload){
     if(!payload || !payload.name) throw buildError('缺少赛季名称', 'SEASON_NAME_MISSING')
     const res = await http.post('/seasons', payload)
     if(!res.ok) throw buildError(res.error?.message || '创建赛季失败', 'SEASON_CREATE_FAILED', res.error)
+    
+    // 成功创建后，使列表缓存失效
+    http.cache.invalidate(SEASON_KEYS.LIST)
+    
     return normalizeSeason(res.data?.data || res.data)
   })
 }

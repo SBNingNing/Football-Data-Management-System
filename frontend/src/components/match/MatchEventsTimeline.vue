@@ -38,6 +38,11 @@
 </template>
 <script setup>
 import { Clock } from '@element-plus/icons-vue'
-import { getEventIcon, getEventClass } from '@/constants/event'
-defineProps({ events: { type:Array, required:true } })
+import { getMatchEventIcon, getMatchEventClass } from '@/constants/match'
+
+defineProps({ events: { type: Array, required: true } })
+
+// 创建别名以保持组件内部使用一致性
+const getEventIcon = getMatchEventIcon
+const getEventClass = getMatchEventClass
 </script>

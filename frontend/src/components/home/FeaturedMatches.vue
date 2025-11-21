@@ -34,27 +34,28 @@
 <script>
 import logger from '@/utils/logger';
 import { Calendar, LocationFilled } from '@element-plus/icons-vue'
+import useCompetitions from '@/composables/admin/useCompetitions';
 
 export default {
   name: 'FeaturedMatches',
+  components: { Calendar, LocationFilled },
+  setup() {
+    const { getCompetitionLabel } = useCompetitions();
+    return { getCompetitionLabel };
+  },
   props: {
     recentMatches: {
       type: Array,
-      default: () => []
+      default: () => [],
+      validator: (value) => {
+        // 确保传入的是数组
+        return Array.isArray(value)
+      }
     }
   },
-  components: { Calendar, LocationFilled },
   methods: {
     getMatchTypeLabel(type) {
-      const labels = {
-        'championsCup': '冠军杯',
-        'womensCup': '巾帼杯',
-        'eightASide': '八人制',
-        'champions-cup': '冠军杯',
-        'womens-cup': '巾帼杯',
-        'eight-a-side': '八人制'
-      };
-      return labels[type] || type || '';
+      return this.getCompetitionLabel(type) || type || '';
     },
     formatDate(dateInput) {
       if (!dateInput) return '';
@@ -118,13 +119,20 @@ export default {
 .featured-match-item {
   height: 100%;
   padding: 15px;
-  background: linear-gradient(135deg, #1e88e5, #0d47a1);
-  color: white;
+ background: #ffffff;
+  color: #303133;
   border-radius: 8px;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
   cursor: pointer;
+  border: 1px solid #e4e7ed;
+  transition: all 0.3s;
+}
+
+.featured-match-item:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 12px 20px 0 rgba(0, 0, 0, 0.1);
 }
 
 .featured-match-header {
@@ -134,9 +142,12 @@ export default {
 }
 
 .match-type-tag {
-  background: rgba(255, 255, 255, 0.2);
+  background: #ecf5ff;
+  color: #409eff;
   padding: 2px 8px;
   border-radius: 4px;
+  font-size: 12px;
+  border: 1px solid #d9ecff;
 }
 
 .featured-match-teams {
@@ -144,17 +155,21 @@ export default {
   font-size: 22px;
   font-weight: bold;
   margin: 20px 0;
+  color: #303133;
 }
 
 .vs {
   margin: 0 15px;
-  color: #ffeb3b;
+  color: #909399;
+  font-style: italic;
 }
 
 .featured-match-footer {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  color: #606266;
+  font-size: 14px;
 }
 
 .no-matches {

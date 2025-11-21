@@ -1,0 +1,62 @@
+/* MetaDataSection.vue 样式 */
+.meta-input-sections {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-bottom: 32px;
+}
+
+.meta-lists {
+  display: flex;
+  gap: 16px;
+  flex: 1 1 360px;
+  min-width: 320px;
+}
+
+.meta-forms {
+  flex: 2 1 520px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.meta-card {
+  flex: 1;
+  /* 使用通用样式类 .card-hover */
+}
+
+.meta-card-header {
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.meta-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.meta-tag {
+  margin: 0;
+  /* 使用通用样式类 .btn-hover */
+}
+
+.meta-empty {
+  color: #999;
+  font-size: 12px;
+}
+
+/* 响应式设计 */
+@media (max-width: 960px) {
+  .meta-input-sections {
+    flex-direction: column;
+  }
+  
+  .meta-lists {
+    flex-direction: column;
+  }
+  
+  .meta-forms {
+    width: 100%;
+  }
+}

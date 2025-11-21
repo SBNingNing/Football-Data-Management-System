@@ -22,12 +22,24 @@ def validate_event_creation_data(f):
             return jsonify({'status': 'error', 'message': '请求数据为空'}), 400
         
         # 验证必要字段
-        required_fields = ['matchName', 'eventType', 'playerName', 'eventTime']
-        missing_fields = [field for field in required_fields if field not in data or not data[field]]
+        # required_fields = ['matchName', 'eventType', 'playerName', 'eventTime']
+        # missing_fields = [field for field in required_fields if field not in data or not data[field]]
         
-        if missing_fields:
-            logger.error(f"缺少必要信息: {missing_fields}")
-            return jsonify({'status': 'error', 'message': f'缺少必要信息: {missing_fields}'}), 400
+        if not data.get('eventType'):
+             logger.error(f"缺少必要信息: eventType, data: {data}")
+             return jsonify({'status': 'error', 'message': '缺少必要信息: eventType'}), 400
+             
+        if not data.get('eventTime') and data.get('eventTime') != 0:
+             logger.error(f"缺少必要信息: eventTime, data: {data}")
+             return jsonify({'status': 'error', 'message': '缺少必要信息: eventTime'}), 400
+             
+        if not data.get('matchName') and not data.get('matchId'):
+             logger.error(f"缺少必要信息: matchName 或 matchId, data: {data}")
+             return jsonify({'status': 'error', 'message': '缺少必要信息: matchName 或 matchId'}), 400
+             
+        if not data.get('playerName') and not data.get('playerId'):
+             logger.error(f"缺少必要信息: playerName 或 playerId, data: {data}")
+             return jsonify({'status': 'error', 'message': '缺少必要信息: playerName 或 playerId'}), 400
         
         # 验证事件类型
         if not validate_event_type(data['eventType']):

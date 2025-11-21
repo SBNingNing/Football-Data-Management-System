@@ -11,7 +11,7 @@ export async function fetchDashboardStats({ token, force = false } = {}) {
     if (!res.ok) {
       throw buildError(res.error?.message || '获取统计数据失败', 'STATS_FETCH_FAILED', res.error)
     }
-    const d = res.data?.data || {}
+  const d = res.data || {}
     return {
       totalMatches: d.totalMatches || 0,
       upcomingMatches: d.upcomingMatches || 0,
@@ -35,12 +35,15 @@ export const fetchGroupRankings = fetchGroupRankingsPlaceholder
 export const fetchPlayoffBracket = fetchPlayoffBracketPlaceholder
 
 // 排行榜综合：返回 { championsCup, womensCup, eightASide }
-export async function fetchRankings({ token, force = false } = {}) {
+export async function fetchRankings({ token, force = false, season_id } = {}) {
   return serviceWrap(async () => {
     const headers = token ? { Authorization: `Bearer ${token}` } : undefined
-    const res = await http.get('/rankings', { headers, cache: { ttl: 15000, force } })
+    const params = {}
+    if (season_id) params.season_id = season_id
+    
+    const res = await http.get('/stats/rankings', { headers, params, cache: { ttl: 15000, force } })
     if (!res.ok) throw buildError(res.error?.message || '获取排行榜失败', 'RANKINGS_FETCH_FAILED', res.error)
-    return res.data?.data || {}
+  return res.data || {}
   })
 }
 

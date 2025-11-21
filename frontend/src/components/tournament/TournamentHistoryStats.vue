@@ -3,7 +3,7 @@
     <template #header><div class="clearfix"><span>赛事历史数据</span></div></template>
     <el-row :gutter="20">
       <el-col :span="6" v-for="item in statItems" :key="item.label">
-        <div class="stat-item" :style="item.style">
+        <div class="stat-item" :class="item.cssClass">
           <el-icon style="color:#ffffff;font-size:40px;"><component :is="item.icon" /></el-icon>
           <div class="stat-info">
             <div class="stat-number">{{ item.value }}</div>
@@ -18,9 +18,9 @@
 import { Finished, Warning, CircleClose, User } from '@element-plus/icons-vue'
 const props = defineProps({ competition: { type: Object, required: true } })
 const statItems = [
-  { label:'总进球数', value: props.competition.totalGoals, icon: Finished, style:'background-color:#1e88e5;color:#fff;' },
-  { label:'黄牌数', value: props.competition.totalYellowCards, icon: Warning, style:'background-color:#f39c12;color:#fff;' },
-  { label:'红牌数', value: props.competition.totalRedCards, icon: CircleClose, style:'background-color:#e74c3c;color:#fff;' },
-  { label:'赛季数', value: props.competition.totalSeasons, icon: User, style:'background-color:#27ae60;color:#fff;' }
+  { label:'总进球数', value: props.competition.totalGoals, icon: Finished, cssClass: 'stat-card--goals' },
+  { label:'黄牌数', value: props.competition.totalYellowCards, icon: Warning, cssClass: 'stat-card--yellow' },
+  { label:'红牌数', value: props.competition.totalRedCards, icon: CircleClose, cssClass: 'stat-card--red' },
+  { label:'赛季数', value: props.competition.totalSeasons, icon: User, cssClass: 'stat-card--success' }
 ]
 </script>

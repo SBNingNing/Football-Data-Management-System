@@ -1,12 +1,17 @@
-// 比赛 / 事件 / 状态 标签与文本映射集中管理 (纯映射，不做统计)
+/**
+ * 管理端标签与文本映射组合函数
+ * 提供统一的标签样式和文本映射功能
+ */
 import { getMatchStatusTagType, getMatchStatusText } from '@/constants/match'
 
+// 比赛类型标签映射
 const MATCH_TYPE_LABELS = Object.freeze({
   'champions-cup': '冠军杯',
   'womens-cup': '巾帼杯',
   'eight-a-side': '八人制比赛'
 })
 
+// 事件类型标签映射
 const EVENT_TYPE_LABELS = Object.freeze({
   '进球': '进球',
   '红牌': '红牌',
@@ -18,6 +23,7 @@ const EVENT_TYPE_LABELS = Object.freeze({
   'own_goal': '乌龙球'
 })
 
+// 事件标签类型映射
 const EVENT_TAG_TYPE_MAP = Object.freeze({
   '进球': 'success',
   'goal': 'success',
@@ -29,6 +35,7 @@ const EVENT_TAG_TYPE_MAP = Object.freeze({
   'own_goal': 'info'
 })
 
+// 比赛类型标签类型映射
 const MATCH_TYPE_TAG_TYPE_MAP = Object.freeze({
   'champions-cup': 'primary',
   'womens-cup': 'success',
@@ -46,16 +53,70 @@ const MATCH_TYPE_TAG_TYPE_MAP = Object.freeze({
  */
 
 /**
- * 标签与状态样式映射统一入口。
+ * 管理端标签与状态样式映射组合函数
  * @returns {ManagementLabelsReturn}
  */
 export default function useManagementLabels() {
-  const getMatchTypeLabel = (type) => MATCH_TYPE_LABELS[type] || type || '未知'
-  const getEventTypeLabel = (type) => EVENT_TYPE_LABELS[type] || type || '未知'
-  const getEventTagType = (eventType) => EVENT_TAG_TYPE_MAP[eventType] || 'info'
-  const getMatchTypeTagType = (matchType) => MATCH_TYPE_TAG_TYPE_MAP[matchType] || 'info'
-  const getStatusTagType = (status) => getMatchStatusTagType(status)
-  const getStatusLabel = (status) => getMatchStatusText(status)
+  /**
+   * 获取比赛类型标签
+   * @param {string} type 比赛类型
+   * @returns {string} 标签文本
+   */
+  const getMatchTypeLabel = (type) => {
+    return MATCH_TYPE_LABELS[type] || type || '未知'
+  }
 
-  return { getMatchTypeLabel, getEventTypeLabel, getEventTagType, getMatchTypeTagType, getStatusTagType, getStatusLabel }
+  /**
+   * 获取事件类型标签
+   * @param {string} type 事件类型
+   * @returns {string} 标签文本
+   */
+  const getEventTypeLabel = (type) => {
+    return EVENT_TYPE_LABELS[type] || type || '未知'
+  }
+
+  /**
+   * 获取事件标签类型
+   * @param {string} eventType 事件类型
+   * @returns {import('element-plus').TagProps['type']} 标签类型
+   */
+  const getEventTagType = (eventType) => {
+    return EVENT_TAG_TYPE_MAP[eventType] || 'info'
+  }
+
+  /**
+   * 获取比赛类型标签类型
+   * @param {string} matchType 比赛类型
+   * @returns {import('element-plus').TagProps['type']} 标签类型
+   */
+  const getMatchTypeTagType = (matchType) => {
+    return MATCH_TYPE_TAG_TYPE_MAP[matchType] || 'info'
+  }
+
+  /**
+   * 获取状态标签类型
+   * @param {string} status 状态
+   * @returns {import('element-plus').TagProps['type']} 标签类型
+   */
+  const getStatusTagType = (status) => {
+    return getMatchStatusTagType(status)
+  }
+
+  /**
+   * 获取状态标签文本
+   * @param {string} status 状态
+   * @returns {string} 标签文本
+   */
+  const getStatusLabel = (status) => {
+    return getMatchStatusText(status)
+  }
+
+  return {
+    getMatchTypeLabel,
+    getEventTypeLabel,
+    getEventTagType,
+    getMatchTypeTagType,
+    getStatusTagType,
+    getStatusLabel
+  }
 }

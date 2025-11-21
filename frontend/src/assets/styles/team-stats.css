@@ -1,0 +1,104 @@
+/* TeamKeyStats.vue 样式 */
+.team-stats {
+  /* 使用通用样式类 .float-shadow */
+}
+
+.clearfix {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+/* 使用通用样式类 .stat-item-common 替代原有的 .stat-item */
+
+/* 通用统计项样式 */
+.stat-item-common {
+  background-color: #ffffff; /* 默认为白色 */
+  color: #303133; /* 字体黑色 */
+  border: 1px solid #ebeef5;
+  border-radius: 8px;
+  padding: 20px;
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  transition: all 0.3s ease;
+}
+
+.stat-item-common:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+/* 图标样式 - 默认颜色 */
+.stat-item-common .el-icon {
+  font-size: 32px;
+}
+
+/* 统计项颜色主题 - 修改为浅色背景，图标保留原色 */
+.stat-goals {
+  background: linear-gradient(135deg, #ffffff 0%, #ecf5ff 100%);
+  border-left: 4px solid #409eff;
+}
+.stat-goals .el-icon { color: #409eff; }
+
+.stat-conceded {
+  background: linear-gradient(135deg, #ffffff 0%, #fef0f0 100%);
+  border-left: 4px solid #f56c6c;
+}
+.stat-conceded .el-icon { color: #f56c6c; }
+
+.stat-difference {
+  background: linear-gradient(135deg, #ffffff 0%, #f0f9eb 100%);
+  border-left: 4px solid #67c23a;
+}
+.stat-difference .el-icon { color: #67c23a; }
+
+.stat-yellow {
+  background: linear-gradient(135deg, #ffffff 0%, #fdf6ec 100%);
+  border-left: 4px solid #e6a23c;
+}
+.stat-yellow .el-icon { color: #e6a23c; }
+
+.stat-red {
+  background: linear-gradient(135deg, #ffffff 0%, #fef0f0 100%);
+  border-left: 4px solid #f56c6c;
+}
+.stat-red .el-icon { color: #f56c6c; }
+
+.stat-rank {
+  background: linear-gradient(135deg, #ffffff 0%, #ecf5ff 100%);
+  border-left: 4px solid #409eff;
+}
+.stat-rank .el-icon { color: #409eff; }
+
+.stat-points {
+  background: linear-gradient(135deg, #ffffff 0%, #f4f4f5 100%);
+  border-left: 4px solid #909399;
+}
+.stat-points .el-icon { color: #909399; }
+
+/* 统计数字样式 */
+.stat-number {
+  font-size: 24px;
+  font-weight: bold;
+  color: #303133;
+  line-height: 1.2;
+}
+
+.stat-label {
+  font-size: 14px;
+  color: #606266;
+  margin-top: 4px;
+}
+
+
+.stat-points {
+  background-color: #909399;
+  color: white;
+}
+
+/* 图标样式 */
+.stat-item .el-icon {
+  color: #ffffff;
+  font-size: 40px;
+}

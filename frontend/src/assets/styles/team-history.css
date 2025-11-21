@@ -1,9 +1,74 @@
-/* team-history.css: 从原 team_history.vue scoped 样式抽离，保持类名不变 */
-/* 重复样式已合并到base.css，此处只保留team-history特有样式。 */
-.team-info { padding: 20px; }
-.team-name-card { margin-bottom: 20px; }
-.team-stats { margin-bottom: 24px; }
-.team-matches { margin-bottom: 24px; }
+/* team-history.css: 球队历史页面样式 */
+
+/* 页面背景容器 */
+.team-history-page {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #f5f7fa 0%, #e4e7ed 100%);
+  padding: 40px 20px;
+  box-sizing: border-box;
+}
+
+/* 内容容器 - 浮窗风格 */
+.team-history-container {
+  max-width: 1100px;
+  margin: 0 auto;
+  /* 移除统一的背景和阴影，改为分模块展示，更具层次感 */
+}
+
+/* 模块通用样式 */
+.module-section {
+  background: #ffffff;
+  border-radius: 16px; /* 圆角加大 */
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+  margin-bottom: 24px;
+  overflow: hidden;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  border: 1px solid rgba(235, 238, 245, 0.8);
+}
+
+.module-section:hover {
+  transform: translateY(-2px); /* 浮起效果更明显 */
+  box-shadow: 0 12px 40px rgba(64, 158, 255, 0.15); /* 悬浮时增加淡蓝色阴影 */
+}
+
+/* 基础信息模块特殊样式 */
+.basic-info-section {
+  background: linear-gradient(135deg, #ffffff 0%, #f0f9ff 100%); /* 淡蓝色渐变 */
+  border-left: 6px solid #409eff; /* 改为蓝色系 */
+}
+
+/* 统计模块特殊样式 */
+.stats-section {
+  background: linear-gradient(135deg, #ffffff 0%, #ecf5ff 100%);
+  border-left: 6px solid #79bbff;
+}
+
+/* 记录模块特殊样式 */
+.records-section {
+  background: linear-gradient(135deg, #ffffff 0%, #fdf6ec 100%);
+  border-left: 6px solid #e6a23c;
+}
+
+/* 覆盖 Element Plus Card 样式以适应新风格 */
+.module-section :deep(.el-card) {
+  border: none;
+  box-shadow: none;
+  background: transparent;
+}
+
+.module-section :deep(.el-card__header) {
+  border-bottom: 1px solid #ebeef5;
+  padding: 15px 20px;
+  font-weight: bold;
+  font-size: 16px;
+  color: #303133;
+}
+
+.module-section :deep(.el-card__body) {
+  padding: 20px;
+}
+
+/* 保持原有的交互样式 */
 .player-name-cell { display: flex; align-items: center; }
 .clickable-player { display: flex; align-items: center; gap: 6px; color: #409EFF; cursor: pointer; padding: 4px 8px; border-radius: 4px; transition: all 0.3s ease; font-weight: 500; }
 .clickable-player:hover { color: #ffffff; background-color: #409EFF; transform: translateY(-1px); box-shadow: 0 2px 6px rgba(64, 158, 255, 0.3); }

@@ -61,20 +61,30 @@ export async function createEventsBatch(list = [], { parallel = false } = {}) {
   return serviceWrap(async () => {
     const results = []
     if(parallel){
-      const settled = await Promise.allSettled(list.map(p => http.post('/events', p)))
+      const settled = await Promise.allSettled(list.map(async p => {
+        try {
+          const result = await createEvent(p)
+          return { ok: true, data: result }
+        } catch (error) {
+          return { ok: false, error }
+        }
+      }))
       settled.forEach((r,i) => {
-        if(r.status==='fulfilled' && r.value.ok){
-          results.push({ ok:true, data:r.value.data })
+        if(r.status==='fulfilled'){
+          results.push(r.value)
         } else {
-          results.push({ ok:false, error:r.reason || r.value?.error, index:i })
+          results.push({ ok:false, error:r.reason, index:i })
         }
       })
     } else {
       for(let i=0;i<list.length;i++){
-        const payload = list[i]
-        const res = await http.post('/events', payload)
-        if(res.ok) results.push({ ok:true, data:res.data })
-        else results.push({ ok:false, error:res.error, index:i })
+        try {
+          const payload = list[i]
+          const data = await createEvent(payload)
+          results.push({ ok:true, data })
+        } catch (error) {
+          results.push({ ok:false, error, index:i })
+        }
       }
     }
     return { total:list.length, success: results.filter(r=>r.ok).length, results }

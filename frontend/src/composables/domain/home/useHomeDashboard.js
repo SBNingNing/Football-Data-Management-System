@@ -1,73 +1,393 @@
-// useHomeDashboard (inlined)
+/**
+ * 首页仪表板组合函数
+ * 管理首页的统计数据、排行榜、淘汰赛对阵图、小组排名和最近比赛
+ */
 import { ref } from 'vue'
 import { useMatchRecords } from '../match/useMatchRecords.js'
 import logger from '@/utils/logger'
-import { fetchDashboardStats, fetchGroupRankings, fetchPlayoffBracket, fetchRankings, processRankingDataBlock } from '@/domain/stats/statsService'
+import { 
+  fetchDashboardStats, 
+  fetchGroupRankings, 
+  fetchPlayoffBracket, 
+  fetchRankings, 
+  processRankingDataBlock 
+} from '@/domain/stats/statsService'
 import { fetchRecentMatches } from '@/domain/match/matchService'
+import { fetchCompetitions } from '@/api/competitions'
+import { fetchSeasons } from '@/api/seasons'
+
+/**
+ * 首页仪表板组合函数
+ * @param {Object} options - 配置选项
+ * @param {Object} options.feedback - 反馈处理器，用于显示加载状态和错误信息
+ * @returns {Object} 仪表板相关的响应式数据和方法
+ */
 export function useHomeDashboard({ feedback }) {
-	const statsData = ref({ totalMatches:0, upcomingMatches:0, completedMatches:0 })
-	const rankings = ref({ championsCup:{ topScorers:{ players:[], teams:[] }, cards:{ players:[], teams:[] }, points:[] }, womensCup:{ topScorers:{ players:[], teams:[] }, cards:{ players:[], teams:[] }, points:[] }, eightASide:{ topScorers:{ players:[], teams:[] }, cards:{ players:[], teams:[] }, points:[] } })
-	const playoffBracket = ref({ championsCup:[], womensCup:[], eightASide:[] })
-	const groupRankings = ref({ eightASide:{ groups:[] } })
-	const recentMatches = ref([]); const retryCount = ref(0); const maxRetries = 3
-	const isPageRefresh = ref(!!(window.performance && window.performance.navigation && window.performance.navigation.type === 1))
-	const matchRecordsC = useMatchRecords(); const matchRecords = matchRecordsC.records; const matchRecordsTotal = matchRecordsC.total
-	function setDefaultRankings(){ const def={ topScorers:{ players:[], teams:[] }, cards:{ players:[], teams:[] }, points:[] }; rankings.value={ championsCup:{...def}, womensCup:{...def}, eightASide:{...def} } }
-	async function loadStats(){ const token = localStorage.getItem('token') || sessionStorage.getItem('token'); if(!token){ statsData.value={ totalMatches:0, upcomingMatches:0, completedMatches:0 }; return } const { ok, data } = await fetchDashboardStats({ token }); if(ok) statsData.value = data }
-	async function loadGroupRankings(){ const { ok, data, error } = await fetchGroupRankings(); if(!ok) return logger.warn('group rankings fail', error); groupRankings.value = data || groupRankings.value }
-	async function loadPlayoffBracket(){ const { ok, data, error } = await fetchPlayoffBracket(); if(!ok) return logger.warn('playoff bracket fail', error); playoffBracket.value = data || playoffBracket.value }
-	async function loadRankings(){ const token = localStorage.getItem('token') || sessionStorage.getItem('token'); if(!token) return setDefaultRankings(); const { ok, data, error } = await fetchRankings({ token }); if(!ok){ logger.warn('rankings fail', error); return setDefaultRankings() } rankings.value = { championsCup: processRankingDataBlock(data?.championsCup,'冠军杯'), womensCup: processRankingDataBlock(data?.womensCup,'女子杯'), eightASide: processRankingDataBlock(data?.eightASide,'八人制') } }
-	async function fetchMatchRecords(params={}){
-		const key = 'svc:match:records';
-		feedback?.begin(key)
-		try {
-			await matchRecordsC.setFilter({ ...params })
-		} catch(e){
-			feedback?.pushError(e)
-		} finally {
-			feedback?.end(key)
-		}
-	}
-	async function fetchRecent(){
-		const key = 'svc:recent-matches'
-		feedback?.begin(key)
-		try {
-			const token = localStorage.getItem('token') || sessionStorage.getItem('token');
-			if(!token){ recentMatches.value = []; return }
-			const { ok, data, error } = await fetchRecentMatches({ token });
-			if(!ok){ logger.warn('recent matches fail', error); recentMatches.value = []; return }
-			recentMatches.value = Array.isArray(data) ? data : []
-		} finally {
-			feedback?.end(key)
-		}
-	}
-	function handleMatchSearch(p){ fetchMatchRecords(p) } function handleMatchFilter(p){ fetchMatchRecords(p) } function handleMatchPageChange(p){ fetchMatchRecords(p) }
-	async function loadAllData(){
-		const key = 'view:home:init'
-		feedback?.begin(key)
-		try {
-			await Promise.all([
-				loadStats(),
-				loadGroupRankings(),
-				loadPlayoffBracket(),
-				loadRankings(),
-				fetchMatchRecords({}),
-				fetchRecent()
-			])
-			retryCount.value=0
-		} catch(e){
-			logger.error('loadAllData error', e)
-			feedback?.pushError(e)
-			handleLoadError()
-		} finally {
-			feedback?.end(key)
-		}
-	}
-	function handleLoadError(){ if(retryCount.value < maxRetries){ retryCount.value++; setTimeout(()=> loadAllData(), 600) } }
-	function refreshData(){ loadAllData() }
-	function onCompetitionChange(){ /* placeholder for future filter logic */ }
-	function onRankingsTabChange(){ /* placeholder */ }
-	function fetchRecentMatchesWrapper(){ fetchRecent() }
-	function handleVisibilityChange(){ if(document.visibilityState==='visible'){ fetchRecent() } }
-	return { statsData, rankings, playoffBracket, groupRankings, recentMatches, retryCount, isPageRefresh, matchRecords, matchRecordsTotal, loadAllData, fetchMatchRecords, fetchRecent: fetchRecentMatchesWrapper, handleMatchSearch, handleMatchFilter, handleMatchPageChange, refreshData, onCompetitionChange, onRankingsTabChange, handleVisibilityChange }
+  // =========================
+  // 响应式状态定义
+  // =========================
+  
+  // 统计数据：总比赛数、即将到来的比赛数、已完成的比赛数
+  const statsData = ref({
+    totalMatches: 0,
+    upcomingMatches: 0,
+    completedMatches: 0
+  })
+
+  // 赛事列表
+  const competitions = ref([])
+  
+  // 赛季列表
+  const seasons = ref([])
+
+  // 选中的赛季ID - 尝试从 sessionStorage 恢复
+  const savedSeasonId = sessionStorage.getItem('home_selectedSeasonId')
+  const selectedSeasonId = ref(savedSeasonId ? Number(savedSeasonId) : null)
+
+  // 排行榜数据：动态键值 comp_{id}
+  const rankings = ref({})
+
+  // 淘汰赛对阵图数据
+  const playoffBracket = ref({})
+
+  // 小组排名数据
+  const groupRankings = ref({})
+
+  // 最近比赛数据
+  const recentMatches = ref([])
+
+  // 重试机制
+  const retryCount = ref(0)
+  const maxRetries = 3
+
+  // 页面刷新检测
+  const isPageRefresh = ref(!!(
+    window.performance && 
+    window.performance.navigation && 
+    window.performance.navigation.type === 1
+  ))
+
+  // 比赛记录相关状态
+  const matchRecordsC = useMatchRecords()
+  const matchRecords = matchRecordsC.records
+  const matchRecordsTotal = matchRecordsC.total
+  const matchRecordsQuery = matchRecordsC.query
+
+  // =========================
+  // 辅助函数
+  // =========================
+
+  /**
+   * 设置默认排行榜数据
+   */
+  function setDefaultRankings() {
+    rankings.value = {}
+  }
+
+  // =========================
+  // 数据加载函数
+  // =========================
+
+  /**
+   * 加载赛事列表
+   */
+  async function loadCompetitions() {
+    try {
+      const res = await fetchCompetitions()
+      if (res.ok) {
+        const payload = res.data
+        // 优先检查 payload.data.competitions (标准结构)
+        if (payload && payload.data && Array.isArray(payload.data.competitions)) {
+          competitions.value = payload.data.competitions
+        } 
+        // 其次检查 payload.competitions (直接返回)
+        else if (payload && Array.isArray(payload.competitions)) {
+          competitions.value = payload.competitions
+        }
+        // 再次检查 payload 本身是否为数组
+        else if (Array.isArray(payload)) {
+          competitions.value = payload
+        }
+        else {
+          competitions.value = []
+          logger.warn('Unexpected competitions response format', payload)
+        }
+        logger.debug('Loaded competitions:', competitions.value.length)
+      }
+    } catch (e) {
+      logger.error('Failed to load competitions', e)
+    }
+  }
+
+  /**
+   * 加载统计数据
+   */
+  async function loadStats() {
+    // 移除 token 依赖
+    const { ok, data } = await fetchDashboardStats({})
+    if (ok) {
+      statsData.value = data
+    }
+  }
+
+  /**
+   * 加载小组排名数据
+   */
+  async function loadGroupRankings() {
+    const { ok, data, error } = await fetchGroupRankings()
+    
+    if (!ok) {
+      logger.warn('group rankings fail', error)
+      return
+    }
+    
+    groupRankings.value = data || groupRankings.value
+  }
+
+  /**
+   * 加载淘汰赛对阵图数据
+   */
+  async function loadPlayoffBracket() {
+    const { ok, data, error } = await fetchPlayoffBracket()
+    
+    if (!ok) {
+      logger.warn('playoff bracket fail', error)
+      return
+    }
+    
+    playoffBracket.value = data || playoffBracket.value
+  }
+
+  /**
+   * 加载赛季列表
+   */
+  async function loadSeasons() {
+    try {
+      const res = await fetchSeasons()
+      if (res.ok) {
+        const list = Array.isArray(res.data) ? res.data : (res.data?.data || [])
+        seasons.value = list
+      }
+    } catch (e) {
+      logger.error('Failed to load seasons', e)
+    }
+  }
+
+  /**
+   * 加载排行榜数据
+   * @param {number|null} seasonId - 赛季ID
+   */
+  async function loadRankings(seasonId = null) {
+    const { ok, data, error } = await fetchRankings({ season_id: seasonId })
+    
+    if (!ok) {
+      logger.warn('rankings fail', error)
+      setDefaultRankings()
+      return
+    }
+
+    const newRankings = {}
+    if (data) {
+      Object.keys(data).forEach(key => {
+        if (key.startsWith('comp_')) {
+          newRankings[key] = processRankingDataBlock(data[key], data[key].competitionName)
+        }
+      })
+    }
+    rankings.value = newRankings
+  }
+  /**
+   * 获取比赛记录数据
+   * @param {Object} params - 查询参数
+   */
+  async function fetchMatchRecords(params = {}) {
+    const key = 'svc:match:records'
+    feedback?.begin(key)
+    
+    try {
+      // 支持强制刷新，确保获取最新数据
+      await matchRecordsC.setFilter({ ...params })
+    } catch (e) {
+      feedback?.pushError(e)
+    } finally {
+      feedback?.end(key)
+    }
+  }
+
+  /**
+   * 获取最近比赛数据
+   */
+  async function fetchRecent() {
+    const key = 'svc:recent-matches'
+    feedback?.begin(key)
+    
+    try {
+      const token = localStorage.getItem('token') || sessionStorage.getItem('token')
+      
+      const { ok, data, error } = await fetchRecentMatches({ token })
+      
+      if (!ok) {
+        logger.warn('recent matches fail', error)
+        recentMatches.value = []
+        return
+      }
+
+      recentMatches.value = Array.isArray(data) ? data : []
+    } finally {
+      feedback?.end(key)
+    }
+  }
+
+  // =========================
+  // 事件处理函数
+  // =========================
+
+  /**
+   * 处理比赛搜索
+   * @param {Object} params - 搜索参数
+   */
+  function handleMatchSearch(params) {
+    fetchMatchRecords(params)
+  }
+
+  /**
+   * 处理比赛过滤
+   * @param {Object} params - 过滤参数
+   */
+  function handleMatchFilter(params) {
+    fetchMatchRecords(params)
+  }
+
+  /**
+   * 处理比赛分页变化
+   * @param {Object} params - 分页参数
+   */
+  function handleMatchPageChange(params) {
+    fetchMatchRecords(params)
+  }
+
+  /**
+   * 加载所有数据
+   */
+  async function loadAllData() {
+    const key = 'view:home:init'
+    feedback?.begin(key)
+    
+    try {
+      await Promise.all([
+        loadCompetitions(),
+        loadSeasons(),
+        loadStats(),
+        loadGroupRankings(),
+        loadPlayoffBracket(),
+        loadRankings(selectedSeasonId.value),
+        fetchMatchRecords({}),
+        fetchRecent()
+      ])
+      
+      retryCount.value = 0
+    } catch (e) {
+      logger.error('loadAllData error', e)
+      feedback?.pushError(e)
+      handleLoadError()
+    } finally {
+      feedback?.end(key)
+    }
+  }
+
+  /**
+   * 处理加载错误（重试机制）
+   */
+  function handleLoadError() {
+    if (retryCount.value < maxRetries) {
+      retryCount.value++
+      setTimeout(() => loadAllData(), 600)
+    }
+  }
+
+  /**
+   * 刷新数据
+   */
+  function refreshData() {
+    loadAllData()
+  }
+
+  /**
+   * 比赛类型变化处理（预留接口）
+   */
+  function onCompetitionChange() {
+    // 预留给未来的过滤逻辑
+  }
+
+  /**
+   * 处理赛季变更
+   * @param {number} seasonId
+   */
+  function handleSeasonChange(seasonId) {
+    selectedSeasonId.value = seasonId
+    if (seasonId) {
+      sessionStorage.setItem('home_selectedSeasonId', seasonId)
+    } else {
+      sessionStorage.removeItem('home_selectedSeasonId')
+    }
+    loadRankings(seasonId)
+  }
+
+  /**
+   * 排行榜标签页变化处理（预留接口）
+   */
+  function onRankingsTabChange() {
+    // 预留接口
+  }
+
+  /**
+   * 获取最近比赛的包装函数
+   */
+  function fetchRecentMatchesWrapper() {
+    fetchRecent()
+  }
+
+  /**
+   * 页面可见性变化处理
+   * 当页面重新可见时刷新最近比赛数据
+   */
+  function handleVisibilityChange() {
+    if (document.visibilityState === 'visible') {
+      fetchRecent()
+    }
+  }
+
+  // =========================
+  // 返回值
+  // =========================
+
+  return {
+    // 响应式数据
+    statsData,
+    competitions,
+    seasons,
+    selectedSeasonId,
+    rankings,
+    playoffBracket,
+    groupRankings,
+    recentMatches,
+    retryCount,
+    isPageRefresh,
+    matchRecords,
+    matchRecordsTotal,
+    matchRecordsQuery,
+    
+    // 方法
+    loadAllData,
+    fetchMatchRecords,
+    fetchRecent: fetchRecentMatchesWrapper,
+    handleSeasonChange,
+    handleMatchSearch,
+    handleMatchFilter,
+    handleMatchPageChange,
+    refreshData,
+    onCompetitionChange,
+    onRankingsTabChange,
+    handleVisibilityChange
+  }
 }
