@@ -5,12 +5,9 @@
 
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required
+from pydantic import ValidationError
 from app.services.match_service import MatchService
 from app.schemas import MatchCreate, MatchUpdate
-from app.middleware.match_middleware import (
-    validate_create_match, validate_update_match, validate_get_match,
-    validate_delete_match, validate_search_matches, MatchMiddleware
-)
 
 # 创建蓝图
 matches_bp = Blueprint('matches', __name__)
@@ -21,18 +18,19 @@ match_service = MatchService()
 
 @matches_bp.route('', methods=['POST'])
 @jwt_required()
-@validate_create_match
 def create_match():
     """创建比赛"""
-    payload = MatchCreate(**(request.get_json() or {}))
-    # 服务层当前使用 team1/team2/date/matchType 等键，这里保持原前端负载结构不变
-    result = match_service.create_match(payload.model_dump(by_alias=True))
-    return jsonify(result), 201
+    try:
+        payload = MatchCreate(**(request.get_json() or {}))
+        # 服务层当前使用 team1/team2/date/matchType 等键，这里保持原前端负载结构不变
+        result = match_service.create_match(payload.model_dump(by_alias=True))
+        return jsonify(result), 201
+    except ValidationError as e:
+        return jsonify({'status': 'error', 'message': '参数验证失败', 'details': e.errors()}), 400
 
 
 @matches_bp.route('/<string:match_id>/complete', methods=['PUT'])
 @jwt_required()
-@validate_get_match
 def complete_match(match_id: str):
     """标记比赛为已完赛"""
     result = match_service.complete_match(match_id)
@@ -41,29 +39,41 @@ def complete_match(match_id: str):
 
 @matches_bp.route('', methods=['GET'])
 @jwt_required()
-@MatchMiddleware.handle_match_errors
-@MatchMiddleware.log_match_request
 def get_matches():
     """获取所有比赛"""
     status = request.args.get('status')
     match_type = request.args.get('type')
+    limit = request.args.get('limit', type=int)
+    sort = request.args.get('sort')
+    
     result = match_service.get_all_matches(status=status, match_type=match_type)
+    
+    # 简单的内存排序和切片，如果数据量大建议移至 Service 层 SQL 处理
+    if result.get('status') == 'success' and isinstance(result.get('data'), list):
+        matches = result['data']
+        if sort == 'desc':
+            matches.sort(key=lambda x: x.get('date') or '', reverse=True)
+        if limit:
+            matches = matches[:limit]
+        result['data'] = matches
+        
     return jsonify(result), 200
 
 
 @matches_bp.route('/<string:match_id>', methods=['PUT'])
 @jwt_required()
-@validate_update_match
 def update_match(match_id: str):
     """更新比赛信息"""
-    payload = MatchUpdate(**(request.get_json() or {}))
-    result = match_service.update_match(match_id, payload.model_dump(exclude_unset=True, by_alias=True))
-    return jsonify(result), 200
+    try:
+        payload = MatchUpdate(**(request.get_json() or {}))
+        result = match_service.update_match(match_id, payload.model_dump(exclude_unset=True, by_alias=True))
+        return jsonify(result), 200
+    except ValidationError as e:
+        return jsonify({'status': 'error', 'message': '参数验证失败', 'details': e.errors()}), 400
 
 
 @matches_bp.route('/<string:match_id>', methods=['DELETE'])
 @jwt_required()
-@validate_delete_match
 def delete_match(match_id: str):
     """删除比赛"""
     result = match_service.delete_match(match_id)
@@ -71,18 +81,17 @@ def delete_match(match_id: str):
 
 
 @matches_bp.route('/match-records', methods=['GET'])
-@validate_search_matches
-def get_match_records(match_type: str = '', status_filter: str = '', 
-                     keyword: str = '', page: int = 1, page_size: int = 10):
+def get_match_records():
     """
     获取比赛记录，支持筛选类型、搜索关键字、状态筛选和分页
-    参数:
-      - type: 比赛类型 (championsCup, womensCup, eightASide)
-      - status: 比赛状态 (待开始, 进行中, 已完赛)
-      - keyword: 搜索关键字（比赛名称/球队/地点）
-      - page: 页码（从1开始）
-      - pageSize: 每页数量
     """
+    # 从 query parameters 获取参数
+    match_type = request.args.get('type', '')
+    status_filter = request.args.get('status', '')
+    keyword = request.args.get('keyword', '')
+    page = int(request.args.get('page', 1))
+    page_size = int(request.args.get('pageSize', 10))
+
     result = match_service.get_match_records(
         match_type=match_type,
         status_filter=status_filter,
@@ -94,7 +103,6 @@ def get_match_records(match_type: str = '', status_filter: str = '',
 
 
 @matches_bp.route('/<string:match_id>', methods=['GET'])
-@validate_get_match
 def get_match_detail(match_id: str):
     """获取单个比赛的详细信息"""
     result = match_service.get_match_detail(match_id)

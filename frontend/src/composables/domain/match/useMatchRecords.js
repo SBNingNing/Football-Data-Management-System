@@ -3,7 +3,7 @@
  * 提供统一的比赛记录分页加载与过滤状态
  */
 import { ref, reactive } from 'vue'
-import { fetchMatchRecords } from '@/domain/match/matchService'
+import { fetchMatchRecords } from '@/api/matches'
 import logger from '@/utils/logger'
 
 /**
@@ -61,13 +61,12 @@ export function useMatchRecords(initialQuery = {}) {
       }
       
       const params = { ...baseQuery, ...restOverrides }
+      if (force) {
+        params._ts = Date.now()
+      }
 
       // 调用API
-      const { ok, data, error: err } = await fetchMatchRecords({ 
-        token, 
-        params, 
-        force 
-      })
+      const { ok, data, error: err } = await fetchMatchRecords(params)
 
       if (!ok) {
         error.value = err
@@ -77,8 +76,18 @@ export function useMatchRecords(initialQuery = {}) {
       }
 
       // 更新数据
-      records.value = data.records
-      total.value = data.total
+      const rawData = data?.data || data || {}
+      const rawRecords = Array.isArray(rawData) ? rawData : (rawData.records || [])
+      const totalCount = rawData.total || rawRecords.length
+
+      records.value = rawRecords.map(r => ({
+        ...r,
+        type: r.matchType, // Alias for component
+        score: (r.home_score !== undefined && r.away_score !== undefined) 
+          ? `${r.home_score}:${r.away_score}` 
+          : '-:-'
+      }))
+      total.value = totalCount
       
     } catch (e) {
       error.value = e

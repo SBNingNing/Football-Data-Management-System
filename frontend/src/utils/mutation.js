@@ -1,13 +1,7 @@
 // mutation.js: 提供通用变更封装 + 缓存失效策略
-// 用法:
-//   mutateAndInvalidate(() => createTeam(payload), { invalidate: ['teams:list', 'stats:dashboard'] })
-import cache from '@/domain/common/cache'
+import cache from '@/utils/cache'
 import { serviceWrap } from '@/utils/error'
 
-// 访问内部 Map 以实现高级失效 (注意: 这是一个轻量侵入；若后续重构可提供官方枚举 API)
-// 由于 cache.js 未导出 store，这里通过弱引用维护一个 keySnapshot；
-// 方案: monkey patch setCache/invalidate 以维护 keys 集合。
-// 若未来暴露 listKeys() 则可替换。
 const _keySet = new Set()
 const _origSet = cache.setCache || (()=>{})
 const _origInvalidate = cache.invalidate || (()=>{})
@@ -29,7 +23,6 @@ function invalidateAdvanced({ prefixes = [], patterns = [] }) {
   return toDelete
 }
 
-// 轻量策略: 调用方直接传递 exact keys (字符串)
 export function mutateAndInvalidate(fn, { invalidate = [], invalidatePrefixes = [], invalidatePatterns = [], mapResult, onSuccess, onError: _onError } = {}) {
   return serviceWrap(async () => {
     const res = await fn()

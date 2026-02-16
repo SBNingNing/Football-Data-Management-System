@@ -3,17 +3,12 @@
 """
 from app.models.tournament import Tournament
 from typing import Optional
+from app.utils.tournament_utils import TournamentUtils
 
 
 def determine_match_type(tournament: Optional[Tournament]) -> str:
     """根据赛事名称确定matchType"""
-    if tournament and tournament.competition:
-        return tournament.competition.name
-    if tournament:
-        # 直接返回赛事名称，不再进行硬编码映射
-        return tournament.name
-    else:
-        return '未知赛事'
+    return TournamentUtils.determine_match_type(tournament)
 
 
 def validate_event_type(event_type: str) -> bool:

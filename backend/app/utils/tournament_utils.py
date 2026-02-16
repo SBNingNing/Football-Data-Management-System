@@ -16,6 +16,15 @@ class TournamentUtils:
     def decode_tournament_name(tournament_name: str) -> str:
         """解码赛事名称（处理URL编码）"""
         return urllib.parse.unquote(tournament_name, encoding='utf-8').strip()
+
+    @staticmethod
+    def determine_match_type(tournament: Optional[Tournament]) -> str:
+        """从赛事对象推断 matchType (赛事名称)"""
+        if tournament and tournament.competition:
+            return tournament.competition.name
+        if tournament:
+            return tournament.name
+        return '未知赛事'
     
     @staticmethod
     def safe_datetime_to_iso(dt: Optional[datetime]) -> Optional[str]:

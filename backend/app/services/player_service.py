@@ -126,11 +126,11 @@ class PlayerService:
     def _format_player_details(player: Player) -> Dict[str, Any]:
         """格式化球员基本信息和所有队伍历史"""
         player_dict = player.to_dict()
-        player_dict.setdefault('teamName', None)
+        player_dict.setdefault('team_name', None)
         player_dict.setdefault('team_id', None)
         player_dict.setdefault('number', None)
-        player_dict.setdefault('matchType', '')
-        player_dict.setdefault('studentId', player.id)
+        player_dict.setdefault('match_type', '')
+        player_dict.setdefault('student_id', player.id)
         player_dict.setdefault('all_teams', [])
 
         try:
@@ -151,11 +151,11 @@ class PlayerService:
                     all_teams.append(team_info)
                     
                     if not current_team_set:
-                        player_dict['teamName'] = team_info['team_name']
+                        player_dict['team_name'] = team_info['team_name']
                         player_dict['team_id'] = team_info['team_id']
                         player_dict['number'] = team_info['player_number']
-                        player_dict['matchType'] = match_type
-                        player_dict['competitionId'] = competition_id
+                        player_dict['match_type'] = match_type
+                        player_dict['competition_id'] = competition_id
                         player_dict['tournament_name'] = team_info['tournament_name']
                         player_dict['season_name'] = team_info['season_name']
                         current_team_set = True

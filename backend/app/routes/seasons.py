@@ -5,16 +5,10 @@
 from flask import Blueprint, jsonify, request
 from flask_jwt_extended import jwt_required
 from sqlalchemy.exc import IntegrityError
+from pydantic import ValidationError
 
 from app.services.season_service import SeasonService
 from app.schemas import SeasonCreate, SeasonUpdate, SeasonOut
-from app.middleware.season_middleware import (
-    validate_season_creation_data,
-    validate_season_update_data,
-    validate_season_id,
-    log_season_operation,
-    preprocess_season_data
-)
 from app.utils.logger import get_logger
 
 logger = get_logger(__name__)
@@ -40,7 +34,6 @@ def get_seasons():
 
 
 @seasons_bp.route('/<int:season_id>', methods=['GET'])
-@validate_season_id
 def get_season(season_id):
     """根据ID获取单个赛季信息"""
     try:
@@ -58,9 +51,6 @@ def get_season(season_id):
 
 @seasons_bp.route('', methods=['POST'])
 @jwt_required()
-@validate_season_creation_data
-@preprocess_season_data
-@log_season_operation('创建')
 def create_season():
     """创建新赛季"""
     try:
@@ -73,6 +63,12 @@ def create_season():
         return jsonify({
             'status': 'error', 
             'message': '赛季名称已存在'
+        }), 400
+    except ValidationError as e:
+        return jsonify({
+            'status': 'error', 
+            'message': '参数验证失败',
+            'details': e.errors()
         }), 400
     except ValueError as e:
         return jsonify({
@@ -90,10 +86,6 @@ def create_season():
 
 @seasons_bp.route('/<int:season_id>', methods=['PUT'])
 @jwt_required()
-@validate_season_id
-@validate_season_update_data
-@preprocess_season_data
-@log_season_operation('更新')
 def update_season(season_id):
     """更新赛季信息"""
     try:
@@ -106,6 +98,12 @@ def update_season(season_id):
         return jsonify({
             'status': 'error', 
             'message': '赛季名称已存在'
+        }), 400
+    except ValidationError as e:
+        return jsonify({
+            'status': 'error', 
+            'message': '参数验证失败',
+            'details': e.errors()
         }), 400
     except ValueError as e:
         return jsonify({
@@ -122,11 +120,10 @@ def update_season(season_id):
 
 @seasons_bp.route('/<int:season_id>', methods=['DELETE'])
 @jwt_required()
-@validate_season_id
-@log_season_operation('删除')
 def delete_season(season_id):
     """删除赛季"""
     try:
+        logger.info(f"请求删除赛季 ID: {season_id}")
         message = SeasonService.delete_season(season_id)
         
         return jsonify({

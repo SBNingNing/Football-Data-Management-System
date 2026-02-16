@@ -38,7 +38,7 @@
 </template>
 <script setup>
 import { Clock } from '@element-plus/icons-vue'
-import { getMatchEventIcon, getMatchEventClass } from '@/constants/match'
+import { getMatchEventIcon, getMatchEventClass } from '@/utils/constants'
 
 defineProps({ events: { type: Array, required: true } })
 

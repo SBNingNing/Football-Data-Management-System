@@ -43,14 +43,13 @@ import TournamentBasicInfo from '@/components/tournament/TournamentBasicInfo.vue
 import TournamentHistoryStats from '@/components/tournament/TournamentHistoryStats.vue'
 import TournamentSeasonsRecords from '@/components/tournament/TournamentSeasonsRecords.vue'
 // tournament-history.css样式已合并到base.css中
-import { toMatchViewModel } from '@/utils/mappers/matchMapper'
 
 const route = useRoute()
 const router = useRouter()
 const activeSeason = ref(null)
 const { competition, allMatches, loading, error, load, retry } = useTournamentHistory()
 const leaderboards = reactive({})
-const mappedMatches = computed(()=> (allMatches?.value || []).map(toMatchViewModel))
+const mappedMatches = computed(()=> (allMatches?.value || []))
 
 onMounted(async () => {
   const name = route.params.activityName

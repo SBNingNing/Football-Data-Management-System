@@ -6,13 +6,10 @@ import { ref } from 'vue'
 import { useMatchRecords } from '../match/useMatchRecords.js'
 import logger from '@/utils/logger'
 import { 
-  fetchDashboardStats, 
-  fetchGroupRankings, 
-  fetchPlayoffBracket, 
-  fetchRankings, 
-  processRankingDataBlock 
-} from '@/domain/stats/statsService'
-import { fetchRecentMatches } from '@/domain/match/matchService'
+  fetchOverallStats, 
+  fetchOverallRankings
+} from '@/api/stats'
+import { fetchMatches } from '@/api/matches'
 import { fetchCompetitions } from '@/api/competitions'
 import { fetchSeasons } from '@/api/seasons'
 
@@ -124,9 +121,14 @@ export function useHomeDashboard({ feedback }) {
    */
   async function loadStats() {
     // 移除 token 依赖
-    const { ok, data } = await fetchDashboardStats({})
+    const { ok, data } = await fetchOverallStats()
     if (ok) {
-      statsData.value = data
+      const d = data || {}
+      statsData.value = {
+        totalMatches: d.totalMatches || 0,
+        upcomingMatches: d.upcomingMatches || 0,
+        completedMatches: d.completedMatches || 0
+      }
     }
   }
 
@@ -134,28 +136,16 @@ export function useHomeDashboard({ feedback }) {
    * 加载小组排名数据
    */
   async function loadGroupRankings() {
-    const { ok, data, error } = await fetchGroupRankings()
-    
-    if (!ok) {
-      logger.warn('group rankings fail', error)
-      return
-    }
-    
-    groupRankings.value = data || groupRankings.value
+    // 占位：后端无 /group-rankings
+    groupRankings.value = { groups: [] }
   }
 
   /**
    * 加载淘汰赛对阵图数据
    */
   async function loadPlayoffBracket() {
-    const { ok, data, error } = await fetchPlayoffBracket()
-    
-    if (!ok) {
-      logger.warn('playoff bracket fail', error)
-      return
-    }
-    
-    playoffBracket.value = data || playoffBracket.value
+    // 占位：后端无 /playoff-bracket
+    playoffBracket.value = { rounds: [] }
   }
 
   /**
@@ -175,10 +165,12 @@ export function useHomeDashboard({ feedback }) {
 
   /**
    * 加载排行榜数据
-   * @param {number|null} seasonId - 赛季ID
+   * @param {number} seasonId - 赛季ID
    */
-  async function loadRankings(seasonId = null) {
-    const { ok, data, error } = await fetchRankings({ season_id: seasonId })
+  async function loadRankings(seasonId) {
+    const params = {}
+    if (seasonId) params.season_id = seasonId
+    const { ok, data, error } = await fetchOverallRankings({ params })
     
     if (!ok) {
       logger.warn('rankings fail', error)
@@ -190,7 +182,7 @@ export function useHomeDashboard({ feedback }) {
     if (data) {
       Object.keys(data).forEach(key => {
         if (key.startsWith('comp_')) {
-          newRankings[key] = processRankingDataBlock(data[key], data[key].competitionName)
+          newRankings[key] = data[key]
         }
       })
     }
@@ -222,9 +214,7 @@ export function useHomeDashboard({ feedback }) {
     feedback?.begin(key)
     
     try {
-      const token = localStorage.getItem('token') || sessionStorage.getItem('token')
-      
-      const { ok, data, error } = await fetchRecentMatches({ token })
+      const { ok, data, error } = await fetchMatches({ limit: 5, sort: 'desc' })
       
       if (!ok) {
         logger.warn('recent matches fail', error)
@@ -232,7 +222,16 @@ export function useHomeDashboard({ feedback }) {
         return
       }
 
-      recentMatches.value = Array.isArray(data) ? data : []
+      // 兼容后端返回格式：可能是数组，也可能是 { records: [] }
+      // 注意：后端 get_all_matches 返回的是 { status: 'success', data: [...] }
+      const list = Array.isArray(data) ? data : (data?.data || data?.records || [])
+      recentMatches.value = list.map(m => ({
+        ...m,
+        type: m.matchType || m.competitionId, // Alias for component compatibility
+        team1: m.team1 || m.home_team_name,
+        team2: m.team2 || m.away_team_name,
+        location: m.location || '待定'
+      }))
     } finally {
       feedback?.end(key)
     }

@@ -30,19 +30,20 @@ class TeamService:
             historical_stats = team_base.get_historical_stats()
             
             team_info = {
-                'teamName': team_name,
-                'totalGoals': historical_stats['total_goals'],
-                'totalGoalsConceded': historical_stats['total_goals_conceded'],
-                'totalGoalDifference': historical_stats['total_goal_difference'],
-                'totalRedCards': historical_stats['total_red_cards'],
-                'totalYellowCards': historical_stats['total_yellow_cards'],
-                'totalPoints': historical_stats['total_points'],
-                'totalMatchesPlayed': historical_stats['total_matches_played'],
-                'totalWins': historical_stats['total_wins'],
-                'totalDraws': historical_stats['total_draws'],
-                'totalLosses': historical_stats['total_losses'],
-                'bestRank': historical_stats['best_rank'],
-                'winRate': historical_stats['win_rate'],
+                'team_base_id': team_base.id,
+                'team_name': team_name,
+                'total_goals': historical_stats['total_goals'],
+                'total_goals_conceded': historical_stats['total_goals_conceded'],
+                'total_goal_difference': historical_stats['total_goal_difference'],
+                'total_red_cards': historical_stats['total_red_cards'],
+                'total_yellow_cards': historical_stats['total_yellow_cards'],
+                'total_points': historical_stats['total_points'],
+                'total_matches_played': historical_stats['total_matches_played'],
+                'total_wins': historical_stats['total_wins'],
+                'total_draws': historical_stats['total_draws'],
+                'total_losses': historical_stats['total_losses'],
+                'best_rank': historical_stats['best_rank'],
+                'win_rate': historical_stats['win_rate'],
                 'records': []
             }
             
@@ -54,19 +55,19 @@ class TeamService:
                 
                 record_dict = {
                     'id': participation.id,
-                    'teamName': team_name,
+                    'team_name': team_name,
                     'tournament_id': participation.tournament_id,
                     'tournament_name': participation.tournament.name if participation.tournament else None,
                     'season_name': participation.tournament.season.name if participation.tournament and participation.tournament.season else None,
                     'competition_name': participation.tournament.competition.name if participation.tournament and participation.tournament.competition else None,
                     'rank': participation.rank,
                     'goals': participation.goals,
-                    'goalsConceded': participation.goals_conceded,
-                    'goalDifference': participation.goal_difference,
-                    'redCards': participation.red_cards,
-                    'yellowCards': participation.yellow_cards,
+                    'goals_conceded': participation.goals_conceded,
+                    'goal_difference': participation.goal_difference,
+                    'red_cards': participation.red_cards,
+                    'yellow_cards': participation.yellow_cards,
                     'points': participation.points,
-                    'matchesPlayed': participation.matches_played,
+                    'matches_played': participation.matches_played,
                     'wins': participation.wins,
                     'draws': participation.draws,
                     'losses': participation.losses
@@ -83,13 +84,13 @@ class TeamService:
                         if history.player:
                             team_players.append({
                                 'name': history.player.name,
-                                'playerId': history.player_id,
-                                'studentId': history.player_id,
+                                'player_id': history.player_id,
+                                'student_id': history.player_id,
                                 'id': history.player_id,
                                 'number': str(history.player_number),
                                 'goals': history.tournament_goals,
-                                'redCards': history.tournament_red_cards,
-                                'yellowCards': history.tournament_yellow_cards
+                                'red_cards': history.tournament_red_cards,
+                                'yellow_cards': history.tournament_yellow_cards
                             })
                 
                 record_dict['players'] = team_players
@@ -128,25 +129,25 @@ class TeamService:
             team_base_id = team_records[0].team_base_id if team_records else None
             
             team_info = {
-                'teamName': team_name,
-                'teamBaseId': team_base_id,  # 添加 team_base_id 字段
-                'totalGoals': total_goals,
-                'totalGoalsConceded': total_goals_conceded,
-                'totalGoalDifference': total_goal_difference,
-                'totalRedCards': total_red_cards,
-                'totalYellowCards': total_yellow_cards,
-                'totalPoints': total_points,
-                'totalMatchesPlayed': total_matches_played,
-                'totalWins': total_wins,
-                'totalDraws': total_draws,
-                'totalLosses': total_losses,
-                'bestRank': best_rank,
+                'team_name': team_name,
+                'team_base_id': team_base_id,  # 添加 team_base_id 字段
+                'total_goals': total_goals,
+                'total_goals_conceded': total_goals_conceded,
+                'total_goal_difference': total_goal_difference,
+                'total_red_cards': total_red_cards,
+                'total_yellow_cards': total_yellow_cards,
+                'total_points': total_points,
+                'total_matches_played': total_matches_played,
+                'total_wins': total_wins,
+                'total_draws': total_draws,
+                'total_losses': total_losses,
+                'best_rank': best_rank,
                 'records': []
             }
             
             for record in team_records:
                 record_dict = record.to_dict()
-                record_dict['teamName'] = record_dict['name']
+                record_dict['team_name'] = record_dict['name']
                 
                 team_players = []
                 player_histories = PlayerTeamHistory.query.filter_by(
@@ -157,28 +158,28 @@ class TeamService:
                 for history in player_histories:
                     team_players.append({
                         'name': history.player.name,
-                        'playerId': history.player_id,
-                        'studentId': history.player_id,
+                        'player_id': history.player_id,
+                        'student_id': history.player_id,
                         'id': history.player_id,
                         'number': str(history.player_number),
                         'goals': history.tournament_goals,
-                        'redCards': history.tournament_red_cards,
-                        'yellowCards': history.tournament_yellow_cards
+                        'red_cards': history.tournament_red_cards,
+                        'yellow_cards': history.tournament_yellow_cards
                     })
                 
                 record_dict['players'] = team_players
                 record_dict.update({
                     'rank': record.tournament_rank,
                     'goals': record.tournament_goals,
-                    'goalsConceded': record.tournament_goals_conceded,
-                    'goalDifference': record.tournament_goal_difference,
-                    'redCards': record.tournament_red_cards,
-                    'yellowCards': record.tournament_yellow_cards,
+                    'goals_conceded': record.tournament_goals_conceded,
+                    'goal_difference': record.tournament_goal_difference,
+                    'red_cards': record.tournament_red_cards,
+                    'yellow_cards': record.tournament_yellow_cards,
                     'points': record.tournament_points,
-                    'tournamentId': record.tournament_id,
-                    'tournamentName': record.tournament.name if record.tournament else None,
-                    'seasonId': record.tournament.season_id if record.tournament else None,
-                    'seasonName': record.tournament.season.name if record.tournament and record.tournament.season else None
+                    'tournament_id': record.tournament_id,
+                    'tournament_name': record.tournament.name if record.tournament else None,
+                    'season_id': record.tournament.season_id if record.tournament else None,
+                    'season_name': record.tournament.season.name if record.tournament and record.tournament.season else None
                 })
                 
                 team_info['records'].append(record_dict)
@@ -201,34 +202,34 @@ class TeamService:
                     team_name = team.name
                     if team_name not in teams_grouped:
                         teams_grouped[team_name] = {
-                            'teamName': team_name,
-                            'totalGoals': 0,
-                            'totalGoalsConceded': 0,
-                            'totalGoalDifference': 0,
-                            'totalRedCards': 0,
-                            'totalYellowCards': 0,
-                            'totalPoints': 0,
-                            'bestRank': None,
+                            'team_name': team_name,
+                            'total_goals': 0,
+                            'total_goals_conceded': 0,
+                            'total_goal_difference': 0,
+                            'total_red_cards': 0,
+                            'total_yellow_cards': 0,
+                            'total_points': 0,
+                            'best_rank': None,
                             'tournaments': [],
-                            'seasonId': team.tournament.season_id if team.tournament else None, # 添加 seasonId
-                            'seasonName': team.tournament.season.name if team.tournament and team.tournament.season else None # 添加 seasonName
+                            'season_id': team.tournament.season_id if team.tournament else None, # 添加 seasonId
+                            'season_name': team.tournament.season.name if team.tournament and team.tournament.season else None # 添加 seasonName
                         }
                     
-                    teams_grouped[team_name]['totalGoals'] += team.tournament_goals
-                    teams_grouped[team_name]['totalGoalsConceded'] += team.tournament_goals_conceded
-                    teams_grouped[team_name]['totalGoalDifference'] += team.tournament_goal_difference
-                    teams_grouped[team_name]['totalRedCards'] += team.tournament_red_cards
-                    teams_grouped[team_name]['totalYellowCards'] += team.tournament_yellow_cards
-                    teams_grouped[team_name]['totalPoints'] += team.tournament_points
+                    teams_grouped[team_name]['total_goals'] += team.tournament_goals
+                    teams_grouped[team_name]['total_goals_conceded'] += team.tournament_goals_conceded
+                    teams_grouped[team_name]['total_goal_difference'] += team.tournament_goal_difference
+                    teams_grouped[team_name]['total_red_cards'] += team.tournament_red_cards
+                    teams_grouped[team_name]['total_yellow_cards'] += team.tournament_yellow_cards
+                    teams_grouped[team_name]['total_points'] += team.tournament_points
                     
                     if team.tournament_rank and team.tournament_rank > 0:
-                        current_best = teams_grouped[team_name]['bestRank']
+                        current_best = teams_grouped[team_name]['best_rank']
                         if current_best is None or team.tournament_rank < current_best:
-                            teams_grouped[team_name]['bestRank'] = team.tournament_rank
+                            teams_grouped[team_name]['best_rank'] = team.tournament_rank
                     
                     teams_grouped[team_name]['tournaments'].append({
-                        'tournamentId': team.tournament_id,
-                        'tournamentName': team.tournament.name if team.tournament else None
+                        'tournament_id': team.tournament_id,
+                        'tournament_name': team.tournament.name if team.tournament else None
                     })
                 
                 return list(teams_grouped.values()), None
@@ -246,35 +247,35 @@ class TeamService:
                     for history in player_histories:
                         team_players.append({
                             'name': history.player.name,
-                            'playerId': history.player_id,
-                            'studentId': history.player_id,
+                            'player_id': history.player_id,
+                            'student_id': history.player_id,
                             'id': history.player_id,
                             'number': str(history.player_number),
                             'goals': history.tournament_goals,
-                            'redCards': history.tournament_red_cards,
-                            'yellowCards': history.tournament_yellow_cards
+                            'red_cards': history.tournament_red_cards,
+                            'yellow_cards': history.tournament_yellow_cards
                         })
                     
                     standardized_team = {
                         'id': team.id,
-                        'teamName': team.name,
+                        'team_name': team.name,
                         'name': team.name,
-                        'tournamentId': team.tournament_id,
-                        'tournamentName': team.tournament.name if team.tournament else None,
-                        'seasonId': team.tournament.season_id if team.tournament else None,
-                        'seasonName': team.tournament.season.name if team.tournament and team.tournament.season else None,
-                        'competitionId': team.tournament.competition_id if team.tournament else None,
-                        'competitionName': team.tournament.competition.name if team.tournament and team.tournament.competition else None,
-                        'groupId': team.group_id,
+                        'tournament_id': team.tournament_id,
+                        'tournament_name': team.tournament.name if team.tournament else None,
+                        'season_id': team.tournament.season_id if team.tournament else None,
+                        'season_name': team.tournament.season.name if team.tournament and team.tournament.season else None,
+                        'competition_id': team.tournament.competition_id if team.tournament else None,
+                        'competition_name': team.tournament.competition.name if team.tournament and team.tournament.competition else None,
+                        'group_id': team.group_id,
                         'rank': team.tournament_rank,
                         'goals': team.tournament_goals,
-                        'goalsConceded': team.tournament_goals_conceded,
-                        'goalDifference': team.tournament_goal_difference,
-                        'redCards': team.tournament_red_cards,
-                        'yellowCards': team.tournament_yellow_cards,
+                        'goals_conceded': team.tournament_goals_conceded,
+                        'goal_difference': team.tournament_goal_difference,
+                        'red_cards': team.tournament_red_cards,
+                        'yellow_cards': team.tournament_yellow_cards,
                         'points': team.tournament_points,
                         'players': team_players,
-                        'createdAt': team.created_at.isoformat() if hasattr(team, 'created_at') and team.created_at else None
+                        'created_at': team.created_at.isoformat() if hasattr(team, 'created_at') and team.created_at else None
                     }
                     
                     teams_data.append(standardized_team)
@@ -389,14 +390,9 @@ class TeamService:
 
             # 更新赛事类型（不支持直接跨赛事迁移，需删除重建）
             if data.get('matchType'):
-                match_type_to_tournament = {
-                    'champions-cup': 1,
-                    'womens-cup': 2,
-                    'eight-a-side': 3
-                }
-                new_tid = match_type_to_tournament.get(data['matchType'], participation.tournament_id)
-                if new_tid != participation.tournament_id:
-                    return None, '暂不支持直接修改赛事类型，请删除后重新创建'
+                # 暂时禁止修改赛事类型，因为涉及复杂的关联数据迁移
+                # 如果确实需要，应该通过删除旧记录并创建新记录来实现
+                return None, '暂不支持直接修改赛事类型，请删除后重新创建'
 
             if 'groupId' in data:
                 participation.group_id = data.get('groupId')
@@ -564,22 +560,22 @@ class TeamService:
             return new_t.id, None
 
         # fallback: matchType (支持中文/别名)
-        raw_type = data.get('matchType', 'champions-cup')
-        canonical, mt_err = TeamUtils.normalize_match_type(raw_type)
-        if mt_err:
-            return None, mt_err + '；或提供 competitionName+seasonName'
-
-        match_type_to_tournament = {
-            'champions-cup': 1,
-            'womens-cup': 2,
-            'eight-a-side': 3
-        }
-        tid = match_type_to_tournament.get(canonical)
-        if tid is None:
-            valid_cn = ['冠军杯/校园杯', '巾帼杯/女子杯/女足杯', '八人制/八人赛/8人制']
-            valid_en = list(match_type_to_tournament.keys())
-            return None, f"无效的比赛类型({raw_type})。有效类型(英文): {', '.join(valid_en)} | (中文): {', '.join(valid_cn)}；或提供 competitionName+seasonName"
-        from app.models.tournament import Tournament as T
-        if not T.query.get(tid):
-            return None, f'目标赛事不存在 (ID={tid})，请提供 competitionName+seasonName 创建'
-        return tid, None
+        raw_type = data.get('matchType')
+        if raw_type:
+            # 尝试查找对应的 Competition
+            # 这里假设 raw_type 是 Competition 的名称
+            comp = Competition.query.filter(Competition.name.ilike(f"%{raw_type}%")).first()
+            
+            if comp:
+                # 查找该赛事下最新的 tournament
+                latest_t = Tournament.query.filter_by(competition_id=comp.competition_id)\
+                    .join(Season).order_by(Season.start_time.desc()).first()
+                
+                if latest_t:
+                    return latest_t.id, None
+                else:
+                    return None, f'赛事 {comp.name} 暂无赛季记录'
+            else:
+                return None, f'未找到赛事类型: {raw_type}，请提供有效的 competitionName 或 tournamentId'
+        
+        return None, '无法确定赛事信息，请提供 tournamentId, competitionId 或 matchType'

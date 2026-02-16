@@ -2,7 +2,7 @@
  * 管理端标签与文本映射组合函数
  * 提供统一的标签样式和文本映射功能
  */
-import { getMatchStatusTagType, getMatchStatusText } from '@/constants/match'
+import { getMatchStatusTagType, getMatchStatusText } from '@/utils/constants'
 
 // 比赛类型标签映射
 const MATCH_TYPE_LABELS = Object.freeze({

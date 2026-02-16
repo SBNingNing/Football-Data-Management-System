@@ -95,19 +95,19 @@
                 <el-icon class="avatar-icon"><Trophy /></el-icon>
               </div>
               <div class="team-details">
-                <div class="team-name">{{ team.teamName }}</div>
+                <div class="team-name">{{ team.team_name }}</div>
                 <div class="team-meta">
                   <div class="meta-item">
                     <el-icon><Flag /></el-icon>
-                    <span>{{ getMatchTypeLabel(team.matchType) }}</span>
+                    <span>{{ getMatchTypeLabel(team.match_type) }}</span>
                   </div>
                   <div class="meta-item">
                     <el-icon><User /></el-icon>
                     <span>{{ team.players ? team.players.length : 0 }} 名球员</span>
                   </div>
-                  <div class="meta-item" v-if="team.tournamentName">
+                  <div class="meta-item" v-if="team.tournament_name">
                     <el-icon><Calendar /></el-icon>
-                    <span>{{ team.tournamentName }}</span>
+                    <span>{{ team.tournament_name }}</span>
                   </div>
                   <div class="meta-item" v-if="team.rank">
                     <el-icon><Trophy /></el-icon>
@@ -123,9 +123,9 @@
                     <el-icon><Medal /></el-icon>
                     积分 {{ team.points || 0 }}
                   </span>
-                  <span class="stat-badge cards" v-if="team.yellowCards || team.redCards">
+                  <span class="stat-badge cards" v-if="team.yellow_cards || team.red_cards">
                     <el-icon><Warning /></el-icon>
-                    {{ team.yellowCards || 0 }}黄 {{ team.redCards || 0 }}红
+                    {{ team.yellow_cards || 0 }}黄 {{ team.red_cards || 0 }}红
                   </span>
                 </div>
               </div>
@@ -177,8 +177,8 @@ import {
 } from '@element-plus/icons-vue';
 // 使用统一 domain service + httpClient
 import logger from '@/utils/logger';
-import { fetchTeams as fetchTeamList } from '@/domain/team/teamService';
-import { getMatchTypeLabel } from '@/constants/domain';
+import { fetchTeams as fetchTeamList } from '@/api/teams';
+import { getMatchTypeLabel } from '@/utils/constants';
 import TeamDetailDialog from '@/components/team/TeamDetailDialog.vue';
 
 export default {
@@ -284,19 +284,19 @@ export default {
       if (this.searchKeyword.trim()) {
         const keyword = this.searchKeyword.trim().toLowerCase();
         filtered = filtered.filter(team => 
-          (team.teamName && team.teamName.toLowerCase().includes(keyword)) ||
+          (team.team_name && team.team_name.toLowerCase().includes(keyword)) ||
           (team.id && team.id.toString().toLowerCase().includes(keyword))
         );
       }
       
       // 按赛事类型过滤
       if (this.selectedMatchType) {
-        filtered = filtered.filter(team => team.matchType === this.selectedMatchType);
+        filtered = filtered.filter(team => team.match_type === this.selectedMatchType);
       }
       
       // 按赛季过滤
       if (this.selectedSeason) {
-        filtered = filtered.filter(team => team.seasonId == this.selectedSeason);
+        filtered = filtered.filter(team => team.season_id == this.selectedSeason);
       }
       
       this.filteredTeams = filtered;

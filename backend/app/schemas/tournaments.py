@@ -8,24 +8,24 @@ from .base import SchemaBase
 class TournamentRecord(SchemaBase):
     id: int
     name: str
-    tournamentName: str
+    tournament_name: str
     teams: List[dict]
-    teamCount: int
-    totalGoals: int
-    totalTeams: int
+    team_count: int
+    total_goals: int
+    total_teams: int
     matches: List[dict]
-    matchCount: int
-    seasonStartTime: Optional[str]
-    seasonEndTime: Optional[str]
-    isGrouped: bool
-    seasonName: str
+    match_count: int
+    season_start_time: Optional[str]
+    season_end_time: Optional[str]
+    is_grouped: bool
+    season_name: str
 
 
 class TournamentInfo(SchemaBase):
-    tournamentName: str
-    totalSeasons: int
+    tournament_name: str
+    total_seasons: int
     records: List[TournamentRecord]
-    matchedMode: Optional[str] = None
+    matched_mode: Optional[str] = None
 
 
 class TournamentCreate(SchemaBase):
@@ -42,11 +42,25 @@ class TournamentUpdate(SchemaBase):
     is_grouped: Optional[bool] = None
     season_start_time: Optional[str] = None
     season_end_time: Optional[str] = None
+    group_count: Optional[int] = None
+    playoff_spots: Optional[int] = None
 
 
 class TournamentInstanceCreate(SchemaBase):
     competition_id: int
     season_id: int
+    is_grouped: Optional[bool] = False
+    group_count: Optional[int] = None
+    playoff_spots: Optional[int] = None
+
+
+class TournamentQuickCreate(SchemaBase):
+    competition_id: Optional[int] = None
+    competition_name: Optional[str] = None
+    season_id: Optional[int] = None
+    season_name: Optional[str] = None
+    create_if_missing: Optional[bool] = True
+    dry_run: Optional[bool] = False
     is_grouped: Optional[bool] = False
     group_count: Optional[int] = None
     playoff_spots: Optional[int] = None

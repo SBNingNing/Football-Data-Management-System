@@ -3,7 +3,8 @@
  * 提供球队详情和比赛记录的加载和管理
  */
 import { ref } from 'vue'
-import { fetchTeamAggregate } from '@/domain/team/teamService'
+import { fetchTeamByName } from '@/api/teams'
+import { useTeamHistoryStore } from '@/store/modules'
 import logger from '@/utils/logger'
 
 /**
@@ -12,7 +13,8 @@ import logger from '@/utils/logger'
  * @param {Function} options.loader - 自定义加载器函数
  * @returns {Object} 球队历史相关的响应式数据和方法
  */
-export function useTeamHistory({ loader } = {}) {
+export function useTeamHistory() {
+  const store = useTeamHistoryStore()
   // =========================
   // 响应式状态定义
   // =========================
@@ -31,14 +33,14 @@ export function useTeamHistory({ loader } = {}) {
 
   /**
    * 加载球队历史数据
-   * @param {string} teamName - 球队名称
+   * @param {string} team_name - 球队名称
    * @param {Object} options - 加载选项
    * @param {boolean} options.force - 是否强制刷新
    */
-  async function load(teamName, { force = false } = {}) {
+  async function load(team_name, { force = false } = {}) {
     // 参数验证
-    if (!teamName) {
-      error.value = new Error('缺少 teamName')
+    if (!team_name) {
+      error.value = new Error('缺少 team_name')
       return
     }
 
@@ -47,22 +49,42 @@ export function useTeamHistory({ loader } = {}) {
     error.value = null
 
     try {
-      // 获取球队聚合数据
-      const aggregateData = await fetchTeamAggregate(teamName, { 
-        force, 
-        loader 
-      })
-
-      // 更新数据
-      team.value = aggregateData.team
-      records.value = aggregateData.records
+      // 1. 获取球队基础信息以拿到 team_base_id
+      const teamRes = await fetchTeamByName(team_name)
+      const teamInfo = teamRes.data
       
-    } catch (e) {
-      // 处理错误
-      error.value = e
-      logger.error('[useTeamHistory] 加载失败:', e)
+      if (!teamInfo || !teamInfo.team_base_id) {
+         // 如果没有 team_base_id，尝试直接使用返回的数据（如果是旧接口格式）
+         if (teamInfo && teamInfo.records) {
+             team.value = teamInfo
+             records.value = teamInfo.records || []
+             return
+         }
+         throw new Error('无法获取球队ID')
+      }
+
+      // 2. 使用 Store 加载完整历史
+      const res = await store.loadComplete(teamInfo.team_base_id, { force })
+      
+      if (res.success) {
+        // Flatten tournaments from all seasons
+        const allTournaments = res.data.records ? res.data.records.flatMap(seasonBlock => 
+            (seasonBlock.tournaments || []).map(t => ({
+                ...t,
+                season_name: seasonBlock.season_info?.name,
+                players: t.players || []
+            }))
+        ) : []
+
+        team.value = res.data.team_info
+        records.value = allTournaments
+      } else {
+        throw new Error(res.error || '加载失败')
+      }
+    } catch (err) {
+      error.value = err
+      logger.error('[useTeamHistory] 加载失败:', err)
     } finally {
-      // 清除加载状态
       loading.value = false
     }
   }

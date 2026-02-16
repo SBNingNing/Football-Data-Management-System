@@ -76,11 +76,9 @@ def create_app(config_class=Config):
     app.register_blueprint(team_history.team_history_bp, url_prefix='/team-history')
     app.register_blueprint(stats.stats_bp, url_prefix='/stats')
     app.register_blueprint(health.health_bp, url_prefix='/health')
-    try:
-        from app.routes import players
-        app.register_blueprint(players.players_bp, url_prefix='/players')
-    except Exception as e:  # pragma: no cover
-        logger.error(f"球员路由注册失败: {e}")
+    
+    from app.routes import players
+    app.register_blueprint(players.players_bp, url_prefix='/players')
 
     register_error_handlers(app)
     return app

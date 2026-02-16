@@ -61,7 +61,7 @@
 import { Plus } from '@element-plus/icons-vue'
 import { ref, reactive } from 'vue'
 import { ElMessage } from 'element-plus'
-import { createSeason } from '@/domain/season/seasonsService'
+import { createSeason } from '@/api/seasons'
 import '@/assets/styles/input-components.css'
 
 const emit = defineEmits(['submit'])

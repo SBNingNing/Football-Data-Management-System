@@ -2,30 +2,38 @@
 Matches 模块 Schemas：create/update/detail 与 records 分页。
 """
 from typing import List, Optional
+from pydantic import field_validator
 from .base import SchemaBase, Page, PageMeta
 
 
 class MatchCreate(SchemaBase):
-    matchName: str
-    matchTime: str
+    match_name: str
+    match_time: str
     location: str
-    homeTeamId: int
-    awayTeamId: int
-    tournamentId: Optional[int] = None
-    competitionId: Optional[int] = None
-    matchType: Optional[str] = None
-    groupId: Optional[str] = None
+    home_team_id: int
+    away_team_id: int
+    tournament_id: Optional[int] = None
+    competition_id: Optional[int] = None
+    match_type: Optional[str] = None
+    group_id: Optional[str] = None
 
 
 class MatchUpdate(SchemaBase):
-    matchName: Optional[str] = None
-    matchTime: Optional[str] = None
+    match_name: Optional[str] = None
+    match_time: Optional[str] = None
     location: Optional[str] = None
-    homeTeamId: Optional[int] = None
-    awayTeamId: Optional[int] = None
-    groupId: Optional[str] = None
+    home_team_id: Optional[int] = None
+    away_team_id: Optional[int] = None
+    group_id: Optional[str] = None
     status: Optional[str] = None
-    knockoutRound: Optional[int] = None
+    knockout_round: Optional[int] = None
+
+    @field_validator('status')
+    @classmethod
+    def validate_status(cls, v: Optional[str]) -> Optional[str]:
+        if v is not None and v not in ('F', 'P'):
+            raise ValueError("Status must be 'F' (Finished) or 'P' (Pending)")
+        return v
 
 
 class MatchBrief(SchemaBase):
@@ -47,15 +55,15 @@ class MatchBrief(SchemaBase):
 
 
 class MatchRecordItem(SchemaBase):
-    id: str
-    matchName: str
-    matchTime: str
+    id: int
+    match_name: str
+    match_time: str
     location: str
-    homeTeam: str
-    awayTeam: str
+    home_team: str
+    away_team: str
     score: str
     status: str
-    matchType: Optional[str]
+    match_type: Optional[str]
 
 
 class MatchRecordsPage(Page[MatchRecordItem]):

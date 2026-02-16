@@ -51,21 +51,21 @@ export function useTeamHistoryPage() {
    */
   async function init() {
     // 获取球队名称（支持多种路由参数格式）
-    const teamName = route.params.teamName || route.query.teamName || route.query.name
+    const team_name = route.params.team_name || route.query.team_name || route.query.name || route.params.teamName
     
-    logger.debug('[team_history] teamName:', teamName)
+    logger.debug('[team_history] team_name:', team_name)
 
-    if (!teamName) {
+    if (!team_name) {
       error.value = normalizeError(new Error('缺少球队名称'))
       return
     }
 
     // 加载球队数据
-    await load(teamName)
+    await load(team_name)
 
     // 设置默认活跃赛季
     if (team.value?.records?.length) {
-      activeSeason.value = team.value.records[0].id
+      activeSeason.value = team.value.records[0].tournament_id
     }
   }
 
@@ -98,14 +98,14 @@ export function useTeamHistoryPage() {
    */
   function navigateToPlayer(player) {
     // 支持多种球员ID字段名
-    const playerId = player.id || player.studentId || player.playerId
+    const player_id = player.id || player.student_id || player.player_id
     
-    if (!playerId) {
+    if (!player_id) {
       logger.error('球员ID不存在', player)
       return
     }
     
-    goToPlayerHistory(playerId)
+    goToPlayerHistory(player_id)
   }
 
   // =========================
@@ -116,14 +116,14 @@ export function useTeamHistoryPage() {
    * @param {boolean} force - 是否强制刷新
    */
   async function refreshTeamData(force = false) {
-    const teamName = team.value?.teamName || route.params.teamName
+    const team_name = team.value?.team_name || route.params.team_name
     
-    if (!teamName) return
+    if (!team_name) return
 
     refreshing.value = true
     
     try {
-      await load(teamName, { force })
+      await load(team_name, { force })
     } finally {
       refreshing.value = false
     }

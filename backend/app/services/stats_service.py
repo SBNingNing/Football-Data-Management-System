@@ -116,7 +116,7 @@ class StatsService:
                     # 先找到最近的赛季ID
                     latest_season = Season.query.order_by(Season.start_time.desc()).first()
                     if latest_season:
-                        target_tournaments = query.filter(Tournament.season_id == latest_season.id).all()
+                        target_tournaments = query.filter(Tournament.season_id == latest_season.season_id).all()
                 
                 key = f"comp_{comp.competition_id}"
                 if target_tournaments:
@@ -268,6 +268,7 @@ class StatsService:
             
         except Exception as e:
             logger.error(f"获取聚合排行榜失败: {str(e)}")
+            # 即使失败也返回空结构，避免前端 500
             return {
                 'topScorers': {'players': [], 'teams': []},
                 'cards': {'players': [], 'teams': []},
@@ -277,6 +278,10 @@ class StatsService:
     @staticmethod
     def _get_top_scorers_players(tournament_ids: List[int], limit: int = 5) -> List[Any]:
         """获取球员射手榜"""
+        # 确保 tournament_ids 不为空，否则 in_() 会报错或行为异常
+        if not tournament_ids:
+            return []
+            
         return (
             db.session.query(
                 PlayerTeamHistory.player_id,
@@ -306,6 +311,9 @@ class StatsService:
     @staticmethod
     def _get_top_scorers_teams(tournament_ids: List[int], limit: int = 5) -> List[Any]:
         """获取球队射手榜"""
+        if not tournament_ids:
+            return []
+
         return (
             db.session.query(
                 Team.name.label('team_name'),
@@ -328,6 +336,9 @@ class StatsService:
     @staticmethod
     def _get_player_cards_stats(tournament_ids: List[int], limit: int = 5) -> List[Any]:
         """获取球员红黄牌榜"""
+        if not tournament_ids:
+            return []
+
         return (
             db.session.query(
                 PlayerTeamHistory.player_id,
@@ -364,6 +375,9 @@ class StatsService:
     @staticmethod
     def _get_team_cards_stats(tournament_ids: List[int], limit: int = 5) -> List[Any]:
         """获取球队红黄牌榜"""
+        if not tournament_ids:
+            return []
+
         return (
             db.session.query(
                 Team.name.label('team_name'),
@@ -391,6 +405,9 @@ class StatsService:
     @staticmethod
     def _calculate_aggregated_team_points(tournament_ids: List[int]) -> List[Dict[str, Any]]:
         """计算聚合的球队积分榜"""
+        if not tournament_ids:
+            return []
+
         teams = (
             db.session.query(
                 Team.name.label('team_name'),

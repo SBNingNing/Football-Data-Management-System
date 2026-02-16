@@ -36,37 +36,37 @@ export function useAdminBoardPage() {
   // 编辑表单数据
   const editTeamForm = reactive({
     id: '',
-    teamName: '',
-    matchType: '',
+    team_name: '',
+    match_type: '',
     players: []
   })
 
   const editMatchForm = reactive({
     id: '',
-    matchName: '',
+    match_name: '',
     team1: '',
     team2: '',
     date: '',
     location: '',
-    matchType: ''
+    match_type: ''
   })
 
   const editEventForm = reactive({
     id: '',
-    matchName: '',
-    eventType: '',
-    playerName: '',
-    eventTime: '',
-    matchType: ''
+    match_name: '',
+    event_type: '',
+    player_name: '',
+    event_time: '',
+    match_type: ''
   })
 
   const editPlayerForm = reactive({
     id: '',
     name: '',
     number: '',
-    studentId: '',
-    teamName: '',
-    matchType: ''
+    student_id: '',
+    team_name: '',
+    match_type: ''
   })
 
   // 数据列表计算属性
@@ -239,8 +239,8 @@ export function useAdminBoardPage() {
     
     Object.assign(editTeamForm, {
       id: team.id,
-      teamName: team.teamName,
-      matchType: team.matchType,
+      team_name: team.team_name,
+      match_type: team.match_type,
       players: team.players ? [...team.players] : []
     })
     
@@ -254,7 +254,7 @@ export function useAdminBoardPage() {
     editTeamForm.players.push({
       name: '',
       number: '',
-      studentId: ''
+      student_id: ''
     })
   }
 
@@ -273,8 +273,8 @@ export function useAdminBoardPage() {
     
     // 检查是否有变更
     const isChanged = 
-      dataToSubmit.teamName !== editTeamForm.teamName ||
-      dataToSubmit.matchType !== editTeamForm.matchType ||
+      dataToSubmit.team_name !== editTeamForm.team_name ||
+      dataToSubmit.match_type !== editTeamForm.match_type ||
       JSON.stringify(dataToSubmit.players) !== JSON.stringify(editTeamForm.players)
 
     if (!isChanged) {
@@ -324,12 +324,12 @@ export function useAdminBoardPage() {
   function editMatch(match) {
     Object.assign(editMatchForm, {
       id: match.id,
-      matchName: match.matchName,
+      match_name: match.match_name,
       team1: match.team1,
       team2: match.team2,
       date: match.date,
       location: match.location,
-      matchType: match.matchType
+      match_type: match.match_type
     })
     
     editMatchDialog.value = true
@@ -422,11 +422,11 @@ export function useAdminBoardPage() {
   function editEvent(event) {
     Object.assign(editEventForm, {
       id: event.id,
-      matchName: event.matchName,
-      eventType: event.eventType,
-      playerName: event.playerName,
-      eventTime: event.eventTime,
-      matchType: event.matchType
+      match_name: event.match_name,
+      event_type: event.event_type,
+      player_name: event.player_name,
+      event_time: event.event_time,
+      match_type: event.match_type
     })
     
     editEventDialog.value = true
@@ -512,14 +512,13 @@ export function useAdminBoardPage() {
    */
   function editPlayer(player) {
     Object.assign(editPlayerForm, {
-      id: player.id || player.studentId,
+      id: player.id || player.student_id,
       name: player.name,
       number: player.number,
-      studentId: player.studentId || player.id,
-      teamName: player.teamName,
-      matchType: player.matchType
+      student_id: player.student_id || player.id,
+      team_name: player.team_name || '',
+      match_type: player.match_type || ''
     })
-    
     editPlayerDialog.value = true
   }
 
@@ -529,7 +528,7 @@ export function useAdminBoardPage() {
   async function updatePlayer(updatedData) {
     try {
       const dataToSubmit = updatedData || editPlayerForm
-      const playerId = dataToSubmit.id || dataToSubmit.studentId
+      const playerId = dataToSubmit.id || dataToSubmit.student_id
       const result = await playerStore.update(playerId, dataToSubmit)
       
       if (result.success) {

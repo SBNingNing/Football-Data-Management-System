@@ -3,6 +3,7 @@ from flask_jwt_extended import create_access_token
 from app.database import db
 from app.models.user import User
 from app.utils.logger import get_logger
+from app.utils.security import SecurityUtils
 from app.middleware.error_middleware import log_error, log_security_event
 
 logger = get_logger(__name__)
@@ -16,6 +17,11 @@ class AuthService:
         """注册新用户"""
         try:
             logger.info(f"Registering user: {username}")
+            
+            # 验证密码强度
+            is_valid, msg = SecurityUtils.validate_password_strength(password)
+            if not is_valid:
+                return None, msg
             
             # 检查用户名和邮箱是否已存在
             if User.query.filter_by(用户名=username).first():

@@ -15,7 +15,7 @@ class Match(db.Model):
     home_score = db.Column('主队比分', db.Integer, default=0, comment='主队比分')
     away_score = db.Column('客队比分', db.Integer, default=0, comment='客队比分')
     group_id = db.Column('小组ID', db.String(1), comment='小组ID')
-    status = db.Column('比赛状态', db.String(1), default='P', comment='比赛状态(F: 已结束，P: 未开始, O: 进行中)')
+    status = db.Column('比赛状态', db.String(1), default='P', comment='比赛状态(F: 已结束，P: 未开始)')
     knockout_round = db.Column('淘汰赛轮次', db.Integer, comment='淘汰赛轮次')
     
     # 外键关系 - 修正为指向 team_tournament_participation 表
@@ -44,7 +44,7 @@ class Match(db.Model):
         db.Index('idx_match_tournament', '赛事ID'),
         db.Index('idx_match_time', '比赛时间'),
         db.Index('idx_match_status', '比赛状态'),
-        db.CheckConstraint("比赛状态 in ('F','P','O')", name='match_chk_1'),
+        db.CheckConstraint("比赛状态 in ('F','P')", name='match_chk_1'),
     )
     
     def __repr__(self):

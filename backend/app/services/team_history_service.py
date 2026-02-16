@@ -103,12 +103,12 @@ class TeamHistoryService:
             players_list = []
             for p in players_stats:
                 players_list.append({
-                    'playerId': p.player_id, 
+                    'player_id': p.player_id, 
                     'name': p.player.name if p.player else '未知球员',
                     'number': p.player_number,
                     'goals': p.tournament_goals,
-                    'yellowCards': p.tournament_yellow_cards,
-                    'redCards': p.tournament_red_cards
+                    'yellow_cards': p.tournament_yellow_cards,
+                    'red_cards': p.tournament_red_cards
                 })
 
             # 添加赛事记录

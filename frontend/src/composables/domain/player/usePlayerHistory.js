@@ -3,7 +3,7 @@
  * 提供球员详情、统计数据、赛季信息和球队历史的加载和管理
  */
 import { ref } from 'vue'
-import { fetchPlayerAggregate } from '@/domain/player/playerService'
+import { fetchPlayerCompleteHistory } from '@/api/playerHistory'
 import logger from '@/utils/logger'
 
 /**
@@ -55,17 +55,34 @@ export function usePlayerHistory() {
 
     try {
       // 获取球员聚合数据
-      const aggregateData = await fetchPlayerAggregate(playerId, { 
-        force
-      })
-      logger.debug(`[usePlayerHistory] Received aggregateData:`, aggregateData);
+      const res = await fetchPlayerCompleteHistory(playerId)
+      
+      if (res.ok) {
+        const data = res.data
+        logger.debug(`[usePlayerHistory] Received data:`, data);
 
-      // 更新各项数据
-      // aggregateData 本身就是完整的视图模型对象
-      player.value = aggregateData;
-      stats.value = aggregateData; // 统计信息也包含在主对象中
-      seasons.value = aggregateData.seasons;
-      teamHistories.value = aggregateData.teamHistories;
+        // Flatten teams from all seasons to create teamHistories
+        const allTeams = data.seasons ? data.seasons.flatMap(season => season.teams.map(team => ({
+            ...team,
+            season_name: season.season_name,
+            tournament_name: team.tournament_info?.name
+        }))) : [];
+
+        const viewModel = {
+            ...data.player_info,
+            ...data.career_summary,
+            seasons: data.seasons,
+            teamHistories: allTeams
+        };
+
+        // 更新各项数据
+        player.value = viewModel;
+        stats.value = viewModel; 
+        seasons.value = viewModel.seasons;
+        teamHistories.value = viewModel.teamHistories;
+      } else {
+        throw res.error || new Error('获取球员历史失败')
+      }
       
     } catch (err) {
       // 处理错误

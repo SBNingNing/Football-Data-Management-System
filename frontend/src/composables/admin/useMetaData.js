@@ -3,8 +3,8 @@
  * 管理赛季与赛事元数据的加载、刷新与快速实例反馈
  */
 import { ref } from 'vue'
-import { fetchSeasons } from '@/domain/season/seasonsService'
-import { fetchCompetitions } from '@/domain/competition/competitionsService'
+import { fetchSeasons } from '@/api/seasons'
+import { fetchCompetitions } from '@/api/competitions'
 import notify from '@/utils/notify'
 
 /**
@@ -24,7 +24,8 @@ export function useMetaData() {
     const { ok, data, error } = await fetchSeasons()
     
     if (ok) {
-      seasons.value = data
+      const rawList = data?.data || data || []
+      seasons.value = rawList
     } else {
       notify.error(error?.message || '获取赛季失败')
     }
@@ -37,7 +38,9 @@ export function useMetaData() {
     const { ok, data, error } = await fetchCompetitions()
     
     if (ok) {
-      competitions.value = data.competitions || data
+      const rawData = data?.data || data || {}
+      const list = rawData.competitions || []
+      competitions.value = list
     } else {
       notify.error(error?.message || '获取赛事失败')
     }

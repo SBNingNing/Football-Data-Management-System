@@ -7,9 +7,6 @@ from flask_jwt_extended import jwt_required
 
 from app.services.stats_facade import StatsFacade
 from app.middleware.stats_middleware import (
-    validate_tournament_id,
-    validate_stats_query_params,
-    validate_ranking_type,
     log_stats_operation,
     handle_stats_errors,
     cache_stats_result
@@ -39,7 +36,6 @@ def get_stats():
 
 @stats_bp.route('/rankings', methods=['GET'])
 @handle_stats_errors
-@validate_stats_query_params
 @log_stats_operation('排行榜查询')
 # @cache_stats_result(600)  # 暂时禁用缓存以便调试，或者需要根据参数生成缓存key
 def get_rankings():
@@ -55,7 +51,6 @@ def get_rankings():
 
 @stats_bp.route('/tournaments/<int:tournament_id>/stats', methods=['GET'])
 @handle_stats_errors
-@validate_tournament_id
 @log_stats_operation('赛事统计查询')
 def get_tournament_stats(tournament_id):
     """获取特定赛事的统计数据"""
@@ -69,8 +64,6 @@ def get_tournament_stats(tournament_id):
 
 @stats_bp.route('/tournaments/<int:tournament_id>/rankings/<string:ranking_type>', methods=['GET'])
 @handle_stats_errors
-@validate_tournament_id
-@validate_ranking_type
 @log_stats_operation('特定排行榜查询')
 def get_tournament_ranking(tournament_id, ranking_type):
     """获取特定赛事的特定类型排行榜"""

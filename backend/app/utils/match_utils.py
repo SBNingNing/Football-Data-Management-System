@@ -7,6 +7,7 @@ from datetime import datetime
 import pytz
 from typing import Optional, Dict, Any, List
 from app.utils.logger import get_logger
+from app.utils.tournament_utils import TournamentUtils
 
 logger = get_logger(__name__)
 
@@ -99,13 +100,7 @@ class MatchUtils:
     @staticmethod
     def determine_match_type(tournament) -> str:
         """根据赛事名称确定matchType"""
-        if tournament and tournament.competition:
-            return tournament.competition.name
-            
-        if tournament:
-            return tournament.name
-        else:
-            return '未知赛事'
+        return TournamentUtils.determine_match_type(tournament)
 
     @staticmethod
     def format_match_time(match_time: Optional[datetime]) -> Optional[str]:
@@ -116,18 +111,6 @@ class MatchUtils:
     def format_match_date_iso(match_time: Optional[datetime]) -> str:
         """格式化比赛时间为ISO格式"""
         return match_time.isoformat() if match_time else ''
-
-    @staticmethod
-    def get_tournament_id_by_type(match_type: str) -> int:
-        """根据比赛类型获取赛事ID"""
-        # 已废弃，不再使用硬编码映射
-        raise NotImplementedError("get_tournament_id_by_type is deprecated. Use dynamic lookup instead.")
-
-    @staticmethod
-    def get_tournament_id_by_frontend_type(match_type: str) -> Optional[int]:
-        """根据前端比赛类型获取赛事ID"""
-        # 已废弃
-        return None
 
     @staticmethod
     def get_status_text(status: str) -> str:
@@ -171,33 +154,6 @@ class MatchUtils:
         match_dict = MatchUtils.build_match_dict_basic(match)
         match_dict['matchType'] = MatchUtils.determine_match_type(tournament)
         return match_dict
-
-    @staticmethod
-    def validate_match_data(data: Dict[str, Any]) -> List[str]:
-        """验证比赛数据"""
-        errors = []
-        
-        # 验证比赛名称
-        if not data.get('matchName'):
-            errors.append('缺少必要字段: matchName')
-
-        # 验证主队 (兼容 team1 和 homeTeamId)
-        if not (data.get('team1') or data.get('homeTeamId')):
-            errors.append('缺少必要字段: homeTeamId')
-
-        # 验证客队 (兼容 team2 和 awayTeamId)
-        if not (data.get('team2') or data.get('awayTeamId')):
-            errors.append('缺少必要字段: awayTeamId')
-
-        # 验证时间 (兼容 date 和 matchTime)
-        if not (data.get('date') or data.get('matchTime')):
-            errors.append('缺少必要字段: matchTime')
-
-        # 验证地点
-        if not data.get('location'):
-            errors.append('缺少必要字段: location')
-        
-        return errors
 
     @staticmethod
     def calculate_team_statistics(events: List, team_id: int) -> Dict[str, int]:

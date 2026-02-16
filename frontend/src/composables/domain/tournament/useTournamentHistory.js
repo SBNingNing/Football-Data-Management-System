@@ -3,7 +3,7 @@
  * 提供锦标赛数据、射手榜、卡牌榜和所有比赛的加载和管理
  */
 import { ref } from 'vue'
-import { fetchTournamentAggregate } from '@/domain/tournament/tournamentService'
+import { fetchTournamentByNameOrId } from '@/api/tournaments'
 import logger from '@/utils/logger'
 import { normalizeError } from '@/utils/error'
 
@@ -63,21 +63,89 @@ export function useTournamentHistory() {
 
     try {
       // 调用服务获取数据
-      const { ok, data, error: serviceError } = await fetchTournamentAggregate(name)
+      const res = await fetchTournamentByNameOrId(name)
 
-      if (ok) {
+      if (res.ok) {
+        const data = res.data
+        
+        // Aggregate all matches from all records and map fields for frontend table
+        const allMatchesList = data.records ? data.records.flatMap(r => (r.matches || []).map(m => ({
+            ...m,
+            matchDate: m.match_time,
+            tournament: m.tournament_name,
+            season: r.seasonName,
+            homeTeam: m.home_team_name,
+            awayTeam: m.away_team_name,
+            homeScore: m.home_score,
+            awayScore: m.away_score,
+            totalYellowCards: 0, // Not provided in basic match list
+            totalRedCards: 0     // Not provided in basic match list
+        }))) : []
+
+        // Aggregate all players for stats
+        let allPlayers = []
+        if (data.records) {
+            data.records.forEach(record => {
+                if (record.teams) {
+                    record.teams.forEach(team => {
+                        if (team.players) {
+                            team.players.forEach(p => {
+                                allPlayers.push({
+                                    ...p,
+                                    teamName: team.name,
+                                    seasonName: record.seasonName
+                                })
+                            })
+                        }
+                    })
+                }
+            })
+        }
+
+        // Calculate top scorers
+        const topScorersList = [...allPlayers]
+            .sort((a, b) => b.goals - a.goals)
+            .slice(0, 10)
+            .map(p => ({
+                name: p.player_name,
+                team: p.teamName,
+                goals: p.goals,
+                season: p.seasonName
+            }))
+
+        // Calculate top cards
+        const topCardsList = [...allPlayers]
+            .sort((a, b) => (b.redCards * 2 + b.yellowCards) - (a.redCards * 2 + a.yellowCards))
+            .slice(0, 10)
+            .map(p => ({
+                name: p.player_name,
+                team: p.teamName,
+                yellowCards: p.yellowCards,
+                redCards: p.redCards,
+                season: p.seasonName
+            }))
+
+        const vm = {
+            competition: data,
+            topScorers: topScorersList,
+            topCards: topCardsList,
+            allMatches: allMatchesList
+        }
+
+        // 简单适配，如果需要特定字段映射，可以在这里手动处理，或者直接使用后端字段
+        if (!vm.competition.name && name) vm.competition.name = name
         // 成功时更新所有数据
-        competition.value = data.competition
-        topScorers.value = data.topScorers
-        topCards.value = data.topCards
-        allMatches.value = data.allMatches || []
+        competition.value = vm.competition
+        topScorers.value = vm.topScorers
+        topCards.value = vm.topCards
+        allMatches.value = vm.allMatches || []
         
         // 重置重试计数
         retryCount.value = 0
       } else {
         // 处理业务错误
-        error.value = normalizeError(serviceError)
-        logger.error('[useTournamentHistory] 加载失败:', serviceError)
+        error.value = normalizeError(res.error)
+        logger.error('[useTournamentHistory] 加载失败:', res.error)
       }
     } catch (e) {
       // 处理网络或其他异常

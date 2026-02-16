@@ -24,7 +24,7 @@ REQUIRED_CONFIGS = [
 # 期望注册的蓝图（根据当前业务模块列出；若后续新增/裁剪模块，可同步调整）
 EXPECTED_BLUEPRINTS = [
     'auth', 'matches', 'events', 'teams', 'tournaments',
-    'competitions', 'seasons', 'player_history', 'team_history', 'players', 'stats'
+    'competitions', 'seasons', 'player_history', 'team_history', 'players', 'stats', 'health'
 ]
 
 

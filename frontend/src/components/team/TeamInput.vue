@@ -5,7 +5,7 @@
         <el-col :span="24">
           <el-form-item label="球队名称" required>
             <el-select
-              v-model="teamForm.teamName"
+              v-model="teamForm.team_name"
               placeholder="请选择或输入球队名称"
               size="large"
               clearable
@@ -17,8 +17,8 @@
               <el-option
                 v-for="team in availableTeams"
                 :key="team.id"
-                :label="team.name"
-                :value="team.name"
+                :label="team.team_name"
+                :value="team.team_name"
               />
             </el-select>
           </el-form-item>
@@ -92,7 +92,7 @@
                   
                   <el-form-item label="学号" class="compact-form-item">
                     <el-input 
-                      v-model="player.studentId" 
+                      v-model="player.student_id" 
                       placeholder="学号"
                       maxlength="20"
                     >
@@ -204,11 +204,11 @@
               <div class="card-body">
                 <div class="info-row">
                   <el-icon><Postcard /></el-icon>
-                  <span class="info-text">{{ player.studentId }}</span>
+                  <span class="info-text">{{ player.student_id }}</span>
                 </div>
-                <div class="info-row" v-if="player.teamName">
+                <div class="info-row" v-if="player.team_name">
                   <el-icon><UserFilled /></el-icon>
-                  <span class="info-text">{{ player.teamName }}</span>
+                  <span class="info-text">{{ player.team_name }}</span>
                 </div>
                 <div class="status-row">
                    <el-tag v-if="!player.number" type="warning" size="small" effect="dark">号码待分配</el-tag>
@@ -247,9 +247,9 @@
 <script>
 import { User, UserFilled, Plus, Close as IconClose, StarFilled, Postcard, Check, Search as IconSearch, Refresh } from '@element-plus/icons-vue'
 import logger from '@/utils/logger';
-import { getMatchTypeLabel } from '@/constants/domain';
-import { fetchPlayers } from '@/domain/player/playerService';
-import { createTeam } from '@/domain/team/teamService';
+import { getMatchTypeLabel } from '@/utils/constants';
+import { fetchPlayers } from '@/api/players';
+import { createTeam } from '@/api/teams';
 
 export default {
   name: 'TeamInput',
@@ -268,13 +268,17 @@ export default {
     matchType: {
       type: [String, Number],
       default: ''
+    },
+    tournamentId: {
+      type: [String, Number],
+      default: ''
     }
   },
   emits: ['submit'],
   data() {
     return {
       teamForm: {
-        teamName: '',
+        team_name: '',
         players: []
       },
       playerSelectorVisible: false,
@@ -288,7 +292,7 @@ export default {
   },
   computed: {
     canSubmit() {
-      return this.teamForm.teamName.trim() && this.teamForm.players.length > 0
+      return this.teamForm.team_name.trim() && this.teamForm.players.length > 0
     },
     filteredExistingPlayers() {
       if (!this.searchKeyword) {
@@ -306,7 +310,7 @@ export default {
   },
   methods: {
     addPlayer() {
-      this.teamForm.players.push({ name: '', number: '', studentId: '' });
+      this.teamForm.players.push({ name: '', number: '', student_id: '' });
     },
     removePlayer(index) {
       this.teamForm.players.splice(index, 1);
@@ -317,10 +321,11 @@ export default {
         this.$message.warning('请填写球队名称并至少添加一名球员');
         return;
       }
-      // 构造 payload，包含 competitionId (传入的 matchType 即为 competitionId)
+      // 构造 payload，包含 competition_id (传入的 matchType 即为 competition_id) 和 tournament_id
       const payload = { 
         ...this.teamForm,
-        competitionId: this.matchType 
+        competition_id: this.matchType,
+        tournament_id: this.tournamentId
       };
       try {
         this.submitting = true;
@@ -337,7 +342,7 @@ export default {
   } catch { /* ignore cache invalidation error */ }
         this.$message.success('球队创建成功');
         this.$emit('submit', data || payload);
-        this.teamForm = { teamName: '', players: [] };
+        this.teamForm = { team_name: '', players: [] };
       } catch (err) {
         logger.error('创建球队异常', err);
         this.$message.error('创建球队异常');
@@ -351,21 +356,22 @@ export default {
     async fetchExistingPlayers() {
       this.loadingPlayers = true;
       try {
-        const { ok, data: playersData, error } = await fetchPlayers();
+        const { ok, data, error } = await fetchPlayers();
         if (!ok) {
           logger.warn('获取球员列表失败(标准化层)', error);
           this.existingPlayers = [];
           return;
         }
         
+        const rawList = data?.data || data || []
         // 处理球员数据，确保字段映射正确
-        this.existingPlayers = playersData.map(player => ({
-          id: player.id || player.studentId, // 球员ID
+        this.existingPlayers = rawList.map(player => ({
+          id: player.id || player.student_id, // 球员ID
           name: player.name || '', // 球员姓名
           number: player.number || '', // 当前球衣号码
-          studentId: player.id || player.studentId, // 学号
-          teamName: player.teamName || null, // 当前队伍
-          matchType: player.matchType || '' // 赛事类型
+          student_id: player.id || player.student_id, // 学号
+          team_name: player.team_name || null, // 当前队伍
+          match_type: player.match_type || '' // 赛事类型
         })).filter(player => player.id && player.name); // 过滤掉无效数据
         
   logger.debug('处理后的球员数据:', this.existingPlayers.length, '名有效球员');
@@ -382,14 +388,14 @@ export default {
       try {
         // 假设有一个获取所有基础球队的API，或者复用 fetchTeams 获取所有参赛球队并去重
         // 这里暂时复用 fetchTeams，实际可能需要专门的 API 获取 TeamBase
-        const { fetchTeams } = await import('@/domain/team/teamService');
+        const { fetchTeams } = await import('@/api/teams');
         const { ok, data } = await fetchTeams();
         if (ok && data) {
           // 去重逻辑
           const uniqueTeams = new Map();
           data.forEach(t => {
-            if (!uniqueTeams.has(t.teamName)) {
-              uniqueTeams.set(t.teamName, { id: t.id, name: t.teamName });
+            if (!uniqueTeams.has(t.team_name)) {
+              uniqueTeams.set(t.team_name, { id: t.team_id, team_name: t.team_name });
             }
           });
           this.availableTeams = Array.from(uniqueTeams.values());
@@ -426,9 +432,9 @@ export default {
   logger.debug('准备添加的球员:', playersToAdd);
       
       // 检查是否有重复的球员
-      const existingPlayerIds = this.teamForm.players.map(p => p.studentId);
+      const existingPlayerIds = this.teamForm.players.map(p => p.student_id);
       const validPlayersToAdd = playersToAdd.filter(player => 
-        !existingPlayerIds.includes(player.studentId)
+        !existingPlayerIds.includes(player.student_id)
       );
       
       if (validPlayersToAdd.length !== playersToAdd.length) {
@@ -440,7 +446,7 @@ export default {
         this.teamForm.players.push({
           name: player.name,
           number: '', // 允许用户后续填写新的球衣号码
-          studentId: player.studentId
+          student_id: player.student_id
         });
       });
       

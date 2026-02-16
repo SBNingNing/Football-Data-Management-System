@@ -37,7 +37,6 @@ def main():
         logger.debug(f"已注册蓝图: {info['registered_blueprints']}")
         
         # 创建数据库表
-        # 创建数据库表
         with app.app_context():
             try:
                 db.create_all()

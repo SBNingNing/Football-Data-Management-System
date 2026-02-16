@@ -3,7 +3,7 @@
  * 职责: 为比赛详情视图提供响应式状态与加载方法
  */
 import { ref } from 'vue'
-import { fetchMatchAggregate } from '@/domain/match/matchService'
+import { getMatchDetail } from '@/api/matches'
 import logger from '@/utils/logger'
 
 /**
@@ -57,15 +57,16 @@ export function useMatchDetail() {
 
     try {
       // 获取比赛聚合数据
-      logger.info('[useMatchDetail] 调用 fetchMatchAggregate')
-      const res = await fetchMatchAggregate(matchId)
-      logger.info('[useMatchDetail] fetchMatchAggregate 响应:', res)
+      logger.info('[useMatchDetail] 调用 getMatchDetail')
+      const res = await getMatchDetail(matchId)
+      logger.info('[useMatchDetail] getMatchDetail 响应:', res)
       
       if (res.ok) {
         // 成功时更新各项数据
-        match.value = res.data.match
-        players.value = res.data.players
-        events.value = res.data.events
+        match.value = res.data
+        players.value = res.data?.players || []
+        events.value = res.data?.events || []
+        
         logger.info('[useMatchDetail] 数据加载成功:', {
           match: match.value,
           playersCount: players.value?.length,

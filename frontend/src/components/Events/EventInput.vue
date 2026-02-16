@@ -10,11 +10,11 @@
     </template>
     <el-form ref="eventFormRef" :model="eventForm" label-width="120px" class="event-form">
       <el-form-item label="比赛名称">
-        <el-select v-model="eventForm.matchName" placeholder="请选择比赛" @change="handleMatchSelect" class="w-full" filterable>
+        <el-select v-model="eventForm.match_name" placeholder="请选择比赛" @change="handleMatchSelect" class="w-full" filterable>
           <el-option 
             v-for="match in filteredMatches" 
             :key="match.id" 
-            :label="`${match.matchName} (${match.team1} vs ${match.team2})`" 
+            :label="`${match.match_name} (${match.team1} vs ${match.team2})`" 
             :value="match.id" 
           />
         </el-select>
@@ -29,22 +29,22 @@
             <div v-for="(ev, index) in eventForm.events" :key="`event-${index}`" class="event-item-card compact-card">
               <div class="event-item-content">
                 <span class="event-index-badge">#{{ index + 1 }}</span>
-                <el-select v-model="ev.eventType" placeholder="类型" class="event-field small-field">
+                <el-select v-model="ev.event_type" placeholder="类型" class="event-field small-field">
                   <el-option label="进球" value="进球" />
                   <el-option label="红牌" value="红牌" />
                   <el-option label="黄牌" value="黄牌" />
                   <el-option label="乌龙球" value="乌龙球" />
                 </el-select>
                 <el-select 
-                  v-model="ev.playerId" 
+                  v-model="ev.player_id" 
                   placeholder="选择球员" 
                   class="event-field medium-field"
                   filterable
                   :loading="playerSearchLoading"
                 >
-                  <el-option v-for="player in filteredMatchPlayers" :key="player.id || player.studentId" :label="`${player.name} (${player.teamName || '无队伍'})`" :value="player.id" />
+                  <el-option v-for="player in filteredMatchPlayers" :key="player.id || player.student_id" :label="`${player.name} (${player.team_name || '无队伍'})`" :value="player.id" />
                 </el-select>
-                <el-input v-model="ev.eventTime" placeholder="时间(分)" class="event-field small-field" />
+                <el-input v-model="ev.event_time" placeholder="时间(分)" class="event-field small-field" />
                 <el-button type="danger" link @click="removeEvent(index)" class="delete-btn" size="small"><el-icon><Delete /></el-icon></el-button>
               </div>
             </div>
@@ -66,8 +66,8 @@
 import { ref, reactive, computed } from 'vue'
 import { Flag, Delete } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
-import { getMatchTypeLabel } from '@/constants/domain'
-import { createEventsBatch } from '@/domain/event/eventService'
+import { getMatchTypeLabel } from '@/utils/constants'
+import { createEventsBatch } from '@/api/events'
 
 const props = defineProps({
   matchType: { type: [String, Number], default: '' },
@@ -77,7 +77,7 @@ const props = defineProps({
 const emit = defineEmits(['submit', 'refresh-data'])
 
 const eventFormRef = ref(null)
-const eventForm = reactive({ matchName: '', events: [] })
+const eventForm = reactive({ match_name: '', events: [] })
 const currentMatchPlayers = ref([])
 const submitting = ref(false)
 const playerSearchLoading = ref(false)
@@ -85,19 +85,18 @@ const playerSearchQuery = ref('')
 
 const matchTypeLabel = computed(() => getMatchTypeLabel(props.matchType))
 const canSubmit = computed(() => {
-  return !!eventForm.matchName && 
+  return !!eventForm.match_name && 
          eventForm.events.length > 0 && 
          !submitting.value &&
-         eventForm.events.every(e => e.eventType && e.playerId && e.eventTime)
+         eventForm.events.every(e => e.event_type && e.player_id && e.event_time)
 })
 
 // 过滤当前赛事类型的比赛
 const filteredMatches = computed(() => {
   if (!props.matchType) return props.matches
   return props.matches.filter(m => {
-    // 兼容多种字段名 (matchType, competitionId, tournamentId 等)
-    // 假设 props.matchType 是 competitionId
-    return m.competitionId == props.matchType || m.matchType == props.matchType
+    // 仅支持下划线命名
+    return m.competition_id == props.matchType
   })
 })
 
@@ -108,7 +107,7 @@ const filteredMatchPlayers = computed(() => {
 })
 
 const addEvent = () => {
-  eventForm.events.push({ eventType: '', playerId: '', eventTime: '' })
+  eventForm.events.push({ event_type: '', player_id: '', event_time: '' })
 }
 const removeEvent = (index) => {
   eventForm.events.splice(index, 1)
@@ -124,9 +123,9 @@ const handleMatchSelect = (matchId) => {
 
 // 刷新球员列表（确保获取最新数据）
 const refreshPlayerList = async () => {
-  if (!eventForm.matchName) return
+  if (!eventForm.match_name) return
   
-  const selectedMatch = props.matches.find(m => m.id === eventForm.matchName)
+  const selectedMatch = props.matches.find(m => m.id === eventForm.match_name)
   if (!selectedMatch) {
     currentMatchPlayers.value = []
     return
@@ -136,30 +135,35 @@ const refreshPlayerList = async () => {
   emit('refresh-data')
   
   // 使用最新的teams数据重新计算球员列表
-  // 尝试匹配 team1/team2 (名称) 或 homeTeamId/awayTeamId (ID)
-  // 注意：props.teams 可能是 TeamTournamentParticipation 列表，包含 teamName 和 id
   
   let team1 = null
   let team2 = null
 
-  // 优先尝试通过 ID 匹配 (如果 selectedMatch 有 homeTeamId/awayTeamId)
-  if (selectedMatch.homeTeamId) {
-    team1 = props.teams.find(t => t.id === selectedMatch.homeTeamId)
+  // 优先尝试通过 ID 匹配 (如果 selectedMatch 有 home_team_id/away_team_id)
+  if (selectedMatch.home_team_id) {
+    team1 = props.teams.find(t => t.id === selectedMatch.home_team_id)
   }
-  if (selectedMatch.awayTeamId) {
-    team2 = props.teams.find(t => t.id === selectedMatch.awayTeamId)
+  else if (selectedMatch.team1_id) {
+    team1 = props.teams.find(t => t.id === selectedMatch.team1_id)
   }
 
-  // 如果 ID 匹配失败，尝试通过名称匹配 (兼容旧数据)
+  if (selectedMatch.away_team_id) {
+    team2 = props.teams.find(t => t.id === selectedMatch.away_team_id)
+  }
+  else if (selectedMatch.team2_id) {
+    team2 = props.teams.find(t => t.id === selectedMatch.team2_id)
+  }
+
+  // 如果 ID 匹配失败，尝试通过名称匹配 (只保留 team_name)
   if (!team1 && selectedMatch.team1) {
-    team1 = props.teams.find(t => t.teamName === selectedMatch.team1)
+    team1 = props.teams.find(t => t.team_name === selectedMatch.team1)
   }
   if (!team2 && selectedMatch.team2) {
-    team2 = props.teams.find(t => t.teamName === selectedMatch.team2)
+    team2 = props.teams.find(t => t.team_name === selectedMatch.team2)
   }
   
-  const team1Players = (team1?.players || []).map(p => ({ ...p, teamName: team1?.teamName || '主队' }))
-  const team2Players = (team2?.players || []).map(p => ({ ...p, teamName: team2?.teamName || '客队' }))
+  const team1Players = (team1?.players || []).map(p => ({ ...p, team_name: team1?.team_name || '主队' }))
+  const team2Players = (team2?.players || []).map(p => ({ ...p, team_name: team2?.team_name || '客队' }))
   
   currentMatchPlayers.value = [...team1Players, ...team2Players]
 }
@@ -175,10 +179,10 @@ const submitEvents = () => {
   const clone = JSON.parse(JSON.stringify(eventForm))
   submitting.value = true
   createEventsBatch(clone.events.map(e => ({
-    matchId: clone.matchName, // matchName 实际上存储的是 ID
-    eventType: e.eventType,
-    playerId: e.playerId,
-    eventTime: e.eventTime
+    match_id: clone.match_name, // match_name 实际上存储的是 ID
+    event_type: e.event_type,
+    player_id: e.player_id,
+    event_time: e.event_time
   }))).then(({ ok, data, error }) => {
     if(!ok){
       ElMessage.error(error?.message || '批量创建事件失败')
@@ -196,7 +200,7 @@ const submitEvents = () => {
     const total = data?.total || clone.events.length
     ElMessage.success(`事件提交完成：成功 ${success}/${total}`)
     emit('submit', clone)
-    eventForm.matchName = ''
+    eventForm.match_name = ''
     eventForm.events = []
     currentMatchPlayers.value = []
   }).catch(_err => {

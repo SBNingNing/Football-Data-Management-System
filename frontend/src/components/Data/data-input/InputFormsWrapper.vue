@@ -10,7 +10,7 @@
           <el-button @click="$emit('back')" text><el-icon><Close /></el-icon>返回选择</el-button>
         </div>
       </template>
-      <TeamInput :match-type="matchType" :teams="teams" @submit="$emit('team-submit', $event)" class="input-component" />
+      <TeamInput :match-type="matchType" :tournament-id="tournamentId" :teams="teams" @submit="$emit('team-submit', $event)" class="input-component" />
     </el-card>
     <el-card v-else-if="type==='schedule'" key="schedule" shadow="hover" class="form-card">
       <template #header>
@@ -22,7 +22,7 @@
           <el-button @click="$emit('back')" text><el-icon><Close /></el-icon>返回选择</el-button>
         </div>
       </template>
-      <ScheduleInput :match-type="matchType" :teams="teams" @submit="$emit('schedule-submit', $event)" class="input-component" />
+      <ScheduleInput :match-type="matchType" :tournament-id="tournamentId" :teams="teams" @submit="$emit('schedule-submit', $event)" class="input-component" />
     </el-card>
     <el-card v-else-if="type==='event'" key="event" shadow="hover" class="form-card">
       <template #header>
@@ -46,6 +46,7 @@ import EventInput from '../../Events/EventInput.vue'
 defineProps({
   type: { type: String, default: '' },
   matchType: { type: [String, Number], default: '' },
+  tournamentId: { type: [String, Number], default: '' },
   teams: { type: Array, default: () => [] },
   matches: { type: Array, default: () => [] }
 })

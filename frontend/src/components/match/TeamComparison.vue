@@ -4,7 +4,7 @@
     <el-row :gutter="20">
       <el-col :span="12">
         <div class="team-stats">
-          <h3>{{ match?.homeTeam || '主队' }}</h3>
+          <h3>{{ match?.home_team_name || '主队' }}</h3>
           <el-row :gutter="10">
             <el-col :span="6" v-for="item in homeItems" :key="item.label">
               <div class="team-stat-item">
@@ -17,7 +17,7 @@
       </el-col>
       <el-col :span="12">
         <div class="team-stats">
-          <h3>{{ match?.awayTeam || '客队' }}</h3>
+          <h3>{{ match?.away_team_name || '客队' }}</h3>
           <el-row :gutter="10">
             <el-col :span="6" v-for="item in awayItems" :key="item.label">
               <div class="team-stat-item">
@@ -45,15 +45,15 @@ const props = defineProps({
   } 
 })
 const homeItems = computed(()=>[
-  { label:'进球', value: props.match?.homeTeamStats?.goals || 0 },
-  { label:'乌龙球', value: props.match?.homeTeamStats?.ownGoals || 0 },
-  { label:'黄牌', value: props.match?.homeTeamStats?.yellowCards || 0 },
-  { label:'红牌', value: props.match?.homeTeamStats?.redCards || 0 }
+  { label:'进球', value: props.match?.home_goals || 0 },
+  { label:'乌龙球', value: props.match?.home_own_goals || 0 },
+  { label:'黄牌', value: props.match?.home_yellow_cards || 0 },
+  { label:'红牌', value: props.match?.home_red_cards || 0 }
 ])
 const awayItems = computed(()=>[
-  { label:'进球', value: props.match?.awayTeamStats?.goals || 0 },
-  { label:'乌龙球', value: props.match?.awayTeamStats?.ownGoals || 0 },
-  { label:'黄牌', value: props.match?.awayTeamStats?.yellowCards || 0 },
-  { label:'红牌', value: props.match?.awayTeamStats?.redCards || 0 }
+  { label:'进球', value: props.match?.away_goals || 0 },
+  { label:'乌龙球', value: props.match?.away_own_goals || 0 },
+  { label:'黄牌', value: props.match?.away_yellow_cards || 0 },
+  { label:'红牌', value: props.match?.away_red_cards || 0 }
 ])
 </script>

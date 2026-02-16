@@ -1,6 +1,6 @@
 <template>
   <el-card class="team-name-card">
-    <EntityHeader :title="team.teamName || '未知球队'" variant="blue" @back="$emit('back')" />
+    <EntityHeader :title="team.team_name || '未知球队'" variant="blue" @back="$emit('back')" />
   </el-card>
 </template>
 <script setup>

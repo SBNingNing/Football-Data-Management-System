@@ -7,14 +7,14 @@
       <div class="status-container">
         <span class="match-status" :class="statusClass">{{ statusText }}</span>
       </div>
-      <h1 class="match-title">{{ match?.homeTeam || '主队' }} VS {{ match?.awayTeam || '客队' }}</h1>
+      <h1 class="match-title">{{ match?.home_team_name || '主队' }} VS {{ match?.away_team_name || '客队' }}</h1>
       <div class="match-meta">
-        <span class="meta-item"><el-icon><Calendar /></el-icon>比赛时间: {{ match?.matchDate || '待定' }}</span>
-        <span class="meta-item"><el-icon><Trophy /></el-icon>赛事: {{ match?.tournament }}</span>
-        <span class="meta-item"><el-icon><Location /></el-icon>赛季: {{ match?.season || '未知赛季' }}</span>
+        <span class="meta-item"><el-icon><Calendar /></el-icon>比赛时间: {{ match?.match_date || '待定' }}</span>
+        <span class="meta-item"><el-icon><Trophy /></el-icon>赛事: {{ match?.tournament_name || '-' }}</span>
+        <span class="meta-item"><el-icon><Location /></el-icon>赛季: {{ match?.season_name || '未知赛季' }}</span>
       </div>
       <div class="match-score">
-        <span class="score">{{ match?.homeScore || 0 }} : {{ match?.awayScore || 0 }}</span>
+        <span class="score">{{ match?.home_score || 0 }} : {{ match?.away_score || 0 }}</span>
       </div>
     </div>
   </el-card>

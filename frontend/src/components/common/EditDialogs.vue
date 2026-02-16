@@ -4,11 +4,11 @@
     <el-dialog :model-value="editTeamDialog" @update:model-value="$emit('close-team-dialog')" title="编辑球队信息" width="600px">
       <el-form :model="localTeamForm" label-width="100px">
         <el-form-item label="球队名称" required>
-          <el-input v-model="localTeamForm.teamName" placeholder="请输入球队名称"></el-input>
+          <el-input v-model="localTeamForm.team_name" placeholder="请输入球队名称"></el-input>
         </el-form-item>
         <el-form-item label="比赛类型" required>
           <el-select 
-            v-model="localTeamForm.matchType" 
+            v-model="localTeamForm.match_type" 
             placeholder="请选择比赛类型" 
             style="width: 100%;"
             @focus="loadCompetitionTypes"
@@ -31,10 +31,10 @@
               <div class="player-card-content">
                 <div class="player-info-row">
                   <span class="player-name">{{ player.name }}</span>
-                  <el-tag size="small" type="info">#{{ player.number }}</el-tag>
+                  <el-tag size="small" type="info">#{{ player.player_number || player.number }}</el-tag>
                 </div>
                 <div class="player-id-row">
-                  <span class="player-id">学号: {{ player.studentId }}</span>
+                  <span class="player-id">学号: {{ player.student_id }}</span>
                 </div>
               </div>
               <div class="player-card-actions">
@@ -62,7 +62,7 @@
                   <el-option
                     v-for="player in availablePlayersToAdd"
                     :key="player.id"
-                    :label="`${player.name} (${player.studentId})`"
+                    :label="`${player.name} (${player.student_id})`"
                     :value="player.id"
                   />
                 </el-select>
@@ -85,7 +85,7 @@
     <el-dialog :model-value="editMatchDialog" @update:model-value="$emit('close-match-dialog')" title="编辑比赛信息" width="600px">
       <el-form :model="localMatchForm" label-width="100px">
         <el-form-item label="比赛名称" required>
-          <el-input v-model="localMatchForm.matchName" placeholder="请输入比赛名称"></el-input>
+          <el-input v-model="localMatchForm.match_name" placeholder="请输入比赛名称"></el-input>
         </el-form-item>
         <el-form-item label="球队1" required>
           <el-select 
@@ -100,8 +100,8 @@
             <el-option 
               v-for="team in availableMatchTeams" 
               :key="team.id" 
-              :label="`${team.teamName} (${getMatchTypeLabel(team.matchType)})`"
-              :value="team.teamName"
+              :label="`${team.team_name} (${getMatchTypeLabel(team.match_type)})`"
+              :value="team.team_name"
             ></el-option>
           </el-select>
         </el-form-item>
@@ -116,10 +116,10 @@
             :loading="matchTeamsLoading"
           >
             <el-option 
-              v-for="team in availableMatchTeams.filter(t => t.teamName !== localMatchForm.team1)" 
-              :key="team.id" 
-              :label="`${team.teamName} (${getMatchTypeLabel(team.matchType)})`"
-              :value="team.teamName"
+              v-for="team in availableMatchTeams.filter(t => t.team_name !== localMatchForm.team1)" 
+              :key="team.id"
+              :label="`${team.team_name} (${getMatchTypeLabel(team.match_type)})`"
+              :value="team.team_name"
             ></el-option>
           </el-select>
         </el-form-item>
@@ -136,7 +136,7 @@
         </el-form-item>
         <el-form-item label="比赛类型" required>
           <el-select 
-            v-model="localMatchForm.matchType" 
+            v-model="localMatchForm.match_type" 
             placeholder="请选择比赛类型" 
             style="width: 100%;"
             @focus="loadCompetitionTypes"
@@ -162,7 +162,7 @@
       <el-form :model="localEventForm" label-width="100px">
         <el-form-item label="比赛名称" required>
           <el-select 
-            v-model="localEventForm.matchName" 
+            v-model="localEventForm.match_name" 
             placeholder="请选择比赛" 
             style="width: 100%;"
             @focus="loadMatches"
@@ -174,13 +174,13 @@
             <el-option 
               v-for="match in availableMatches" 
               :key="match.id" 
-              :label="`${match.matchName} (${match.team1} vs ${match.team2})`"
-              :value="match.matchName"
+              :label="`${match.match_name} (${match.team1} vs ${match.team2})`"
+              :value="match.match_name"
             ></el-option>
           </el-select>
         </el-form-item>
         <el-form-item label="事件类型" required>
-          <el-select v-model="localEventForm.eventType" placeholder="请选择事件类型" style="width: 100%;">
+          <el-select v-model="localEventForm.event_type" placeholder="请选择事件类型" style="width: 100%;">
             <el-option label="进球" value="进球"></el-option>
             <el-option label="黄牌" value="黄牌"></el-option>
             <el-option label="红牌" value="红牌"></el-option>
@@ -189,7 +189,7 @@
         </el-form-item>
         <el-form-item label="球员姓名" required>
           <el-select 
-            v-model="localEventForm.playerName" 
+            v-model="localEventForm.player_name" 
             placeholder="请选择球员" 
             style="width: 100%;"
             @focus="loadPlayers"
@@ -199,18 +199,18 @@
           >
             <el-option 
               v-for="player in availablePlayers" 
-              :key="player.id || player.studentId" 
-              :label="`${player.name} (${player.teamName || '无队伍'})`"
+              :key="player.id" 
+              :label="`${player.name} (${player.team_name || '无队伍'})`"
               :value="player.name"
             ></el-option>
           </el-select>
         </el-form-item>
         <el-form-item label="事件时间" required>
-          <el-input v-model="localEventForm.eventTime" placeholder="请输入事件时间（分钟）" type="number"></el-input>
+          <el-input v-model="localEventForm.event_time" placeholder="请输入事件时间（分钟）" type="number"></el-input>
         </el-form-item>
         <el-form-item label="比赛类型" required>
           <el-select 
-            v-model="localEventForm.matchType" 
+            v-model="localEventForm.match_type" 
             placeholder="请选择比赛类型" 
             style="width: 100%;"
             @focus="loadCompetitionTypes"
@@ -239,14 +239,14 @@
           <el-input v-model="localPlayerForm.name" placeholder="请输入球员姓名"></el-input>
         </el-form-item>
         <el-form-item label="学号" required>
-          <el-input v-model="localPlayerForm.studentId" placeholder="请输入学号" disabled></el-input>
+          <el-input v-model="localPlayerForm.student_id" placeholder="请输入学号" disabled></el-input>
         </el-form-item>
         <el-form-item label="球衣号码">
           <el-input v-model="localPlayerForm.number" placeholder="请输入球衣号码" type="number"></el-input>
         </el-form-item>
         <el-form-item label="所属球队">
           <el-select 
-            v-model="localPlayerForm.teamName" 
+            v-model="localPlayerForm.team_name" 
             placeholder="请选择球队" 
             style="width: 100%;"
             @focus="loadTeams"
@@ -257,14 +257,14 @@
             <el-option 
               v-for="team in availableTeams" 
               :key="team.id" 
-              :label="`${team.teamName} (${getMatchTypeLabel(team.matchType)})`"
-              :value="team.teamName"
+              :label="`${team.team_name} (${getMatchTypeLabel(team.match_type)})`"
+              :value="team.team_name"
             ></el-option>
           </el-select>
         </el-form-item>
         <el-form-item label="比赛类型">
           <el-select 
-            v-model="localPlayerForm.matchType" 
+            v-model="localPlayerForm.match_type" 
             placeholder="请选择比赛类型" 
             style="width: 100%;"
             @focus="loadCompetitionTypes"
@@ -288,127 +288,154 @@
 </template>
 
 <script setup>
-import { ref, watch, reactive, computed } from 'vue'
+import { reactive, watch, ref } from 'vue'
 import { Delete } from '@element-plus/icons-vue'
 import http from '@/utils/httpClient'
 import logger from '@/utils/logger'
-import useCompetitions from '@/composables/admin/useCompetitions'
+import useManagementLabels from '@/composables/admin/useManagementLabels'
 
-// 运行时 props 定义（无需 withDefaults，已提供 default）
 const props = defineProps({
-  editTeamDialog: { type: Boolean, default: false },
-  editMatchDialog: { type: Boolean, default: false },
-  editEventDialog: { type: Boolean, default: false },
-  editPlayerDialog: { type: Boolean, default: false },
-  editTeamForm: { type: Object, default: () => ({}) },
-  editMatchForm: { type: Object, default: () => ({}) },
-  editEventForm: { type: Object, default: () => ({}) },
-  editPlayerForm: { type: Object, default: () => ({}) },
+  editTeamDialog: Boolean,
+  editMatchDialog: Boolean,
+  editEventDialog: Boolean,
+  editPlayerDialog: Boolean,
+  editTeamForm: Object,
+  editMatchForm: Object,
+  editEventForm: Object,
+  editPlayerForm: Object,
   teams: { type: Array, default: () => [] },
   matches: { type: Array, default: () => [] },
-  players: { type: Array, default: () => [] }
+  players: { type: Array, default: () => [] },
 })
 
 const emit = defineEmits([
   'close-team-dialog', 'close-match-dialog', 'close-event-dialog', 'close-player-dialog',
-  'update-team','update-match','update-event','update-player','add-edit-player','remove-edit-player'
+  'update-team', 'update-match', 'update-event', 'update-player', 
+  'add-edit-player', 'remove-edit-player'
 ])
 
-const { competitionOptions, fetchCompetitions, getCompetitionLabel } = useCompetitions()
+const { getMatchTypeLabel } = useManagementLabels()
 
-// 响应式数据
-const availableTeams = ref([])
-const teamsLoading = ref(false)
-const availableMatches = ref([])
-const matchesLoading = ref(false)
-const availablePlayers = ref([])
-const playersLoading = ref(false)
-const availableMatchTeams = ref([])
-const matchTeamsLoading = ref(false)
-const availableCompetitionTypes = computed(() => competitionOptions.value)
+// 本地表单状态，统一使用下划线命名
+const localTeamForm = reactive({
+  id: '',
+  team_name: '',
+  match_type: '',
+  players: []
+})
+
+const localMatchForm = reactive({
+  id: '',
+  match_name: '',
+  team1: '',
+  team2: '',
+  date: '',
+  location: '',
+  match_type: ''
+})
+
+const localEventForm = reactive({
+  id: '',
+  match_name: '',
+  event_type: '',
+  player_name: '',
+  event_time: '',
+  match_type: ''
+})
+
+const localPlayerForm = reactive({
+  id: '', 
+  name: '',
+  student_id: '',
+  number: '',
+  team_name: '',
+  match_type: ''
+})
+
+// 监听父组件传来的表单数据变化，进行深拷贝
+watch(() => props.editTeamForm, (newVal) => { 
+  if(newVal) Object.assign(localTeamForm, newVal) 
+}, { deep: true })
+
+watch(() => props.editMatchForm, (newVal) => { 
+  if(newVal) Object.assign(localMatchForm, newVal) 
+}, { deep: true })
+
+watch(() => props.editEventForm, (newVal) => { 
+  if(newVal) Object.assign(localEventForm, newVal) 
+}, { deep: true })
+
+watch(() => props.editPlayerForm, (newVal) => { 
+  if(newVal) Object.assign(localPlayerForm, newVal) 
+}, { deep: true })
+
+
+// 提交处理函数
+const emitUpdateTeam = () => { emit('update-team', { ...localTeamForm }) }
+const emitUpdateMatch = () => { emit('update-match', { ...localMatchForm }) }
+const emitUpdateEvent = () => { emit('update-event', { ...localEventForm }) }
+const emitUpdatePlayer = () => { emit('update-player', { ...localPlayerForm }) }
+
+// 辅助状态和数据加载
+const availableCompetitionTypes = ref([])
 const competitionsLoading = ref(false)
 
-// New state for team player management
-const selectedPlayerToAdd = ref('')
-const availablePlayersToAdd = ref([])
-const isAddingPlayer = ref(false)
-
-// 本地副本（避免直接修改父级传入的表单对象）
-const clone = (obj, fallback) => {
-  if (!obj || typeof obj !== 'object') return fallback
-  try { return JSON.parse(JSON.stringify(obj)) } catch { return fallback }
-}
-const localTeamForm = reactive(clone(props.editTeamForm, { teamName:'', matchType:'' }))
-const localMatchForm = reactive(clone(props.editMatchForm, { matchName:'', team1:'', team2:'', date:'', location:'', matchType:'' }))
-const localEventForm = reactive(clone(props.editEventForm, { matchName:'', eventType:'', playerName:'', eventTime:'', matchType:'' }))
-const localPlayerForm = reactive(clone(props.editPlayerForm, { id: '', name:'', studentId:'', number:'', teamName:'', matchType:'' }))
-
-// 同步父 prop 更新（当父重新赋值时刷新本地）
-watch(() => props.editTeamForm, v => Object.assign(localTeamForm, clone(v, {})), { deep: true })
-watch(() => props.editMatchForm, v => Object.assign(localMatchForm, clone(v, {})), { deep: true })
-watch(() => props.editEventForm, v => Object.assign(localEventForm, clone(v, {})), { deep: true })
-watch(() => props.editPlayerForm, v => Object.assign(localPlayerForm, clone(v, {})), { deep: true })
-
-// 提交时 emit 更新后的副本
-const emitUpdateTeam = () => emit('update-team', clone(localTeamForm, {}))
-const emitUpdateMatch = () => emit('update-match', clone(localMatchForm, {}))
-const emitUpdateEvent = () => emit('update-event', clone(localEventForm, {}))
-const emitUpdatePlayer = () => emit('update-player', clone(localPlayerForm, {}))
-
-// 方法
-const getMatchTypeLabel = (type) => {
-  return getCompetitionLabel(type)
-}
-
-// 加载赛事类型（从数据库中获取唯一的比赛类型）
 const loadCompetitionTypes = async () => {
+  if (availableCompetitionTypes.value.length > 0) return
   competitionsLoading.value = true
   try {
-    await fetchCompetitions()
+    const res = await http.get('/competitions')
+    if (res.ok) {
+      availableCompetitionTypes.value = (res.data.data || res.data).map(c => ({
+        value: c.name,
+        label: c.name
+      }))
+    }
+  } catch (e) {
+    logger.error('获取赛事类型失败', e)
   } finally {
     competitionsLoading.value = false
   }
 }
 
-// Load players who don't have a team
-const loadAvailablePlayers = async () => {
-  playersLoading.value = true
-  try {
-    // Force reload to get latest status
-    const res = await http.get('/players', { 
-      params: { _t: Date.now() } 
-    })
-    if (res.ok) {
-      const allPlayers = res.data.data || res.data || []
-      // Filter players who don't have a teamName or team property
-      availablePlayersToAdd.value = allPlayers.filter(p => !p.teamName && !p.team)
-    }
-  } catch (e) {
-    logger.error('Failed to load available players', e)
-  } finally {
-    playersLoading.value = false
-  }
-}
+// 动态数据源
+const availableTeams = ref([])
+const teamsLoading = ref(false)
+const availableMatchTeams = ref([])
+const matchTeamsLoading = ref(false)
+const availableMatches = ref([])
+const matchesLoading = ref(false)
+const availablePlayers = ref([])
+const playersLoading = ref(false)
+
+// 添加球员相关逻辑
+const isAddingPlayer = ref(false)
+const selectedPlayerToAdd = ref('')
+const availablePlayersToAdd = ref([])
 
 const searchAvailablePlayers = async (query) => {
-  if (!query) {
-    await loadAvailablePlayers()
+  if (query === '') {
+    availablePlayersToAdd.value = []
     return
   }
   playersLoading.value = true
   try {
-    // Client-side filtering for now as backend might not support complex filtering
     const res = await http.get('/players')
     if (res.ok) {
       const allPlayers = res.data.data || res.data || []
       availablePlayersToAdd.value = allPlayers.filter(p => 
-        (!p.teamName && !p.team) && 
-        (p.name.includes(query) || p.studentId.includes(query))
+        (!p.team_name) && 
+        (p.name.includes(query) || p.student_id.includes(query))
       )
     }
   } finally {
     playersLoading.value = false
   }
+}
+
+const loadAvailablePlayers = async () => {
+  // 加载所有无队伍球员
+  searchAvailablePlayers('') 
 }
 
 const startAddingPlayer = () => {
@@ -427,14 +454,12 @@ const addPlayerToTeam = () => {
   const player = availablePlayersToAdd.value.find(p => p.id === selectedPlayerToAdd.value)
   if (player) {
     if (!localTeamForm.players) localTeamForm.players = []
-    // Add to local form
     localTeamForm.players.push({
       id: player.id,
       name: player.name,
-      number: player.number || '', // Allow editing number later? Or just add as is.
-      studentId: player.studentId
+      number: player.number || '',
+      student_id: player.student_id
     })
-    // Remove from available list
     availablePlayersToAdd.value = availablePlayersToAdd.value.filter(p => p.id !== player.id)
     selectedPlayerToAdd.value = ''
     isAddingPlayer.value = false
@@ -443,42 +468,20 @@ const addPlayerToTeam = () => {
 
 const removePlayerFromTeam = (index) => {
   if (localTeamForm.players && localTeamForm.players[index]) {
-    const player = localTeamForm.players[index]
-    // Add back to available list if we have it loaded (optional, but good UX)
-    if (player.id) {
-      availablePlayersToAdd.value.push({
-        id: player.id,
-        name: player.name,
-        studentId: player.studentId,
-        number: player.number
-      })
-    }
     localTeamForm.players.splice(index, 1)
   }
 }
 
-// 通用的球队加载函数
 // 通用数据加载函数
 const loadGenericData = async (endpoint, targetRef, loadingRef, logPrefix, propsFallback = null, options = {}) => {
   if (targetRef.value.length > 0 && !options.forceReload) return
   
   loadingRef.value = true
   try {
-    const requestOptions = {
-      retry: {
-        times: 2,
-        delay: (attempt) => attempt * 1000,
-        onRetry: (error, attempt) => {
-          logger.warn(`${logPrefix}数据获取失败，第${attempt}次重试:`, error.message)
-        }
-      },
-      ...options.requestOptions
-    }
-    
+    const requestOptions = { ...options.requestOptions }
     const result = await http.get(endpoint, requestOptions)
     
     if (!result.ok) {
-      logger.error(`获取${logPrefix}列表失败:`, result.error)
       if (propsFallback && Array.isArray(propsFallback)) {
         targetRef.value = propsFallback
       }
@@ -490,7 +493,8 @@ const loadGenericData = async (endpoint, targetRef, loadingRef, logPrefix, props
     if (Array.isArray(response)) {
       dataArray = response;
     } else if (response && typeof response === 'object') {
-      const possibleKeys = ['data', 'records', logPrefix.toLowerCase(), `${logPrefix.toLowerCase()}s`]
+      // 尝试常见的后端返回字段
+      const possibleKeys = ['data', 'records']
       for (const key of possibleKeys) {
         if (Array.isArray(response[key])) {
           dataArray = response[key];
@@ -510,6 +514,7 @@ const loadGenericData = async (endpoint, targetRef, loadingRef, logPrefix, props
 }
 
 const loadTeams = async () => {
+  // 仅在对话框打开时加载
   return loadGenericData('/teams', availableTeams, teamsLoading, '球队', props.teams)
 }
 
@@ -518,12 +523,11 @@ const loadMatches = async () => {
 }
 
 const loadPlayers = async () => {
-  // 强制重新加载，确保获取最新球员数据
   return loadGenericData('/players', availablePlayers, playersLoading, '球员', props.players, {
     forceReload: true,
     requestOptions: {
       headers: { 'Cache-Control': 'no-cache' },
-      params: { _t: Date.now() } // 添加时间戳避免缓存
+      params: { _t: Date.now() }
     }
   })
 }
@@ -532,7 +536,6 @@ const loadTeamsForMatch = async () => {
   return loadGenericData('/teams', availableMatchTeams, matchTeamsLoading, '比赛球队', props.teams)
 }
 
-// 监听球员编辑对话框打开
 watch(() => props.editPlayerDialog, (newValue) => {
   if (newValue) {
     loadTeams()
@@ -548,82 +551,31 @@ watch(() => props.editEventDialog, (newValue) => {
   }
 })
 
-watch(() => props.editMatchDialog, (newValue) => {
-  if (newValue) {
-    loadTeamsForMatch()
-    loadCompetitionTypes()
-  }
-})
 </script>
 
 <style scoped>
-/* 局部样式已抽离到 admin-management.css，如需个性化覆写可在此扩展 */
 .team-players-container {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 10px;
-  max-height: 300px;
-  overflow-y: auto;
-  padding: 10px;
   border: 1px solid #dcdfe6;
   border-radius: 4px;
-  margin-bottom: 10px;
-  background-color: #fff;
+  padding: 10px;
+  min-height: 100px;
+  max-height: 200px;
+  overflow-y: auto;
+  margin-top: 5px;
 }
-
+.no-players-text {
+  text-align: center;
+  color: #909399;
+  line-height: 100px;
+}
 .player-card-item {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 10px;
-  background-color: #ecf5ff; /* 浅蓝色背景 */
-  border-radius: 6px;
-  border: 1px solid #d9ecff;
-  transition: all 0.3s ease;
-  position: relative;
+  border-bottom: 1px solid #ebeef5;
+  padding: 8px 0;
 }
-
-.player-card-item:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  border-color: #409eff;
-  z-index: 1;
-}
-
-.player-card-content {
-  flex: 1;
-  overflow: hidden;
-}
-
-.player-info-row {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-weight: bold;
-  color: #303133;
-  margin-bottom: 4px;
-}
-
-.player-name {
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 80px;
-}
-
-.player-id-row {
-  font-size: 12px;
-  color: #606266;
-}
-
-.player-card-actions {
-  margin-left: 8px;
-}
-
-.no-players-text {
-  grid-column: span 3;
-  text-align: center;
-  color: #909399;
-  padding: 20px;
+.player-card-item:last-child {
+  border-bottom: none;
 }
 </style>

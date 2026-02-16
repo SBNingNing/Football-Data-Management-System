@@ -9,6 +9,7 @@ from .tournaments import (
     TournamentUpdate,
     TournamentInstanceCreate,
     TournamentInstanceUpdate,
+    TournamentQuickCreate,
 )
 from .stats import StatsOverview, Rankings, TournamentStats
 from .matches import MatchCreate, MatchUpdate, MatchBrief, MatchRecordItem, MatchRecordsPage

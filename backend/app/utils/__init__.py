@@ -2,7 +2,6 @@
 from .security import SecurityUtils
 from .logging_config import setup_logging
 from .logger import get_logger
-from .validation_config import ValidationConfig
 from .stats_utils import StatsUtils
 from .team_utils import TeamUtils
 from .player_history_utils import PlayerHistoryUtils
@@ -17,7 +16,6 @@ __all__ = [
     'SecurityUtils',
     'setup_logging',
     'get_logger', 
-    'ValidationConfig',
     'StatsUtils',
     'TeamUtils',
     'PlayerHistoryUtils',

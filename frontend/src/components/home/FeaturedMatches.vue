@@ -119,14 +119,14 @@ export default {
 .featured-match-item {
   height: 100%;
   padding: 15px;
- background: #ffffff;
-  color: #303133;
+  background: #60a5fa; /* 蓝色底色（不偏天蓝/不偏深蓝） */
+  color: #ffffff;
   border-radius: 8px;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
   cursor: pointer;
-  border: 1px solid #e4e7ed;
+  border: 1px solid #3b82f6;
   transition: all 0.3s;
 }
 
@@ -155,12 +155,12 @@ export default {
   font-size: 22px;
   font-weight: bold;
   margin: 20px 0;
-  color: #303133;
+  color: inherit;
 }
 
 .vs {
   margin: 0 15px;
-  color: #909399;
+  color: rgba(255, 255, 255, 0.85);
   font-style: italic;
 }
 

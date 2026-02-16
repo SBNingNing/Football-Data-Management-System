@@ -3,8 +3,8 @@
 """
 from flask import Blueprint, request
 from flask_jwt_extended import jwt_required
+from pydantic import ValidationError
 from app.services.player_service import PlayerService
-from app.middleware.player_middleware import validate_player_id
 from app.utils.logger import get_logger
 from app.utils.response import success_response, error_response
 from app.schemas.player import PlayerCreate, PlayerUpdate
@@ -25,7 +25,6 @@ def get_players():
 
 
 @players_bp.route('/<string:player_id>', methods=['GET'])
-@validate_player_id
 def get_player(player_id):
     """获取单个球员信息"""
     try:
@@ -52,20 +51,15 @@ def create_player():
         return success_response(new_player.to_dict(), message='球员创建成功', status_code=201)
     except ValueError as e:
         return error_response('PLAYER_CREATE_CONFLICT', str(e), 400)
+    except ValidationError as e:
+        return error_response('VALIDATION_ERROR', '参数验证失败', 400, detail=e.errors())
     except Exception as e:
-        try:
-            from pydantic import ValidationError  # type: ignore
-            if isinstance(e, ValidationError):
-                return error_response('VALIDATION_ERROR', '参数验证失败', 400, detail=e.errors())
-        except Exception:
-            pass
         logger.error(f"创建球员失败: {str(e)}", exc_info=True)
         return error_response('PLAYER_CREATE_ERROR', '创建失败', 500, detail=str(e))
 
 
 @players_bp.route('/<string:player_id>', methods=['PUT'])
 @jwt_required()
-@validate_player_id
 def update_player(player_id):
     """更新球员信息"""
     try:
@@ -76,20 +70,15 @@ def update_player(player_id):
         return success_response(message='更新成功')
     except ValueError as e:
         return error_response('PLAYER_NOT_FOUND', str(e), 404)
+    except ValidationError as e:
+        return error_response('VALIDATION_ERROR', '参数验证失败', 400, detail=e.errors())
     except Exception as e:
-        try:
-            from pydantic import ValidationError  # type: ignore
-            if isinstance(e, ValidationError):
-                return error_response('VALIDATION_ERROR', '参数验证失败', 400, detail=e.errors())
-        except Exception:
-            pass
         logger.error(f"更新球员 {player_id} 失败: {str(e)}", exc_info=True)
         return error_response('PLAYER_UPDATE_ERROR', '更新失败', 500, detail=str(e))
 
 
 @players_bp.route('/<string:player_id>', methods=['DELETE'])
 @jwt_required()
-@validate_player_id
 def delete_player(player_id):
     """删除球员"""
     try:

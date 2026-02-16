@@ -7,8 +7,8 @@
           <div class="search-stats">共 {{ filteredPlayers.length }} 名球员</div>
           <el-radio-group v-model="selectedTeamLocal" class="team-filter">
             <el-radio-button label="all">全部</el-radio-button>
-            <el-radio-button :label="match?.homeTeam">{{ match?.homeTeam || '主队' }}</el-radio-button>
-            <el-radio-button :label="match?.awayTeam">{{ match?.awayTeam || '客队' }}</el-radio-button>
+            <el-radio-button :label="match?.home_team_name">{{ match?.home_team_name || '主队' }}</el-radio-button>
+            <el-radio-button :label="match?.away_team_name">{{ match?.away_team_name || '客队' }}</el-radio-button>
           </el-radio-group>
         </div>
       </div>
@@ -19,21 +19,21 @@
         <p>{{ selectedTeamLocal==='all' ? '暂无球员数据' : `${selectedTeamLocal} 队暂无球员数据` }}</p>
       </div>
       <el-row :gutter="20" v-else>
-        <el-col :span="8" v-for="player in paginatedPlayers" :key="player.playerId" class="player-col">
-          <el-card shadow="hover" class="player-card" @click="$emit('view-player', player.playerId)">
+        <el-col :span="8" v-for="player in paginatedPlayers" :key="player.player_id" class="player-col">
+          <el-card shadow="hover" class="player-card" @click="$emit('view-player', player.player_id)">
             <div class="player-info">
               <div class="player-avatar"><el-icon class="avatar-icon"><User /></el-icon></div>
               <div class="player-details">
-                <div class="player-name">{{ player.playerName || '未知球员' }}</div>
+                <div class="player-name">{{ player.player_name || '未知球员' }}</div>
                 <div class="player-meta">
-                  <div class="meta-item"><el-icon><Trophy /></el-icon><span>{{ player.teamName || '未知球队' }}</span></div>
-                  <div class="meta-item" v-if="player.playerNumber"><el-icon><Tickets /></el-icon><span>{{ player.playerNumber }}号</span></div>
+                  <div class="meta-item"><el-icon><Trophy /></el-icon><span>{{ player.team_name || '未知球队' }}</span></div>
+                  <div class="meta-item" v-if="player.player_number"><el-icon><Tickets /></el-icon><span>{{ player.player_number }}号</span></div>
                 </div>
                 <div class="player-stats">
                   <span class="stat-badge goals"><el-icon><Football /></el-icon>{{ player.goals || 0 }}球</span>
-                  <span class="stat-badge own-goals"><el-icon><Football /></el-icon>{{ player.ownGoals || 0 }}乌龙</span>
-                  <span class="stat-badge yellow-cards"><el-icon><Warning /></el-icon>{{ player.yellowCards || 0 }}黄</span>
-                  <span class="stat-badge red-cards"><el-icon><CircleClose /></el-icon>{{ player.redCards || 0 }}红</span>
+                  <span class="stat-badge own-goals"><el-icon><Football /></el-icon>{{ player.own_goals || 0 }}乌龙</span>
+                  <span class="stat-badge yellow-cards"><el-icon><Warning /></el-icon>{{ player.yellow_cards || 0 }}黄</span>
+                  <span class="stat-badge red-cards"><el-icon><CircleClose /></el-icon>{{ player.red_cards || 0 }}红</span>
                 </div>
               </div>
             </div>
@@ -82,6 +82,6 @@ watch(()=>props.pageSize, v=>{ if(v!==pageSizeLocal.value) pageSizeLocal.value =
 watch(selectedTeamLocal, v=>{ emits('update:selectedTeam', v); currentPageLocal.value = 1; emits('update:currentPage',1) })
 function onSizeChange(size){ pageSizeLocal.value = size; emits('update:pageSize', size); currentPageLocal.value = 1; emits('update:currentPage',1) }
 function onPageChange(p){ currentPageLocal.value = p; emits('update:currentPage', p) }
-const filteredPlayers = computed(()=> selectedTeamLocal.value==='all' ? props.players : props.players.filter(p=>p.teamName===selectedTeamLocal.value))
+const filteredPlayers = computed(()=> selectedTeamLocal.value==='all' ? props.players : props.players.filter(p=>p.team_name===selectedTeamLocal.value))
 const paginatedPlayers = computed(()=> { const start = (currentPageLocal.value-1)*pageSizeLocal.value; return filteredPlayers.value.slice(start, start+pageSizeLocal.value) })
 </script>

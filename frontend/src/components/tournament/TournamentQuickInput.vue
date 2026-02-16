@@ -63,9 +63,9 @@
 import { Plus } from '@element-plus/icons-vue'
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
-import { createTournament } from '@/domain/tournament/tournamentCrudService'
-import { fetchSeasons } from '@/domain/season/seasonsService'
-import { fetchCompetitions } from '@/domain/competition/competitionsService'
+import { createTournament } from '@/api/tournaments'
+import { fetchSeasons } from '@/api/seasons'
+import { fetchCompetitions } from '@/api/competitions'
 import '@/assets/styles/input-components.css'
 
 const emit = defineEmits(['submit'])
@@ -119,8 +119,11 @@ const submitTournament = async () => {
 // 加载赛季列表
 const loadSeasons = async () => {
   try {
-    const response = await fetchSeasons()
-    seasons.value = response.data || []
+    const { ok, data } = await fetchSeasons()
+    if (ok) {
+      const rawList = data?.data || data || []
+      seasons.value = rawList.map(normalizeSeason)
+    }
   } catch (error) {
     console.error('加载赛季列表失败:', error)
   }
@@ -131,7 +134,9 @@ const loadCompetitions = async () => {
   try {
     const { ok, data } = await fetchCompetitions()
     if (ok) {
-      competitions.value = data.competitions || []
+      const rawData = data?.data || data || {}
+      const list = rawData.competitions || []
+      competitions.value = list.map(normalizeCompetition)
     }
   } catch (error) {
     console.error('加载赛事列表失败:', error)

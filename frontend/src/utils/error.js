@@ -15,7 +15,13 @@ export function buildError(message, code, cause, extra = {}) {
 export function normalizeError(e) {
   if (!e) return { message: '未知错误', code: 'UNKNOWN', isNormalized: true }
   if (e.isNormalized) return e
-  const message = e.message || '请求失败'
+  
+  // 尝试从 axios 响应中提取后端返回的错误信息
+  let message = e.message || '请求失败'
+  if (e.response && e.response.data && e.response.data.message) {
+    message = e.response.data.message
+  }
+  
   const code = e.code || e.statusCode || 'ERROR'
   return { message, code, cause: e, isNormalized: true, retryable: !!e.retryable }
 }

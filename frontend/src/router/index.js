@@ -26,8 +26,8 @@ const routes = [
     component: Register,
     meta: { 
       title: '管理员注册',
-      // 后续游客登录状态判断逻辑：游客状态下隐藏此路由
-      // adminOnly: true 
+      // 对应后端 /auth/register-admin 接口
+      // 此页面为公开注册页面，用于创建初始管理员
     }
   },
   {
@@ -89,16 +89,6 @@ const routes = [
   {
     path: '/match-detail/:matchId',
     name: 'match-detail',
-    component: MatchDetail,
-    props: route => ({
-      matchId: route.params.matchId,
-      ...route.query
-    }),
-    meta: { requiresAuth: true }
-  },
-  {
-    path: '/match/detail/:matchId',
-    name: 'match-detail-alt',
     component: MatchDetail,
     props: route => ({
       matchId: route.params.matchId,

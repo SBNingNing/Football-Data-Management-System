@@ -5,7 +5,7 @@
 import { ref, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useMatchDetail } from './useMatchDetail.js'
-import { MATCH_EVENT_TYPES } from '@/constants/match'
+import { MATCH_EVENT_TYPES } from '@/utils/constants'
 import { normalizeError } from '@/utils/error'
 import logger from '@/utils/logger'
 

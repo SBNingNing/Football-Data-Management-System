@@ -41,7 +41,7 @@
 import { Plus } from '@element-plus/icons-vue'
 import { ref, reactive } from 'vue'
 import { ElMessage } from 'element-plus'
-import { createCompetition } from '@/domain/competition/competitionsService'
+import { createCompetition } from '@/api/competitions'
 import '@/assets/styles/input-components.css'
 
 const emit = defineEmits(['submit'])

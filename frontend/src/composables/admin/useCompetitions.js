@@ -1,5 +1,5 @@
 import { ref, computed } from 'vue'
-import { fetchCompetitions as fetchCompetitionsService } from '@/domain/competition/competitionsService'
+import { fetchCompetitions as fetchCompetitionsApi } from '@/api/competitions'
 import logger from '@/utils/logger'
 
 // Shared state to avoid fetching multiple times if used in multiple components
@@ -18,10 +18,11 @@ export default function useCompetitions() {
 
     loading.value = true
     try {
-      const res = await fetchCompetitionsService({}, { force })
+      const res = await fetchCompetitionsApi(force ? { _ts: Date.now() } : {})
       if (res.ok) {
-        // The service returns { competitions: [...], statistics: ... }
-        competitions.value = res.data.competitions || []
+        const rawData = res.data?.data || res.data || {}
+        const list = rawData.competitions || []
+        competitions.value = list
         loaded.value = true
       } else {
         logger.error('Failed to fetch competitions:', res.error)

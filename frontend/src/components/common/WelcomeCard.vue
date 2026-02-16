@@ -26,7 +26,7 @@
           <el-skeleton :rows="1" animated />
         </div>
         <div v-else class="stat-item float-shadow">
-          <div class="stat-number">{{ teamsCount }}</div>
+          <div class="stat-number">{{ teams_count }}</div>
           <div class="stat-label">球队数量</div>
         </div>
         
@@ -34,7 +34,7 @@
           <el-skeleton :rows="1" animated />
         </div>
         <div v-else class="stat-item float-shadow">
-          <div class="stat-number">{{ matchesCount }}</div>
+          <div class="stat-number">{{ matches_count }}</div>
           <div class="stat-label">比赛数量</div>
         </div>
         
@@ -42,7 +42,7 @@
           <el-skeleton :rows="1" animated />
         </div>
         <div v-else class="stat-item float-shadow">
-          <div class="stat-number">{{ playersCount }}</div>
+          <div class="stat-number">{{ players_count }}</div>
           <div class="stat-label">球员数量</div>
         </div>
       </div>
@@ -55,7 +55,7 @@
 
 <script setup>
 import { UserFilled, House, SwitchButton, Refresh } from '@element-plus/icons-vue'
-import { ref, onMounted } from 'vue'
+import { ref } from 'vue'
 import { useAuthStore } from '@/store/modules/auth'
 import http from '@/utils/httpClient'
 import logger from '@/utils/logger'
@@ -64,9 +64,9 @@ import '@/assets/styles/welcome-card.css'
 const authStore = useAuthStore()
 
 // 统计数据
-const teamsCount = ref(0)
-const matchesCount = ref(0)
-const playersCount = ref(0)
+const teams_count = ref(0)
+const matches_count = ref(0)
+const players_count = ref(0)
 const loading = ref(false)
 
 // 获取统计数据
@@ -82,33 +82,25 @@ async function fetchStats() {
     
     if (result.ok) {
       const stats = result.data
-      // 根据实际API响应结构更新数据
-      teamsCount.value = stats.teams_count || stats.totalTeams || 0
-      matchesCount.value = stats.matches_count || stats.totalMatches || 0
-      playersCount.value = stats.players_count || stats.totalPlayers || 0
+      teams_count.value = stats.teams_count || 0
+      matches_count.value = stats.matches_count || 0
+      players_count.value = stats.players_count || 0
       logger.info('统计数据获取成功:', stats)
     } else {
       logger.error('获取统计数据失败:', result.error)
       // 如果API失败，从用户信息中获取备用数据
-      teamsCount.value = authStore.user?.teamsCount || 0
-      matchesCount.value = authStore.user?.matchesCount || 0
-      playersCount.value = authStore.user?.playersCount || 0
+      teams_count.value = authStore.user?.teams_count || 0
+      matches_count.value = authStore.user?.matches_count || 0
+      players_count.value = authStore.user?.players_count || 0
     }
   } catch (error) {
     logger.error('获取统计数据异常:', error)
     // 出错时使用备用数据
-    teamsCount.value = authStore.user?.teamsCount || 0
-    matchesCount.value = authStore.user?.matchesCount || 0
-    playersCount.value = authStore.user?.playersCount || 0
+    teams_count.value = authStore.user?.teams_count || 0
+    matches_count.value = authStore.user?.matches_count || 0
+    players_count.value = authStore.user?.players_count || 0
   } finally {
     loading.value = false
   }
 }
-
-// 组件挂载时获取统计数据
-onMounted(() => {
-  fetchStats()
-})
-
-defineEmits(['go-to-home', 'logout'])
 </script>

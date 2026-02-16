@@ -48,24 +48,24 @@
         <template #card="{ entity: match }">
           <el-card shadow="hover" class="match-card">
             <div class="match-info">
-              <div class="match-title">{{ match.matchName || match.name || '未命名比赛' }}</div>
+              <div class="match-title">{{ match.match_name || '未命名比赛' }}</div>
               <div class="match-teams">
-                <span class="team">{{ match.team1 || match.homeTeam || '主队' }}</span>
+                <span class="team">{{ match.home_team || '主队' }}</span>
                 <span class="vs">VS</span>
-                <span class="team">{{ match.team2 || match.awayTeam || '客队' }}</span>
+                <span class="team">{{ match.away_team || '客队' }}</span>
               </div>
-              <div class="match-score">{{ match.home_score || match.homeScore || 0 }} : {{ match.away_score || match.awayScore || 0 }}</div>
+              <div class="match-score">{{ match.score || '0 : 0' }}</div>
               <div class="match-meta">
-                <div class="meta-item"><el-icon><Calendar /></el-icon><span>{{ formatDate(match.date || match.matchDate) }}</span></div>
-                <div class="meta-item"><el-icon><LocationFilled /></el-icon><span>{{ match.location || match.venue || '未定' }}</span></div>
-                <div class="meta-item"><el-icon><Trophy /></el-icon><span>{{ getMatchTypeLabel(match.matchType || match.type) }}</span></div>
+                <div class="meta-item"><el-icon><Calendar /></el-icon><span>{{ formatDate(match.match_time) }}</span></div>
+                <div class="meta-item"><el-icon><LocationFilled /></el-icon><span>{{ match.location || '未定' }}</span></div>
+                <div class="meta-item"><el-icon><Trophy /></el-icon><span>{{ getMatchTypeLabel(match.match_type) }}</span></div>
               </div>
               <div class="match-status"><el-tag :type="getStatusTagType(match.status)">{{ getStatusLabel(match.status) }}</el-tag></div>
             </div>
             <div class="card-actions">
               <el-button size="small" type="primary" @click="$emit('edit-match', match)">编辑</el-button>
-              <el-button size="small" type="danger" @click="$emit('delete-match', match.id || match.matchId)">删除</el-button>
-              <el-button v-if="['P', 'pending', '待开始', '未开始'].includes(match.status)" size="small" type="success" @click="$emit('complete-match', match.id || match.matchId)">完赛</el-button>
+              <el-button size="small" type="danger" @click="$emit('delete-match', match.id)">删除</el-button>
+              <el-button v-if="['P', 'pending', '待开始', '未开始'].includes(match.status)" size="small" type="success" @click="$emit('complete-match', match.id)">完赛</el-button>
             </div>
           </el-card>
         </template>
@@ -118,15 +118,15 @@
         <template #card="{ entity: event }">
           <el-card shadow="hover" class="event-card">
             <div class="event-info">
-              <div class="event-type"><el-tag :type="getEventTagType(event.eventType || event.type)" size="large">{{ getEventTypeLabel(event.eventType || event.type) }}</el-tag></div>
-              <div class="event-match">{{ event.matchName || event.match || '未知比赛' }}</div>
-              <div class="event-player"><el-icon><User /></el-icon><span>{{ event.playerName || event.player || '未知球员' }}</span></div>
-              <div class="event-time"><el-icon><Clock /></el-icon><span>{{ event.eventTime || event.time || 0 }}分钟</span></div>
-              <div class="event-match-type"><el-icon><Trophy /></el-icon><span>{{ getMatchTypeLabel(event.matchType || event.type) }}</span></div>
+              <div class="event-type"><el-tag :type="getEventTagType(event.event_type)" size="large">{{ getEventTypeLabel(event.event_type) }}</el-tag></div>
+              <div class="event-match">{{ event.match_name || '未知比赛' }}</div>
+              <div class="event-player"><el-icon><User /></el-icon><span>{{ event.player_name || '未知球员' }}</span></div>
+              <div class="event-time"><el-icon><Clock /></el-icon><span>{{ event.event_time || 0 }}分钟</span></div>
+              <div class="event-match-type"><el-icon><Trophy /></el-icon><span>{{ getMatchTypeLabel(event.match_type) }}</span></div>
             </div>
             <div class="card-actions">
               <el-button size="small" type="primary" @click="$emit('edit-event', event)">编辑</el-button>
-              <el-button size="small" type="danger" @click="$emit('delete-event', event.id || event.eventId)">删除</el-button>
+              <el-button size="small" type="danger" @click="$emit('delete-event', event.id)">删除</el-button>
             </div>
           </el-card>
         </template>
@@ -182,10 +182,10 @@
               <div class="player-details">
                 <div class="player-name">{{ player.name || '未知球员' }}</div>
                 <div class="player-meta">
-                  <div class="meta-item"><el-icon><CreditCard /></el-icon><span>{{ player.studentId || player.id || '无学号' }}</span></div>
-                  <div class="meta-item"><el-icon><Football /></el-icon><span>{{ player.teamName || player.team || '无球队' }}</span></div>
-                  <div class="meta-item"><el-icon><Trophy /></el-icon><span>{{ getMatchTypeLabel(player.matchType || player.type) }}</span></div>
-                  <div class="meta-item"><el-icon><Tickets /></el-icon><span>号码: {{ player.number || player.jerseyNumber || '?' }}</span></div>
+                  <div class="meta-item"><el-icon><CreditCard /></el-icon><span>{{ player.student_id || '无学号' }}</span></div>
+                  <div class="meta-item"><el-icon><Football /></el-icon><span>{{ player.team_name || '无球队' }}</span></div>
+                  <div class="meta-item"><el-icon><Trophy /></el-icon><span>{{ getMatchTypeLabel(player.match_type) }}</span></div>
+                  <div class="meta-item"><el-icon><Tickets /></el-icon><span>号码: {{ player.number || '?' }}</span></div>
                 </div>
                 <div class="player-stats">
                   <span class="stat-badge goals" v-if="getPlayerGoals(player.id) > 0">

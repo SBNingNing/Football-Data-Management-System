@@ -4,17 +4,13 @@ from datetime import datetime
 import re
 
 from app.utils.logger import get_logger
+from app.utils.tournament_utils import TournamentUtils
 
 logger = get_logger(__name__)
 
 
 class TeamUtils:
     """球队工具函数集合。"""
-
-    # 比赛类型英文规范列表
-    VALID_MATCH_TYPES = []
-    # 中英文 & 变体别名映射到规范英文
-    MATCH_TYPE_ALIAS_MAP = {}
 
     @staticmethod
     def normalize_match_type(raw: str) -> tuple[str | None, str | None]:
@@ -28,21 +24,7 @@ class TeamUtils:
     @staticmethod
     def determine_match_type(tournament) -> str:
         """从赛事名称推断 matchType。"""
-        if tournament and tournament.competition:
-            return tournament.competition.name
-        if tournament:
-            return tournament.name
-        return '未知赛事'
-    
-    @staticmethod
-    def get_tournament_id_by_match_type(match_type: str) -> int:
-        """比赛类型 -> 固定 tournamentId 映射。"""
-        # 尝试将 match_type 转换为整数 ID
-        try:
-            return int(match_type)
-        except (ValueError, TypeError):
-            # 如果不是数字，返回默认值 1
-            return 1
+        return TournamentUtils.determine_match_type(tournament)
     
     @staticmethod
     def format_team_name(name: str) -> str:
@@ -95,13 +77,13 @@ class TeamUtils:
         
         return {
             'name': player_history.player.name,
-            'playerId': player_history.player_id,
-            'studentId': player_history.player_id,
+            'player_id': player_history.player_id,
+            'student_id': player_history.player_id,
             'id': player_history.player_id,
             'number': str(player_history.player_number),
             'goals': player_history.tournament_goals or 0,
-            'redCards': player_history.tournament_red_cards or 0,
-            'yellowCards': player_history.tournament_yellow_cards or 0
+            'red_cards': player_history.tournament_red_cards or 0,
+            'yellow_cards': player_history.tournament_yellow_cards or 0
         }
     
     @staticmethod
@@ -115,24 +97,24 @@ class TeamUtils:
         # 标准化字段名
         standardized_dict = {
             'id': team.id if hasattr(team, 'id') else None,
-            'teamName': team.name if hasattr(team, 'name') else '',
+            'team_name': team.name if hasattr(team, 'name') else '',
             'name': team.name if hasattr(team, 'name') else '',
-            'tournamentId': team.tournament_id if hasattr(team, 'tournament_id') else None,
-            'tournamentName': team.tournament.name if hasattr(team, 'tournament') and team.tournament else None,
-            'matchType': TeamUtils.determine_match_type(team.tournament if hasattr(team, 'tournament') else None),
-            'groupId': team.group_id if hasattr(team, 'group_id') else None,
+            'tournament_id': team.tournament_id if hasattr(team, 'tournament_id') else None,
+            'tournament_name': team.tournament.name if hasattr(team, 'tournament') and team.tournament else None,
+            'match_type': TeamUtils.determine_match_type(team.tournament if hasattr(team, 'tournament') else None),
+            'group_id': team.group_id if hasattr(team, 'group_id') else None,
             'rank': team.tournament_rank if hasattr(team, 'tournament_rank') else None,
             'goals': team.tournament_goals if hasattr(team, 'tournament_goals') else 0,
-            'goalsConceded': team.tournament_goals_conceded if hasattr(team, 'tournament_goals_conceded') else 0,
-            'goalDifference': team.tournament_goal_difference if hasattr(team, 'tournament_goal_difference') else 0,
-            'redCards': team.tournament_red_cards if hasattr(team, 'tournament_red_cards') else 0,
-            'yellowCards': team.tournament_yellow_cards if hasattr(team, 'tournament_yellow_cards') else 0,
+            'goals_conceded': team.tournament_goals_conceded if hasattr(team, 'tournament_goals_conceded') else 0,
+            'goal_difference': team.tournament_goal_difference if hasattr(team, 'tournament_goal_difference') else 0,
+            'red_cards': team.tournament_red_cards if hasattr(team, 'tournament_red_cards') else 0,
+            'yellow_cards': team.tournament_yellow_cards if hasattr(team, 'tournament_yellow_cards') else 0,
             'points': team.tournament_points if hasattr(team, 'tournament_points') else 0,
-            'matchesPlayed': team.matches_played if hasattr(team, 'matches_played') else 0,
+            'matches_played': team.matches_played if hasattr(team, 'matches_played') else 0,
             'wins': team.wins if hasattr(team, 'wins') else 0,
             'draws': team.draws if hasattr(team, 'draws') else 0,
             'losses': team.losses if hasattr(team, 'losses') else 0,
-            'createdAt': team.created_at.isoformat() if hasattr(team, 'created_at') and team.created_at else None
+            'created_at': team.created_at.isoformat() if hasattr(team, 'created_at') and team.created_at else None
         }
         
         return standardized_dict
@@ -153,7 +135,7 @@ class TeamUtils:
                 # 排名越小越好（正序）
                 return sorted(teams, key=lambda x: x.get('rank', 999))
             elif sort_by == 'name':
-                return sorted(teams, key=lambda x: x.get('teamName', ''))
+                return sorted(teams, key=lambda x: x.get('team_name', ''))
             else:
                 logger.warning(f"Unknown sort criteria: {sort_by}, using default 'points'")
                 return sorted(teams, key=lambda x: x.get('points', 0), reverse=True)
@@ -167,7 +149,7 @@ class TeamUtils:
         """过滤: 赛事ID。"""
         if not teams:
             return []
-        return [team for team in teams if team.get('tournamentId') == tournament_id]
+        return [team for team in teams if team.get('tournament_id') == tournament_id]
     
     @staticmethod
     def filter_teams_by_match_type(teams: List[Dict[str, Any]], 
@@ -175,7 +157,7 @@ class TeamUtils:
         """过滤: 比赛类型。"""
         if not teams:
             return []
-        return [team for team in teams if team.get('matchType') == match_type]
+        return [team for team in teams if team.get('match_type') == match_type]
     
     @staticmethod
     def get_team_statistics(teams: List[Dict[str, Any]]) -> Dict[str, Any]:
@@ -191,7 +173,7 @@ class TeamUtils:
         
         total_teams = len(teams)
         total_goals = sum(team.get('goals', 0) for team in teams)
-        total_matches = sum(team.get('matchesPlayed', 0) for team in teams)
+        total_matches = sum(team.get('matches_played', 0) for team in teams)
         average_goals = round(total_goals / total_teams, 2) if total_teams > 0 else 0
         
         # 找到进球最多的球队
@@ -202,7 +184,7 @@ class TeamUtils:
             'total_goals': total_goals,
             'total_matches': total_matches,
             'average_goals_per_team': average_goals,
-            'top_scorer_team': top_scorer.get('teamName') if top_scorer else None,
+            'top_scorer_team': top_scorer.get('team_name') if top_scorer else None,
             'top_scorer_goals': top_scorer.get('goals', 0) if top_scorer else 0
         }
     
@@ -230,7 +212,9 @@ class TeamUtils:
             if not player.get('name'):
                 return False, f"第{i+1}个球员姓名不能为空"
             
-            if not player.get('studentId'):
+            # 兼容 student_id 和 studentId (优先 student_id)
+            pid = player.get('student_id') or player.get('studentId')
+            if not pid:
                 return False, f"第{i+1}个球员学号不能为空"
             
             # 检查号码重复
@@ -244,7 +228,7 @@ class TeamUtils:
                 return False, f"第{i+1}个球员号码格式错误"
             
             # 检查学号重复
-            student_id = str(player['studentId'])
+            student_id = str(pid)
             if student_id in student_ids:
                 return False, f"学号{student_id}重复"
             student_ids.append(student_id)

@@ -3,9 +3,9 @@
 """
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required
+from pydantic import ValidationError
 from app.services.event_service import EventService
 from app.schemas import EventCreate, EventUpdate, EventOut
-from app.middleware.event_middleware import validate_event_creation_data, validate_event_update_data
 from app.utils.logger import get_logger
 
 events_bp = Blueprint('events', __name__)
@@ -14,7 +14,6 @@ logger = get_logger(__name__)
 
 @events_bp.route('', methods=['POST'])
 @jwt_required()
-@validate_event_creation_data
 def create_event():
     """创建事件"""
     try:
@@ -39,6 +38,11 @@ def create_event():
         # 业务逻辑错误
         logger.error(f"创建事件失败: {str(e)}")
         return jsonify({'status': 'error', 'message': str(e)}), 400
+
+    except ValidationError as e:
+        # 参数验证错误
+        logger.error(f"创建事件参数验证失败: {e.errors()}")
+        return jsonify({'status': 'error', 'message': '参数验证失败', 'details': e.errors()}), 400
         
     except Exception as e:
         # 系统错误
@@ -67,7 +71,6 @@ def get_events():
 
 @events_bp.route('/<int:event_id>', methods=['PUT'])
 @jwt_required()
-@validate_event_update_data
 def update_event(event_id):
     """更新事件信息"""
     try:
@@ -84,6 +87,11 @@ def update_event(event_id):
         # 业务逻辑错误
         logger.error(f"更新事件 {event_id} 失败: {str(e)}")
         return jsonify({'status': 'error', 'message': str(e)}), 400
+
+    except ValidationError as e:
+        # 参数验证错误
+        logger.error(f"更新事件 {event_id} 参数验证失败: {e.errors()}")
+        return jsonify({'status': 'error', 'message': '参数验证失败', 'details': e.errors()}), 400
         
     except Exception as e:
         # 系统错误

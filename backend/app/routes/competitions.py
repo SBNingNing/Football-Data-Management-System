@@ -1,9 +1,9 @@
 from flask import Blueprint, request, jsonify
+from pydantic import ValidationError
 from app.services.competition_service import CompetitionService
 from app.middleware.auth_middleware import auth_required
-from app.middleware.validation_middleware import validate_json
-from app.middleware.competition_middleware import validate_competition_data, validate_competition_id
 from app.utils.competition_utils import CompetitionUtils
+from app.schemas import CompetitionCreate, CompetitionUpdate
 
 competitions_bp = Blueprint('competitions', __name__)
 
@@ -43,7 +43,6 @@ def get_competitions():
         return jsonify(CompetitionUtils.format_error_response(f'获取赛事列表失败: {str(e)}')), 500
 
 @competitions_bp.route('/<int:competition_id>', methods=['GET'])
-@validate_competition_id
 def get_competition(competition_id):
     """根据ID获取单个赛事信息"""
     try:
@@ -67,12 +66,11 @@ def get_competition(competition_id):
 
 @competitions_bp.route('', methods=['POST'])
 @auth_required
-@validate_json(['name'])
-@validate_competition_data
 def create_competition():
     """创建新赛事"""
     try:
-        data = request.get_json()
+        payload = CompetitionCreate(**(request.get_json() or {}))
+        data = payload.model_dump(by_alias=True)
         
         # 使用工具函数格式化名称
         formatted_name = CompetitionUtils.format_competition_name(data['name'])
@@ -88,18 +86,18 @@ def create_competition():
             '赛事创建成功'
         )), 201
         
+    except ValidationError as e:
+        return jsonify(CompetitionUtils.format_error_response(f'参数验证失败: {e.errors()}')), 400
     except Exception as e:
         return jsonify(CompetitionUtils.format_error_response(f'创建赛事失败: {str(e)}')), 500
 
 @competitions_bp.route('/<int:competition_id>', methods=['PUT'])
 @auth_required
-@validate_competition_id
-@validate_json()
-@validate_competition_data
 def update_competition(competition_id):
     """更新赛事信息"""
     try:
-        data = request.get_json()
+        payload = CompetitionUpdate(**(request.get_json() or {}))
+        data = payload.model_dump(exclude_unset=True, by_alias=True)
         
         # 格式化名称（如果提供了）
         if 'name' in data and data['name']:
@@ -121,12 +119,13 @@ def update_competition(competition_id):
             '赛事更新成功'
         )), 200
         
+    except ValidationError as e:
+        return jsonify(CompetitionUtils.format_error_response(f'参数验证失败: {e.errors()}')), 400
     except Exception as e:
         return jsonify(CompetitionUtils.format_error_response(f'更新赛事失败: {str(e)}')), 500
 
 @competitions_bp.route('/<int:competition_id>', methods=['DELETE'])
 @auth_required
-@validate_competition_id
 def delete_competition(competition_id):
     """删除赛事"""
     try:

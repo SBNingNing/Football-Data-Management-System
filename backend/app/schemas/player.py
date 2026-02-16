@@ -8,7 +8,7 @@ from .base import SchemaBase
 
 class PlayerCreate(SchemaBase):
     name: str = Field(..., min_length=1, max_length=50)
-    student_id: str = Field(..., min_length=1, max_length=20, alias='studentId')
+    student_id: str = Field(..., min_length=1, max_length=20)
 
 
 class PlayerUpdate(SchemaBase):

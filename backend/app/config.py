@@ -28,15 +28,6 @@ class Config:
     CORS_METHODS = ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS']
     CORS_HEADERS = ['Content-Type', 'Authorization']
     
-    # 用户验证规则配置
-    USER_VALIDATION = {
-        'USERNAME_MIN_LENGTH': int(os.environ.get('USERNAME_MIN_LENGTH', 3)),
-        'USERNAME_MAX_LENGTH': int(os.environ.get('USERNAME_MAX_LENGTH', 50)),
-        'PASSWORD_MIN_LENGTH': int(os.environ.get('PASSWORD_MIN_LENGTH', 6)),
-        'PASSWORD_MAX_LENGTH': int(os.environ.get('PASSWORD_MAX_LENGTH', 128)),
-        'REQUIRE_PASSWORD_COMPLEXITY': os.environ.get('REQUIRE_PASSWORD_COMPLEXITY', 'False').lower() == 'true'
-    }
-    
     # 日志配置
     LOG_LEVEL = os.environ.get('LOG_LEVEL', 'INFO')
     LOG_MAX_BYTES = int(os.environ.get('LOG_MAX_BYTES', 10485760))  # 10MB
@@ -69,20 +60,12 @@ class Config:
 
         secret_key = _get(mapping, 'SECRET_KEY')
         jwt_secret = _get(mapping, 'JWT_SECRET_KEY')
-        user_validation = _get(mapping, 'USER_VALIDATION') or {}
 
         if not secret_key or secret_key == 'dev-key-should-be-changed':
             errors.append("SECRET_KEY should be set to a secure value")
 
         if not jwt_secret or jwt_secret == 'jwt-dev-key-change-in-production':
             errors.append("JWT_SECRET_KEY should be set to a secure value")
-
-        try:
-            pwd_min = user_validation.get('PASSWORD_MIN_LENGTH', cls.USER_VALIDATION['PASSWORD_MIN_LENGTH'])
-            if int(pwd_min) < 6:
-                errors.append("PASSWORD_MIN_LENGTH should be at least 6")
-        except Exception:
-            errors.append("USER_VALIDATION.PASSWORD_MIN_LENGTH must be an integer >= 6")
 
         return errors
 
@@ -137,15 +120,6 @@ class TestingConfig(Config):
     DEBUG = True
     SQLALCHEMY_DATABASE_URI = 'sqlite:///:memory:'
     JWT_ACCESS_TOKEN_EXPIRES = timedelta(minutes=5)
-    
-    # 测试环境配置
-    USER_VALIDATION = {
-        'USERNAME_MIN_LENGTH': 2,  # 测试时允许更短的用户名
-        'USERNAME_MAX_LENGTH': 50,
-        'PASSWORD_MIN_LENGTH': 4,  # 测试时允许更短的密码
-        'PASSWORD_MAX_LENGTH': 128,
-        'REQUIRE_PASSWORD_COMPLEXITY': False
-    }
     
     # 测试时禁用CSRF保护
     WTF_CSRF_ENABLED = False

@@ -17,7 +17,7 @@
         <div class="stat-item-common stat-goals">
           <el-icon><Finished /></el-icon>
           <div class="stat-info">
-            <div class="stat-number">{{ team.totalGoals }}</div>
+            <div class="stat-number">{{ team.total_goals }}</div>
             <div class="stat-label">总进球数</div>
           </div>
         </div>
@@ -26,7 +26,7 @@
         <div class="stat-item-common stat-conceded">
           <el-icon><Warning /></el-icon>
           <div class="stat-info">
-            <div class="stat-number">{{ team.totalGoalsConceded }}</div>
+            <div class="stat-number">{{ team.total_goals_conceded }}</div>
             <div class="stat-label">总失球数</div>
           </div>
         </div>
@@ -35,7 +35,7 @@
         <div class="stat-item-common stat-difference">
           <el-icon><Top /></el-icon>
           <div class="stat-info">
-            <div class="stat-number">{{ team.totalGoalDifference }}</div>
+            <div class="stat-number">{{ team.total_goal_difference }}</div>
             <div class="stat-label">总净胜球</div>
           </div>
         </div>
@@ -46,7 +46,7 @@
         <div class="stat-item-common stat-yellow">
           <el-icon><Warning /></el-icon>
           <div class="stat-info">
-            <div class="stat-number">{{ team.totalYellowCards }}</div>
+            <div class="stat-number">{{ team.total_yellow_cards }}</div>
             <div class="stat-label">总黄牌数</div>
           </div>
         </div>
@@ -55,7 +55,7 @@
         <div class="stat-item-common stat-red">
           <el-icon><CircleClose /></el-icon>
           <div class="stat-info">
-            <div class="stat-number">{{ team.totalRedCards }}</div>
+            <div class="stat-number">{{ team.total_red_cards }}</div>
             <div class="stat-label">总红牌数</div>
           </div>
         </div>
@@ -64,7 +64,7 @@
         <div class="stat-item-common stat-rank">
           <el-icon><Trophy /></el-icon>
           <div class="stat-info">
-            <div class="stat-number">{{ team.bestRank || '暂无' }}</div>
+            <div class="stat-number">{{ team.best_rank || '暂无' }}</div>
             <div class="stat-label">历史最好排名</div>
           </div>
         </div>
@@ -75,7 +75,7 @@
         <div class="stat-item-common stat-points">
           <el-icon><Star /></el-icon>
           <div class="stat-info">
-            <div class="stat-number">{{ team.totalPoints }}</div>
+            <div class="stat-number">{{ team.total_points }}</div>
             <div class="stat-label">总积分</div>
           </div>
         </div>

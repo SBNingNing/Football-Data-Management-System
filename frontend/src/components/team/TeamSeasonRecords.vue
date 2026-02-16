@@ -4,10 +4,10 @@
       <div class="clearfix"><span>球队参加的比赛信息</span></div>
     </template>
     <el-collapse v-model="localActive">
-      <el-collapse-item v-for="record in records" :key="record.id" :name="record.id">
+      <el-collapse-item v-for="record in records" :key="record.tournament_id" :name="record.tournament_id">
         <template #title>
           <div class="season-title">
-            <span>{{ record.tournamentName }} ({{ getMatchTypeText(record.matchType) }})</span>
+            <span>{{ record.tournament_name }} ({{ record.season_name }})</span>
           </div>
         </template>
         <el-row :gutter="20">
@@ -29,10 +29,11 @@
                   </span>
                 </template>
               </el-table-column>
-              <el-table-column prop="playerId" label="球员ID" />
+              <el-table-column prop="player_id" label="球员ID" />
+              <el-table-column prop="number" label="号码" />
               <el-table-column prop="goals" label="进球数" />
-              <el-table-column prop="yellowCards" label="黄牌数" />
-              <el-table-column prop="redCards" label="红牌数" />
+              <el-table-column prop="yellow_cards" label="黄牌数" />
+              <el-table-column prop="red_cards" label="红牌数" />
             </el-table>
           </el-col>
         </el-row>
@@ -52,22 +53,16 @@ const props = defineProps({
 })
 const emit = defineEmits(['update:activeSeason', 'view-player'])
 
-const { getCompetitionLabel } = useCompetitions()
-
 const localActive = ref(props.activeSeason)
 watch(() => props.activeSeason, v => { if(v !== localActive.value) localActive.value = v })
 watch(localActive, v => emit('update:activeSeason', v))
 
-function getMatchTypeText(matchType){
-  return getCompetitionLabel(matchType) || matchType || '未知类型'
-}
-
 const seasonStatItems = (r) => [
-  { label: '排名', value: r.rank || '暂无' },
-  { label: '进球数', value: r.goals },
-  { label: '失球数', value: r.goalsConceded },
-  { label: '净胜球', value: r.goalDifference },
-  { label: '黄牌', value: r.yellowCards },
-  { label: '红牌', value: r.redCards }
+  { label: '排名', value: r.final_ranking || '暂无' },
+  { label: '进球数', value: r.stats?.total_goals || 0 },
+  // { label: '失球数', value: r.goalsConceded }, // 后端暂未提供
+  // { label: '净胜球', value: r.goalDifference }, // 后端暂未提供
+  { label: '黄牌', value: r.stats?.total_yellow_cards || 0 },
+  { label: '红牌', value: r.stats?.total_red_cards || 0 }
 ]
 </script>

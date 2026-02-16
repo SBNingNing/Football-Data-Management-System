@@ -2,7 +2,7 @@
 // 核心功能:
 // - 统一返回结构 { ok, data, error, status, headers, meta }
 // - 自动认证 Token 管理和本地存储
-// - 内置缓存系统 (支持 TTL, 委托给 domain/common/cache 模块)
+// - 内置缓存系统 (支持 TTL, 委托给 utils/cache 模块)
 // - 智能重试机制 (可配置重试次数、延迟和条件)
 // - 数据 Transform 管线 (支持多层转换函数)
 // - 完整的错误分类和规范化处理
@@ -14,7 +14,7 @@
 
 import axios from 'axios';
 import logger from '@/utils/logger';
-import cacheModule, { getCache as extGet, setCache as extSet } from '@/domain/common/cache';
+import cacheModule, { getCache as extGet, setCache as extSet } from '@/utils/cache';
 
 const axiosInstance = axios.create({ baseURL: '/api', timeout: 15000 });
 
@@ -47,7 +47,7 @@ try {
   logger.warn('Token 恢复失败:', e.message); 
 }
 
-// 缓存逻辑委托给 domain/common/cache 模块
+// 缓存逻辑委托给 utils/cache 模块
 function getCache(key) { return extGet(key); }
 function setCache(key, data, ttl) { extSet(key, data, ttl); }
 
@@ -118,10 +118,20 @@ async function core(method, url, options = {}) {
         } else {
           payload = { __raw: resp.data, ...payload.data };
         }
+      } else if (payload && typeof payload === 'object' && payload.status === 'success' && Object.prototype.hasOwnProperty.call(payload,'data')) {
+        // 兼容历史响应：{ status:'success', data:... }
+        if (Array.isArray(payload.data)) {
+          payload = payload.data;
+        } else {
+          payload = { __raw: resp.data, ...payload.data };
+        }
       } else if (payload && typeof payload === 'object' && payload.success === false) {
         // 如果响应体是 { success: false, ... }，这可能是一个业务逻辑上的失败响应。
         // 我们将其视为一个错误，并抛出，以便进入下面的 catch 块进行统一处理。
         throw new Error(payload.message || 'Request failed with success:false in payload');
+      } else if (payload && typeof payload === 'object' && payload.status === 'error') {
+        // 兼容历史响应：{ status:'error', message:'...' }
+        throw new Error(payload.message || 'Request failed with status:error in payload');
       }
       
       // 应用数据转换

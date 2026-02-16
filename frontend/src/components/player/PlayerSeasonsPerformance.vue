@@ -47,7 +47,7 @@
 </template>
 <script setup>
 import { ref, watch } from 'vue'
-import { getMatchTypeText } from '@/constants/matchTypes'
+import { getMatchTypeText } from '@/utils/constants'
 const props = defineProps({ player:{ type:Object, required:true }, activeSeason:{ type:String, default:'' } })
 const emits = defineEmits(['update:activeSeason'])
 const activeSeasonLocal = ref(props.activeSeason)

@@ -1,11 +1,12 @@
 """赛事路由。"""
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required
+from pydantic import ValidationError
 
 from app.services.tournament_service import TournamentService
 from app.models.tournament import Tournament
-from app.middleware.tournament_middleware import TournamentMiddleware
 from app.utils.tournament_utils import TournamentUtils
+from app.schemas import TournamentInstanceCreate, TournamentUpdate, TournamentQuickCreate
 
 tournaments_bp = Blueprint('tournaments', __name__)
 
@@ -27,17 +28,18 @@ def get_tournament(tournament_name):
                     'records': [single_record],
                     'matchedMode': 'id'
                 }
-                return jsonify(TournamentMiddleware.format_tournament_response(payload)), 200
+                return jsonify({'status': 'success', 'data': payload}), 200
         # 名称逻辑
         tournament_info = TournamentService.get_tournament_info_by_name(tournament_name)
         tournament_info['matchedMode'] = 'name'
-        return jsonify(TournamentMiddleware.format_tournament_response(tournament_info)), 200
+        return jsonify({'status': 'success', 'data': tournament_info}), 200
     except ValueError as ve:
         _, all_names = TournamentService.find_tournament_by_name(tournament_name)
-        return jsonify(TournamentMiddleware.format_error_response(
-            str(ve), 
-            available_tournaments=all_names
-        )), 404
+        return jsonify({
+            'status': 'error',
+            'message': str(ve),
+            'available_tournaments': all_names
+        }), 404
     except Exception as e:
         return jsonify({'status': 'error', 'message': f'查询失败: {str(e)}'}), 500
 
@@ -46,12 +48,12 @@ def get_tournament(tournament_name):
 def get_tournaments():
     """全部赛事列表。"""
     try:
-        validated_params = TournamentMiddleware.validate_query_params(request.args)
+        group_by_name = request.args.get('group_by_name', 'true').lower() == 'true'
         tournaments_data = TournamentService.get_all_tournaments(
-            group_by_name=validated_params['group_by_name']
+            group_by_name=group_by_name
         )
         
-        return jsonify(TournamentMiddleware.format_tournament_response(tournaments_data)), 200
+        return jsonify({'status': 'success', 'data': tournaments_data}), 200
     except Exception as e:
         return jsonify({'status': 'error', 'message': f'查询失败: {str(e)}'}), 500
 
@@ -61,19 +63,18 @@ def get_tournaments():
 def create_tournament():
     """创建赛事实例：要求 competition_id + season_id。"""
     try:
-        data = request.get_json() or {}
-        # 直接复用实例创建逻辑
-        required_fields = ['competition_id', 'season_id']
-        for field in required_fields:
-            if not data.get(field):
-                return jsonify({'status': 'error', 'message': f'{field}不能为空'}), 400
+        payload = TournamentInstanceCreate(**(request.get_json() or {}))
+        data = payload.model_dump(by_alias=True)
 
         tournament = TournamentService.create_tournament_instance(data)
-        return jsonify(TournamentMiddleware.format_tournament_response(
-            tournament.to_dict(),
-            message='赛事实例创建成功'
-        )), 201
+        return jsonify({
+            'status': 'success',
+            'data': tournament.to_dict(),
+            'message': '赛事实例创建成功'
+        }), 201
 
+    except ValidationError as ve:
+        return jsonify({'status': 'error', 'message': '参数验证失败', 'details': ve.errors()}), 400
     except ValueError as ve:
         return jsonify({'status': 'error', 'message': str(ve)}), 400
     except Exception as e:
@@ -85,18 +86,22 @@ def create_tournament():
 def update_tournament(tournament_id):
     """更新赛事。"""
     try:
-        data = request.get_json()
+        payload = TournamentUpdate(**(request.get_json() or {}))
+        data = payload.model_dump(exclude_unset=True, by_alias=True)
         
         if not data:
             return jsonify({'status': 'error', 'message': '请提供要更新的数据'}), 400
         
         TournamentService.update_tournament(tournament_id, data)
         
-        return jsonify(TournamentMiddleware.format_tournament_response(
-            None,
-            message='更新成功'
-        )), 200
+        return jsonify({
+            'status': 'success',
+            'data': None,
+            'message': '更新成功'
+        }), 200
         
+    except ValidationError as ve:
+        return jsonify({'status': 'error', 'message': '参数验证失败', 'details': ve.errors()}), 400
     except ValueError as ve:
         return jsonify({'status': 'error', 'message': str(ve)}), 400
     except Exception as e:
@@ -110,10 +115,11 @@ def delete_tournament(tournament_id):
     try:
         TournamentService.delete_tournament(tournament_id)
         
-        return jsonify(TournamentMiddleware.format_tournament_response(
-            None,
-            message='删除成功'
-        )), 200
+        return jsonify({
+            'status': 'success',
+            'data': None,
+            'message': '删除成功'
+        }), 200
         
     except ValueError as ve:
         return jsonify({'status': 'error', 'message': str(ve)}), 400
@@ -135,10 +141,11 @@ def create_tournament_instance():
         
         tournament = TournamentService.create_tournament_instance(data)
         
-        return jsonify(TournamentMiddleware.format_tournament_response(
-            tournament.to_dict(),
-            message='赛事实例创建成功'
-        )), 201
+        return jsonify({
+            'status': 'success',
+            'data': tournament.to_dict(),
+            'message': '赛事实例创建成功'
+        }), 201
         
     except ValueError as ve:
         return jsonify({'status': 'error', 'message': str(ve)}), 400
@@ -158,10 +165,11 @@ def update_tournament_instance(tournament_id):
         
         tournament = TournamentService.update_tournament_instance(tournament_id, data)
         
-        return jsonify(TournamentMiddleware.format_tournament_response(
-            tournament.to_dict(),
-            message='赛事实例更新成功'
-        )), 200
+        return jsonify({
+            'status': 'success',
+            'data': tournament.to_dict(),
+            'message': '赛事实例更新成功'
+        }), 200
         
     except ValueError as ve:
         return jsonify({'status': 'error', 'message': str(ve)}), 400
@@ -174,7 +182,9 @@ def update_tournament_instance(tournament_id):
 def create_tournament_quick():
     """快速创建/复用赛事实例。"""
     try:
-        data = request.get_json() or {}
+        payload = TournamentQuickCreate(**(request.get_json() or {}))
+        data = payload.model_dump(by_alias=True)
+        
         result = TournamentService.create_tournament_quick(data)
         if result.get('dryRun'):
             msg = '试运行成功，将创建新赛事实例' if result['willCreate']['tournament'] else '试运行成功，赛事实例已存在'
@@ -186,7 +196,13 @@ def create_tournament_quick():
             else:
                 msg = '赛事实例已存在返回'
                 code = 200
-        return jsonify(TournamentMiddleware.format_tournament_response(result, message=msg)), code
+        return jsonify({
+            'status': 'success',
+            'data': result,
+            'message': msg
+        }), code
+    except ValidationError as ve:
+        return jsonify({'status': 'error', 'message': '参数验证失败', 'details': ve.errors()}), 400
     except ValueError as ve:
         return jsonify({'status': 'error', 'message': str(ve)}), 400
     except Exception as e:

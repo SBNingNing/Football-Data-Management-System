@@ -2,7 +2,7 @@
  * 状态标签组合函数
  * 提供统一的状态文本和样式映射
  */
-import { MATCH_STATUS_TEXT, MATCH_STATUS_TAG_TYPE } from '@/constants/match'
+import { MATCH_STATUS_TEXT, MATCH_STATUS_TAG_TYPE } from '@/utils/constants'
 
 /**
  * 状态标签组合函数

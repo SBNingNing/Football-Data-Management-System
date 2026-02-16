@@ -3,9 +3,9 @@
   <el-form ref="scheduleForm" :model="scheduleForm" :rules="rules" label-width="120px" class="schedule-form">
       <el-row :gutter="24">
         <el-col :span="24">
-          <el-form-item label="比赛名称" required>
+          <el-form-item label="比赛名称" prop="match_name" required>
             <el-input 
-              v-model="scheduleForm.matchName" 
+              v-model="scheduleForm.match_name" 
               placeholder="请输入比赛名称"
               size="large"
               clearable
@@ -22,9 +22,9 @@
 
       <el-row :gutter="24">
         <el-col :md="12" :span="24">
-          <el-form-item label="参赛球队1" prop="team1Id" required>
+          <el-form-item label="参赛球队1" prop="team1_id" required>
             <el-select 
-              v-model="scheduleForm.team1Id" 
+              v-model="scheduleForm.team1_id" 
               placeholder="请选择球队1"
               size="large"
               style="width: 100%;"
@@ -38,12 +38,12 @@
               <el-option 
                 v-for="team in teams" 
                 :key="team.id" 
-                :label="team.teamName" 
+                :label="team.team_name" 
                 :value="team.id"
-                :disabled="scheduleForm.team2Id === team.id"
+                :disabled="scheduleForm.team2_id === team.id"
               >
                 <div class="team-option">
-                  <span class="team-name">{{ team.teamName }}</span>
+                  <span class="team-name">{{ team.team_name }}</span>
                   <span class="team-players">{{ team.players?.length || 0 }}名球员</span>
                 </div>
               </el-option>
@@ -51,9 +51,9 @@
           </el-form-item>
         </el-col>
         <el-col :md="12" :span="24">
-          <el-form-item label="参赛球队2" prop="team2Id" required>
+          <el-form-item label="参赛球队2" prop="team2_id" required>
             <el-select 
-              v-model="scheduleForm.team2Id" 
+              v-model="scheduleForm.team2_id" 
               placeholder="请选择球队2"
               size="large"
               style="width: 100%;"
@@ -67,12 +67,12 @@
               <el-option 
                 v-for="team in teams" 
                 :key="team.id" 
-                :label="team.teamName" 
+                :label="team.team_name" 
                 :value="team.id"
-                :disabled="scheduleForm.team1Id === team.id"
+                :disabled="scheduleForm.team1_id === team.id"
               >
                 <div class="team-option">
-                  <span class="team-name">{{ team.teamName }}</span>
+                  <span class="team-name">{{ team.team_name }}</span>
                   <span class="team-players">{{ team.players?.length || 0 }}名球员</span>
                 </div>
               </el-option>
@@ -126,7 +126,7 @@
           </div>
           <div class="match-preview-content">
             <div class="match-info">
-              <div class="match-preview-match-title">{{ scheduleForm.matchName }}</div>
+              <div class="match-preview-match-title">{{ scheduleForm.match_name }}</div>
               <div class="match-preview-teams">
                 <div class="match-preview-team">
                   <el-avatar :size="40" class="match-preview-team-avatar">{{ team1Name?.charAt(0) }}</el-avatar>
@@ -174,8 +174,8 @@
 
 <script>
 import { Trophy, UserFilled, Calendar, MapLocation, View as IconView, Check } from '@element-plus/icons-vue'
-import { createMatch } from '@/domain/match/matchService'
-import { fetchTournaments } from '@/domain/tournament/tournamentCrudService'
+import { createMatch } from '@/api/matches'
+import { fetchTournaments } from '@/api/tournaments'
 
 export default {
   name: 'ScheduleInput',
@@ -192,6 +192,10 @@ export default {
       type: [String, Number],
       default: ''
     },
+    tournamentId: {
+      type: [String, Number],
+      default: ''
+    },
     teams: {
       type: Array,
       default: () => []
@@ -202,20 +206,20 @@ export default {
   data() {
     return {
       scheduleForm: {
-        matchName: '',
-        team1Id: null,
-        team2Id: null,
+        match_name: '',
+        team1_id: null,
+        team2_id: null,
         date: '',
         location: '',
-        tournamentId: null
+        tournament_id: null
       },
       submitting: false,
       tournaments: [],
       tournamentsLoading: false,
       rules: {
-        matchName: [{ required: true, message: '请输入比赛名称', trigger: 'blur' }],
-        team1Id: [{ required: true, message: '请选择参赛球队1', trigger: 'change' }],
-        team2Id: [{ required: true, message: '请选择参赛球队2', trigger: 'change' }],
+        match_name: [{ required: true, message: '请输入比赛名称', trigger: 'blur' }],
+        team1_id: [{ required: true, message: '请选择参赛球队1', trigger: 'change' }],
+        team2_id: [{ required: true, message: '请选择参赛球队2', trigger: 'change' }],
         date: [{ required: true, message: '请选择比赛日期', trigger: 'change' }],
         location: [{ required: true, message: '请输入比赛地点', trigger: 'blur' }],
       }
@@ -223,20 +227,20 @@ export default {
   },
   computed: {
     isFormValid() {
-      return this.scheduleForm.matchName.trim() && 
-             this.scheduleForm.team1Id && 
-             this.scheduleForm.team2Id && 
+      return this.scheduleForm.match_name.trim() && 
+             this.scheduleForm.team1_id && 
+             this.scheduleForm.team2_id && 
              this.scheduleForm.date && 
              this.scheduleForm.location.trim() &&
-             this.scheduleForm.team1Id !== this.scheduleForm.team2Id
+             this.scheduleForm.team1_id !== this.scheduleForm.team2_id
     },
     team1Name(){
-      const t = this.teams.find(t=>t.id===this.scheduleForm.team1Id)
-      return t?.teamName || ''
+      const t = this.teams.find(t=>t.id===this.scheduleForm.team1_id)
+      return t?.team_name || ''
     },
     team2Name(){
-      const t = this.teams.find(t=>t.id===this.scheduleForm.team2Id)
-      return t?.teamName || ''
+      const t = this.teams.find(t=>t.id===this.scheduleForm.team2_id)
+      return t?.team_name || ''
     }
   },
   mounted(){
@@ -251,17 +255,17 @@ export default {
       } else if (!this.isFormValid) { this.$message.warning('请填写完整的赛程信息'); return }
       
       // 双方不可相同
-      if(this.scheduleForm.team1Id === this.scheduleForm.team2Id){ this.$message.warning('两支参赛球队不能相同'); return }
+      if(this.scheduleForm.team1_id === this.scheduleForm.team2_id){ this.$message.warning('两支参赛球队不能相同'); return }
       
       // 构造符合后端要求的数据格式
       let matchData = {
-        matchName: this.scheduleForm.matchName,
+        matchName: this.scheduleForm.match_name,
         matchTime: this.scheduleForm.date, // 将date字段改为matchTime
-        homeTeamId: this.scheduleForm.team1Id,
-        awayTeamId: this.scheduleForm.team2Id,
+        homeTeamId: this.scheduleForm.team1_id,
+        awayTeamId: this.scheduleForm.team2_id,
         location: this.scheduleForm.location,
         competitionId: this.matchType, // 传入 competitionId
-        tournamentId: this.scheduleForm.tournamentId || (this.tournaments.length > 0 ? this.tournaments[0].id : 1) // 默认值改为1，避免None
+        tournamentId: this.tournamentId // 优先使用传入的 tournamentId
       };
       
       console.log('[ScheduleInput] Submitting matchData:', matchData, 'this.matchType:', this.matchType);
@@ -288,7 +292,7 @@ export default {
   } catch { /* ignore cache invalidation errors */ }
         this.$message.success('比赛创建成功')
         this.$emit('submit', data || matchData)
-        this.scheduleForm = { matchName: '', team1Id: null, team2Id: null, date: '', location: '', tournamentId: null };
+        this.scheduleForm = { match_name: '', team1_id: null, team2_id: null, date: '', location: '', tournament_id: null };
   } catch{ 
         this.$message.error('创建比赛异常')
       } finally {

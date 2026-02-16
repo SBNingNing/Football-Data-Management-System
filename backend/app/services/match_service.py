@@ -7,6 +7,8 @@ from sqlalchemy import or_
 from app.database import db
 from app.models.match import Match
 from app.models.team import Team
+from app.models.team_base import TeamBase
+from app.models.team_tournament_participation import TeamTournamentParticipation
 from app.models.tournament import Tournament
 from app.models.competition import Competition
 from app.models.event import Event
@@ -35,45 +37,50 @@ class MatchService:
                 match_time = datetime.now()
 
             # 2. 确定赛事ID (Tournament ID)
-            tournament_id = None
+            tournament_id = data.get('tournamentId')
             
-            # 优先使用 competitionId
-            competition_id = data.get('competitionId')
-            
-            # 如果没有 competitionId，尝试从 matchType 解析 (动态查找)
-            if not competition_id and data.get('matchType'):
-                # 尝试通过 matchType 查找 Competition
-                comp = Competition.query.filter(or_(Competition.name == data['matchType'], Competition.name.like(f"%{data['matchType']}%"))).first()
-                if comp:
-                    competition_id = comp.competition_id
-            
-            if not competition_id:
-                 raise ValueError('未提供 competitionId，且无法通过 matchType 找到对应的赛事')
-            
-            # 3. 根据比赛时间和 competitionId 查找对应的 Season 和 Tournament
-            if competition_id:
-                from app.models.season import Season
-                # 查找包含 match_time 的赛季
-                season = Season.query.filter(
-                    Season.start_time <= match_time,
-                    Season.end_time >= match_time
-                ).first()
+            if tournament_id:
+                tournament = Tournament.query.get(tournament_id)
+                if not tournament:
+                    raise ValueError(f'未找到ID为 {tournament_id} 的赛事记录')
+            else:
+                # 优先使用 competitionId
+                competition_id = data.get('competitionId')
                 
-                if not season:
-                    # 如果找不到匹配的赛季，尝试查找最近的一个赛季（可选，或者直接报错）
-                    # 用户要求：匹配到的赛季作为新添加的赛程所属的赛季
-                    raise ValueError(f'未找到包含日期 {match_time} 的赛季记录')
+                # 如果没有 competitionId，尝试从 matchType 解析 (动态查找)
+                if not competition_id and data.get('matchType'):
+                    # 尝试通过 matchType 查找 Competition
+                    comp = Competition.query.filter(or_(Competition.name == data['matchType'], Competition.name.like(f"%{data['matchType']}%"))).first()
+                    if comp:
+                        competition_id = comp.competition_id
                 
-                # 查找对应的 Tournament
-                tournament = Tournament.query.filter_by(
-                    competition_id=competition_id,
-                    season_id=season.season_id
-                ).first()
+                if not competition_id:
+                    raise ValueError('未提供 competitionId，且无法通过 matchType 找到对应的赛事')
                 
-                if tournament:
-                    tournament_id = tournament.id
-                else:
-                    raise ValueError(f'在赛季 {season.name} 中未找到该赛事的记录')
+                # 3. 根据比赛时间和 competitionId 查找对应的 Season 和 Tournament
+                if competition_id:
+                    from app.models.season import Season
+                    # 查找包含 match_time 的赛季
+                    season = Season.query.filter(
+                        Season.start_time <= match_time,
+                        Season.end_time >= match_time
+                    ).first()
+                    
+                    if not season:
+                        # 如果找不到匹配的赛季，尝试查找最近的一个赛季（可选，或者直接报错）
+                        # 用户要求：匹配到的赛季作为新添加的赛程所属的赛季
+                        raise ValueError(f'未找到包含日期 {match_time} 的赛季记录')
+                    
+                    # 查找对应的 Tournament
+                    tournament = Tournament.query.filter_by(
+                        competition_id=competition_id,
+                        season_id=season.season_id
+                    ).first()
+                    
+                    if tournament:
+                        tournament_id = tournament.id
+                    else:
+                        raise ValueError(f'在赛季 {season.name} 中未找到该赛事的记录')
 
             if not tournament_id:
                  raise ValueError('无法确定赛事信息')
@@ -242,10 +249,31 @@ class MatchService:
         if not match:
             raise ValueError('比赛不存在')
         
-        # 更新比赛类型
+        # 更新比赛类型 (迁移赛事)
         if data.get('matchType'):
-            new_tournament_id = MatchUtils.get_tournament_id_by_type(data['matchType'])
-            match.tournament_id = new_tournament_id
+            # 尝试查找对应的 Competition
+            comp_name = data['matchType']
+            comp = Competition.query.filter(or_(Competition.name == comp_name, Competition.name.like(f"%{comp_name}%"))).first()
+            
+            if comp:
+                # 尝试在当前比赛所属的赛季中查找该赛事的 Tournament
+                current_tournament = Tournament.query.get(match.tournament_id)
+                if current_tournament:
+                    target_tournament = Tournament.query.filter_by(
+                        competition_id=comp.competition_id,
+                        season_id=current_tournament.season_id
+                    ).first()
+                    
+                    if target_tournament:
+                        match.tournament_id = target_tournament.id
+                    else:
+                        # 如果当前赛季没有该赛事，可能需要报错或者查找最近的
+                        raise ValueError(f'在当前赛季中未找到赛事: {comp_name}')
+                else:
+                     # 如果当前比赛没有关联赛事（异常情况），尝试查找最新的
+                     pass
+            else:
+                 raise ValueError(f'未找到赛事类型: {comp_name}')
         
         # 更新基本信息
         if data.get('matchName'):
@@ -338,8 +366,8 @@ class MatchService:
                 or_(
                     Match.match_name.ilike(f'%{keyword}%'),
                     Match.location.ilike(f'%{keyword}%'),
-                    Match.home_team.has(Team.name.ilike(f'%{keyword}%')),
-                    Match.away_team.has(Team.name.ilike(f'%{keyword}%'))
+                    Match.home_team.has(TeamTournamentParticipation.team_base.has(TeamBase.name.ilike(f'%{keyword}%'))),
+                    Match.away_team.has(TeamTournamentParticipation.team_base.has(TeamBase.name.ilike(f'%{keyword}%')))
                 )
             )
 

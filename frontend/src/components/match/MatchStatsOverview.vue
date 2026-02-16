@@ -5,31 +5,31 @@
       <el-col :span="5">
         <div class="stat-item stat-card--goals">
           <el-icon style="color:#fff;font-size:40px;"><Finished /></el-icon>
-          <div class="stat-info"><div class="stat-number">{{ match?.totalGoals || 0 }}</div><div class="stat-label">总进球数</div></div>
+          <div class="stat-info"><div class="stat-number">{{ match?.total_goals || 0 }}</div><div class="stat-label">总进球数</div></div>
         </div>
       </el-col>
       <el-col :span="5">
         <div class="stat-item stat-card--own-goals">
           <el-icon style="color:#fff;font-size:40px;"><Football /></el-icon>
-          <div class="stat-info"><div class="stat-number">{{ match?.totalOwnGoals || 0 }}</div><div class="stat-label">乌龙球数</div></div>
+          <div class="stat-info"><div class="stat-number">{{ match?.total_own_goals || 0 }}</div><div class="stat-label">乌龙球数</div></div>
         </div>
       </el-col>
       <el-col :span="5">
         <div class="stat-item stat-card--yellow">
           <el-icon style="color:#fff;font-size:40px;"><Warning /></el-icon>
-          <div class="stat-info"><div class="stat-number">{{ match?.totalYellowCards || 0 }}</div><div class="stat-label">黄牌数</div></div>
+          <div class="stat-info"><div class="stat-number">{{ match?.total_yellow_cards || 0 }}</div><div class="stat-label">黄牌数</div></div>
         </div>
       </el-col>
       <el-col :span="5">
         <div class="stat-item stat-card--red">
           <el-icon style="color:#fff;font-size:40px;"><CircleClose /></el-icon>
-          <div class="stat-info"><div class="stat-number">{{ match?.totalRedCards || 0 }}</div><div class="stat-label">红牌数</div></div>
+          <div class="stat-info"><div class="stat-number">{{ match?.total_red_cards || 0 }}</div><div class="stat-label">红牌数</div></div>
         </div>
       </el-col>
       <el-col :span="4">
         <div class="stat-item stat-card--success">
           <el-icon style="color:#fff;font-size:40px;"><User /></el-icon>
-          <div class="stat-info"><div class="stat-number">{{ match?.totalPlayers || 0 }}</div><div class="stat-label">参赛球员</div></div>
+          <div class="stat-info"><div class="stat-number">{{ match?.total_players || 0 }}</div><div class="stat-label">参赛球员</div></div>
         </div>
       </el-col>
     </el-row>

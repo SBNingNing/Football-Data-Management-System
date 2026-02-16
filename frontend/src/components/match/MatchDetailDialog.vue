@@ -1,7 +1,7 @@
 <template>
   <el-dialog
     v-model="dialogVisible"
-    :title="matchData?.name || '比赛详情'"
+    :title="matchData?.match_name || '比赛详情'"
     width="80%"
     :before-close="handleClose"
     class="match-detail-dialog"
@@ -40,7 +40,7 @@
         <template #header>
           <div class="card-header">
             <el-icon class="header-icon"><Trophy /></el-icon>
-            <span class="header-title">{{ matchDetails.name }}</span>
+            <span class="header-title">{{ matchDetails.match_name }}</span>
             <el-tag :type="getMatchStatusType()" size="small">
               {{ matchDetails.status }}
             </el-tag>
@@ -54,7 +54,7 @@
               <el-icon><Flag /></el-icon>
             </div>
             <div class="team-details">
-              <div class="team-name">{{ matchDetails.team1 }}</div>
+              <div class="team-name">{{ matchDetails.home_team || matchDetails.home_team_name }}</div>
               <div class="team-label">主队</div>
             </div>
           </div>
@@ -62,9 +62,9 @@
           <div class="vs-section">
             <div class="vs-text">VS</div>
             <div class="match-score" :class="getScoreClass()">
-              {{ matchDetails.score || '0-0' }}
+              {{ matchDetails.score || `${matchDetails.home_score || 0} - ${matchDetails.away_score || 0}` }}
             </div>
-            <div class="match-time">{{ formatDate(matchDetails.date) }}</div>
+            <div class="match-time">{{ formatDate(matchDetails.match_time) }}</div>
           </div>
           
           <div class="team-info team-away">
@@ -72,7 +72,7 @@
               <el-icon><Flag /></el-icon>
             </div>
             <div class="team-details">
-              <div class="team-name">{{ matchDetails.team2 }}</div>
+              <div class="team-name">{{ matchDetails.away_team || matchDetails.away_team_name }}</div>
               <div class="team-label">客队</div>
             </div>
           </div>
@@ -86,7 +86,7 @@
                 <el-icon><Medal /></el-icon>
               </div>
               <div class="stat-content">
-                <div class="stat-number">{{ getMatchTypeLabel(matchDetails.type) }}</div>
+                <div class="stat-number">{{ getMatchTypeLabel(matchDetails.match_type) }}</div>
                 <div class="stat-label">比赛类型</div>
               </div>
             </div>
@@ -176,7 +176,7 @@
               <h4>比赛规则</h4>
               <div class="info-item">
                 <span class="info-label">比赛制度:</span>
-                <span class="info-value">{{ getMatchFormat(matchDetails.type) }}</span>
+                <span class="info-value">{{ getMatchFormat(matchDetails.match_type) }}</span>
               </div>
               <div class="info-item">
                 <span class="info-label">比赛时长:</span>
@@ -354,7 +354,7 @@ const fetchMatchDetails = async () => {
       weather: '晴朗',
       temperature: '25°C',
       attendance: 150,
-      duration: getMatchFormat(props.matchData.type) === '8人制' ? '60分钟' : '90分钟'
+      duration: getMatchFormat(props.matchData.match_type) === '8人制' ? '60分钟' : '90分钟'
     }
 
   } catch (err) {

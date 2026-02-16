@@ -10,9 +10,11 @@
     <MatchTypeSelector
       ref="matchTypeSelectorRef"
       v-model="matchTypeForm.matchType"
+      v-model:seasonId="matchTypeForm.seasonId"
       :get-match-type-label="getMatchTypeLabel"
       :get-match-type-tag-type="getMatchTypeTagType"
       @change="handleMatchTypeChange"
+      @tournament-found="handleTournamentFound"
     >
       <template #stats>
         <TypeStatsPanel
@@ -30,7 +32,7 @@
 
     <!-- 录入类型选择 -->
     <section
-      v-if="currentMatchType"
+      v-if="currentMatchType && currentTournamentId"
       ref="typeSelectionContainer"
       class="input-type-selection"
     >
@@ -45,12 +47,13 @@
 
     <!-- 信息录入表单区域 -->
     <section
-      v-if="currentMatchType && selectedInputType"
+      v-if="currentMatchType && currentTournamentId && selectedInputType"
       class="input-form-container"
     >
       <InputFormsWrapper
         :type="selectedInputType"
         :match-type="currentMatchType"
+        :tournament-id="currentTournamentId"
         :teams="filteredTeams"
         :matches="filteredMatches"
         @back="goBackToSelection"
@@ -62,7 +65,7 @@
     </section>
 
     <!-- 空状态提示（组件化） -->
-    <EmptyState v-if="!currentMatchType" />
+    <EmptyState v-if="!currentMatchType || !currentTournamentId" />
   </div>
 </template>
 
@@ -89,8 +92,9 @@ const props = defineProps({
 const emit = defineEmits(['team-submit', 'schedule-submit', 'event-submit', 'refresh-data'])
 
 // reactive state
-const matchTypeForm = reactive({ matchType: '' })
+const matchTypeForm = reactive({ matchType: '', seasonId: '' })
 const currentMatchType = ref('')
+const currentTournamentId = ref(null)
 const selectedInputType = ref('')
 const typeSelectionContainer = ref(null)
 const matchTypeSelectorRef = ref(null)
@@ -98,6 +102,10 @@ const matchTypeSelectorRef = ref(null)
 // computed
 const filteredTeams = computed(() => props.teams.filter(t => t.competitionId === currentMatchType.value))
 const filteredMatches = computed(() => props.matches.filter(m => m.competitionId === currentMatchType.value))
+
+function handleTournamentFound(id) {
+  currentTournamentId.value = id
+}
 
 // match type meta & scroll helpers
 const { getMatchTypeLabel: getMetaLabel, getMatchTypeTagType, getMatchTypeStats } = useMatchTypeMeta()
