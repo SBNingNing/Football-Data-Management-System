@@ -4,6 +4,8 @@ from pydantic import ValidationError
 from app.services.auth_service import AuthService
 from app.middleware.auth_middleware import auth_required
 from app.schemas import RegisterIn, LoginIn, LoginOut, RegisterOut, GuestLoginOut, UserView, GuestUserView
+from app.utils.logger import get_logger
+logger = get_logger(__name__)
 
 auth_bp = Blueprint('auth', __name__)
 
@@ -31,7 +33,10 @@ def register():
 def register_admin():
     """管理员注册 - 直接创建管理员账号"""
     try:
-        payload = RegisterIn(**(request.get_json() or {}))
+        json_data = request.get_json() or {}
+        logger.info(f"Admin register attempt: {json_data.get('username', 'unknown')}")
+
+        payload = RegisterIn(**json_data)
         
         # 使用 AuthService 创建管理员账号
         user, error = AuthService.register_user(
@@ -42,19 +47,21 @@ def register_admin():
         )
         
         if error:
+            # 关键：记录具体错误原因
+            logger.warning(f"Admin registration failed: {error}")
             return jsonify({'error': error}), 400
             
         out = RegisterOut(user_id=user.用户ID)
+        logger.info(f"Admin registered successfully: {user.用户ID}")
         return jsonify(out.model_dump(by_alias=True)), 201
     except ValidationError as e:
+        # 关键：记录参数验证错误详情
+        logger.warning(f"Admin registration validation error: {e.errors()}")
         return jsonify({'error': '参数验证失败', 'details': e.errors()}), 400
 
 @auth_bp.route('/login', methods=['POST'])
 def login():
     """用户登录"""
-    from app.utils.logger import get_logger
-    logger = get_logger(__name__)
-    
     try:
         payload = LoginIn(**(request.get_json() or {}))
         
@@ -90,9 +97,6 @@ def login():
 @auth_bp.route('/guest-login', methods=['POST'])
 def guest_login():
     """游客登录"""
-    from app.utils.logger import get_logger
-    logger = get_logger(__name__)
-    
     logger.info("Guest login attempt")
     
     # 调用服务层处理游客登录
@@ -115,9 +119,6 @@ def guest_login():
 @auth_required
 def get_current_user():
     """获取当前用户信息"""
-    from app.utils.logger import get_logger
-    logger = get_logger(__name__)
-    
     try:
         user_id = get_jwt_identity()
         logger.info(f"Fetching user info for ID: {user_id}")

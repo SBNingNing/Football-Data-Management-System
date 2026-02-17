@@ -58,10 +58,29 @@ export const useAuthStore = defineStore('auth', {
     async registerAdmin(adminData){ 
       this.loading=true; this.error=null; 
       try{ 
-        await apiRegisterAdmin(adminData); 
-        return true; // 直接返回 boolean 以保持向后兼容
+        const res = await apiRegisterAdmin(adminData); 
+        // 检查 http 客户端返回的 ok 状态
+        if (!res.ok) {
+           // 优先尝试获取后端直接返回的 error 字段
+           // 后端返回格式通常为: {'error': '具体错误信息'} 或 {'error': '参数验证失败', 'details': [...]}
+           const rawData = res.error?.raw?.response?.data;
+           const explicitError = rawData?.error;
+           
+           // 如果有 details 数组，可能需要将其格式化为字符串
+           let detailedMsg = '';
+           if (rawData?.details && Array.isArray(rawData.details)) {
+             detailedMsg = rawData.details.map(d => `${d.loc?.[0]}: ${d.msg}`).join('; ');
+           }
+
+           const finalMsg = explicitError 
+             ? (detailedMsg ? `${explicitError}: ${detailedMsg}` : explicitError)
+             : (res.error?.message || '管理员注册失败');
+
+           throw new Error(finalMsg);
+        }
+        return true; 
       }catch(e){ 
-        this.error = e?.message || '管理员注册失败';
+        this.error = e.message;
         return false; 
       } finally { 
         this.loading=false 
